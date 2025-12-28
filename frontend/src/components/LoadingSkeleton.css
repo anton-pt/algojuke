@@ -1,0 +1,124 @@
+/* Skeleton container */
+.skeleton-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+/* Base skeleton card */
+.skeleton-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Skeleton elements with shimmer animation */
+.skeleton-artwork,
+.skeleton-artwork-small,
+.skeleton-title,
+.skeleton-title-small,
+.skeleton-artist,
+.skeleton-artist-small,
+.skeleton-meta-item,
+.skeleton-meta-item-small {
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e0e0e0 50%,
+    #f0f0f0 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Album skeleton styles */
+.album-skeleton .skeleton-artwork {
+  width: 100%;
+  aspect-ratio: 1;
+  margin-bottom: 1rem;
+  border-radius: 8px;
+}
+
+.album-skeleton .skeleton-title {
+  height: 1.5rem;
+  width: 80%;
+  margin-bottom: 0.5rem;
+}
+
+.album-skeleton .skeleton-artist {
+  height: 1rem;
+  width: 60%;
+  margin-bottom: 0.75rem;
+}
+
+.album-skeleton .skeleton-meta-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.album-skeleton .skeleton-meta-item {
+  height: 0.875rem;
+  width: 4rem;
+}
+
+/* Track skeleton styles */
+.track-skeleton {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.track-skeleton .skeleton-artwork-small {
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+  border-radius: 4px;
+}
+
+.track-skeleton .skeleton-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.track-skeleton .skeleton-title-small {
+  height: 1.25rem;
+  width: 70%;
+  margin-bottom: 0.5rem;
+}
+
+.track-skeleton .skeleton-artist-small {
+  height: 1rem;
+  width: 50%;
+  margin-bottom: 0.5rem;
+}
+
+.track-skeleton .skeleton-meta-item-small {
+  height: 0.875rem;
+  width: 3rem;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .skeleton-container {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  .track-skeleton .skeleton-artwork-small {
+    width: 60px;
+    height: 60px;
+  }
+}

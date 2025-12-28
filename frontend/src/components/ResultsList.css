@@ -1,0 +1,51 @@
+.results-list {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.results-header {
+  margin-bottom: 2rem;
+  color: #666;
+}
+
+.cached-badge {
+  margin-left: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background: #e0f0ff;
+  color: #0066cc;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 4px;
+}
+
+.albums-section,
+.tracks-section {
+  margin-bottom: 3rem;
+}
+
+.albums-section h2,
+.tracks-section h2 {
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+  color: #000;
+}
+
+.albums-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.tracks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+@media (max-width: 768px) {
+  .albums-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+  }
+}
