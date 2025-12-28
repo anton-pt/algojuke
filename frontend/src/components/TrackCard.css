@@ -1,0 +1,99 @@
+.track-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: background 0.2s;
+}
+
+.track-card:hover {
+  background: #f9f9f9;
+}
+
+.track-artwork {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #f0f0f0;
+}
+
+.track-artwork img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.track-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.track-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem 0;
+  color: #000;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.track-artist {
+  font-size: 0.875rem;
+  color: #666;
+  margin: 0 0 0.25rem 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.track-album {
+  font-size: 0.8rem;
+  color: #999;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.track-duration {
+  font-size: 0.9rem;
+  color: #666;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  min-width: 3rem;
+  text-align: right;
+}
+
+.tidal-link-small {
+  flex-shrink: 0;
+  padding: 0.5rem 1rem;
+  background: #0066cc;
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.tidal-link-small:hover {
+  background: #0052a3;
+}
+
+@media (max-width: 768px) {
+  .track-card {
+    flex-wrap: wrap;
+  }
+
+  .tidal-link-small {
+    width: 100%;
+    text-align: center;
+  }
+}

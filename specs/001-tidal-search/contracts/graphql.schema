@@ -1,0 +1,195 @@
+# GraphQL Schema - Tidal Music Search API
+# Version: 1.0.0
+# Date: 2025-12-27
+
+"""
+Root query type for Tidal music search API
+"""
+type Query {
+  """
+  Search for albums and tracks on Tidal by query string.
+
+  Returns combined results of albums and tracks matching the search term.
+  Results are limited to the specified limit per type.
+
+  Supports pagination via offset for discovering more results.
+
+  Caching is transparent - cached results are indicated in the response.
+  """
+  search(
+    """Search query (required, 1-200 characters)"""
+    query: String!
+
+    """Limit results per content type (default: 20, max: 50)"""
+    limit: Int = 20
+
+    """Offset for pagination (default: 0)"""
+    offset: Int = 0
+
+    """ISO 3166-1 country code for content availability (default: US)"""
+    countryCode: String = "US"
+  ): SearchResults!
+}
+
+"""
+Results of a search operation containing albums and tracks
+"""
+type SearchResults {
+  """Album search results matching the query"""
+  albums: [AlbumResult!]!
+
+  """Track/song search results matching the query"""
+  tracks: [TrackResult!]!
+
+  """The search query that was used"""
+  query: String!
+
+  """Aggregated total counts from Tidal API"""
+  total: SearchResultCounts!
+
+  """Whether this result was served from cache"""
+  cached: Boolean!
+
+  """Unix timestamp (milliseconds) when result was retrieved"""
+  timestamp: Int!
+}
+
+"""
+Album search result from Tidal API
+"""
+type AlbumResult {
+  """Unique Tidal identifier for this album"""
+  id: String!
+
+  """Album title/name"""
+  title: String!
+
+  """Primary artist name associated with album"""
+  artist: String!
+
+  """All artists credited on the album"""
+  artists: [String!]!
+
+  """Album artwork image URL (standard 320x320px)"""
+  artworkUrl: String!
+
+  """Album artwork thumbnail image URL (160x160px)"""
+  artworkThumbUrl: String!
+
+  """Whether album contains explicit content"""
+  explicit: Boolean!
+
+  """Number of tracks on the album"""
+  trackCount: Int!
+
+  """Total album duration in seconds"""
+  duration: Int!
+
+  """Album release date in ISO 8601 format (YYYY-MM-DD)"""
+  releaseDate: String!
+
+  """Direct URL to album on Tidal website"""
+  externalUrl: String!
+
+  """Data source identifier (always 'tidal')"""
+  source: String!
+}
+
+"""
+Track/song search result from Tidal API
+"""
+type TrackResult {
+  """Unique Tidal identifier for this track"""
+  id: String!
+
+  """Track/song title"""
+  title: String!
+
+  """Primary artist name for this track"""
+  artist: String!
+
+  """All artists credited on the track (including featured artists)"""
+  artists: [String!]!
+
+  """Title of the album containing this track"""
+  albumTitle: String!
+
+  """Tidal ID of the album containing this track"""
+  albumId: String!
+
+  """Album artwork image URL (standard 320x320px)"""
+  artworkUrl: String!
+
+  """Album artwork thumbnail image URL (160x160px)"""
+  artworkThumbUrl: String!
+
+  """Whether track contains explicit content"""
+  explicit: Boolean!
+
+  """Track duration in seconds"""
+  duration: Int!
+
+  """Direct URL to track on Tidal website"""
+  externalUrl: String!
+
+  """Data source identifier (always 'tidal')"""
+  source: String!
+}
+
+"""
+Aggregated total counts of search results available on Tidal
+These represent the TOTAL available results, not the returned limit.
+"""
+type SearchResultCounts {
+  """Total number of albums matching query on Tidal"""
+  albums: Int!
+
+  """Total number of tracks matching query on Tidal"""
+  tracks: Int!
+}
+
+"""
+Error response for search operations
+"""
+type SearchError implements Error {
+  """Machine-readable error code for error handling"""
+  code: String!
+
+  """Human-readable error message"""
+  message: String!
+
+  """Additional details for debugging (optional)"""
+  details: String
+
+  """Seconds to wait before retrying (for rate limit errors)"""
+  retryAfter: Int
+}
+
+"""
+Interface for all error types in the API
+"""
+interface Error {
+  """Error code"""
+  code: String!
+
+  """Error message"""
+  message: String!
+}
+
+"""
+Schema directives for contract validation
+"""
+directive @specVersion(version: String!) on SCHEMA
+directive @rateLimit(requests: Int!, window: Int!) on FIELD_DEFINITION
+directive @cache(ttl: Int!) on FIELD_DEFINITION
+directive @validate(minLength: Int, maxLength: Int) on FIELD_DEFINITION
+
+"""
+API metadata
+Version: 1.0.0
+Rate Limit: See field directives
+Cache Strategy: See field directives
+"""
+schema {
+  query: Query
+}
