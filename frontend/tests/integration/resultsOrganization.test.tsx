@@ -4,6 +4,30 @@ import userEvent from '@testing-library/user-event';
 import { MockedProvider } from '@apollo/client/testing';
 import { SearchPage } from '../../src/pages/SearchPage';
 import { SEARCH_QUERY } from '../../src/graphql/queries';
+import { GET_LIBRARY_ALBUMS, GET_LIBRARY_TRACKS } from '../../src/graphql/library';
+
+const libraryMocks = [
+  {
+    request: {
+      query: GET_LIBRARY_ALBUMS,
+    },
+    result: {
+      data: {
+        getLibraryAlbums: [],
+      },
+    },
+  },
+  {
+    request: {
+      query: GET_LIBRARY_TRACKS,
+    },
+    result: {
+      data: {
+        getLibraryTracks: [],
+      },
+    },
+  },
+];
 
 describe('Results Organization Integration Tests', () => {
   test('broad search shows albums and tracks in separate sections', async () => {
@@ -82,6 +106,8 @@ describe('Results Organization Integration Tests', () => {
     };
 
     const mocks = [
+      ...libraryMocks,
+      ...libraryMocks,
       {
         request: {
           query: SEARCH_QUERY,
@@ -111,7 +137,7 @@ describe('Results Organization Integration Tests', () => {
 
     // Wait for results
     await waitFor(() => {
-      expect(screen.getByText('Rock Album 1')).toBeInTheDocument();
+      expect(screen.getAllByText('Rock Album 1').length).toBeGreaterThan(0);
     });
 
     // Verify Albums section exists with heading
@@ -120,9 +146,9 @@ describe('Results Organization Integration Tests', () => {
     // Verify Tracks section exists with heading
     expect(screen.getByRole('heading', { name: /tracks \(5000\)/i })).toBeInTheDocument();
 
-    // Verify albums are displayed
-    expect(screen.getByText('Rock Album 1')).toBeInTheDocument();
-    expect(screen.getByText('Rock Album 2')).toBeInTheDocument();
+    // Verify albums are displayed (use getAllByText since album names appear in both album and track cards)
+    expect(screen.getAllByText('Rock Album 1').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Rock Album 2').length).toBeGreaterThan(0);
 
     // Verify tracks are displayed
     expect(screen.getByText('Rock Track 1')).toBeInTheDocument();
@@ -177,6 +203,7 @@ describe('Results Organization Integration Tests', () => {
     };
 
     const mocks = [
+      ...libraryMocks,
       {
         request: {
           query: SEARCH_QUERY,
@@ -231,6 +258,7 @@ describe('Results Organization Integration Tests', () => {
     };
 
     const mocks = [
+      ...libraryMocks,
       {
         request: {
           query: SEARCH_QUERY,
@@ -290,6 +318,7 @@ describe('Results Organization Integration Tests', () => {
     };
 
     const mocks = [
+      ...libraryMocks,
       {
         request: {
           query: SEARCH_QUERY,
@@ -405,6 +434,7 @@ describe('Results Organization Integration Tests', () => {
     };
 
     const mocks = [
+      ...libraryMocks,
       {
         request: {
           query: SEARCH_QUERY,
@@ -435,7 +465,7 @@ describe('Results Organization Integration Tests', () => {
     await user.click(searchButton);
 
     await waitFor(() => {
-      expect(screen.getByText('First Album')).toBeInTheDocument();
+      expect(screen.getAllByText('First Album').length).toBeGreaterThan(0);
       expect(screen.getByText('First Track')).toBeInTheDocument();
     });
 
@@ -448,7 +478,7 @@ describe('Results Organization Integration Tests', () => {
     await user.click(searchButton);
 
     await waitFor(() => {
-      expect(screen.getByText('Second Album')).toBeInTheDocument();
+      expect(screen.getAllByText('Second Album').length).toBeGreaterThan(0);
       expect(screen.getByText('Second Track')).toBeInTheDocument();
     });
 
@@ -505,6 +535,7 @@ describe('Results Organization Integration Tests', () => {
     };
 
     const mocks = [
+      ...libraryMocks,
       {
         request: {
           query: SEARCH_QUERY,
@@ -524,7 +555,7 @@ describe('Results Organization Integration Tests', () => {
     await user.click(screen.getByRole('button', { name: /search/i }));
 
     await waitFor(() => {
-      expect(screen.getByText('Album')).toBeInTheDocument();
+      expect(screen.getAllByText('Album').length).toBeGreaterThan(0);
     });
 
     // Verify grid layout for albums

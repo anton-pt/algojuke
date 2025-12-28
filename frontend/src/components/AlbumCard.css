@@ -86,3 +86,48 @@
 .tidal-link:hover {
   background: #0052a3;
 }
+
+.add-to-library-btn {
+  margin-top: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.add-to-library-btn:hover:not(:disabled) {
+  background: #059669;
+}
+
+.add-to-library-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.add-to-library-btn.in-library {
+  background: #6b7280;
+}
+
+.add-to-library-btn.success {
+  background: #10b981;
+}
+
+.add-to-library-btn.error {
+  background: #ef4444;
+}
+
+.add-error-message {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #fee2e2;
+  color: #dc2626;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  text-align: center;
+}

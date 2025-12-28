@@ -1,0 +1,44 @@
+.albums-view {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.albums-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.albums-loading,
+.albums-error,
+.albums-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #6b7280;
+}
+
+.albums-error {
+  color: #dc2626;
+}
+
+.albums-empty h2 {
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.albums-empty p {
+  color: #6b7280;
+}
+
+@media (max-width: 768px) {
+  .albums-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+  }
+
+  .albums-view {
+    padding: 1rem;
+  }
+}

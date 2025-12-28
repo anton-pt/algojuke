@@ -1,0 +1,27 @@
+.library-nav {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 0.5rem;
+}
+
+.library-nav .nav-link {
+  padding: 0.75rem 1.5rem;
+  text-decoration: none;
+  color: #6b7280;
+  font-weight: 500;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+  position: relative;
+  bottom: -2px;
+}
+
+.library-nav .nav-link:hover {
+  color: #374151;
+}
+
+.library-nav .nav-link.active {
+  color: #1d4ed8;
+  border-bottom-color: #1d4ed8;
+}

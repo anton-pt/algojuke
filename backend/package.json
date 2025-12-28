@@ -11,7 +11,12 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "lint": "eslint src --ext .ts"
+    "lint": "eslint src --ext .ts",
+    "typeorm": "tsx ./node_modules/typeorm/cli -d src/config/database.ts",
+    "migration:generate": "npm run typeorm migration:generate",
+    "migration:run": "npm run typeorm migration:run",
+    "migration:revert": "npm run typeorm migration:revert",
+    "migration:show": "npm run typeorm migration:show"
   },
   "dependencies": {
     "@apollo/server": "^4.10.0",
@@ -19,18 +24,24 @@
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "graphql": "^16.8.1",
-    "graphql-tag": "^2.12.6"
+    "graphql-tag": "^2.12.6",
+    "pg": "^8.16.3",
+    "reflect-metadata": "^0.2.2",
+    "typeorm": "^0.3.28",
+    "typeorm-naming-strategies": "^4.1.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/node": "^20.11.5",
+    "@types/pg": "^8.16.0",
     "@typescript-eslint/eslint-plugin": "^6.19.0",
     "@typescript-eslint/parser": "^6.19.0",
     "@vitest/coverage-v8": "^1.2.0",
+    "@vitest/ui": "^1.6.1",
     "eslint": "^8.56.0",
-    "tsx": "^4.7.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.3.3",
-    "vitest": "^1.2.0"
+    "vitest": "^1.6.1"
   },
   "engines": {
     "node": ">=20.0.0"

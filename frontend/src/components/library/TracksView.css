@@ -1,0 +1,43 @@
+.tracks-view {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.tracks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.tracks-loading,
+.tracks-error,
+.tracks-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #6b7280;
+}
+
+.tracks-error {
+  color: #dc2626;
+}
+
+.tracks-empty h2 {
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.tracks-empty p {
+  color: #6b7280;
+}
+
+@media (max-width: 768px) {
+  .tracks-view {
+    padding: 1rem;
+  }
+
+  .tracks-list {
+    gap: 0.5rem;
+  }
+}

@@ -1,6 +1,8 @@
 import { describe, test, expect } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { MockedProvider } from '@apollo/client/testing';
 import { AlbumCard } from './AlbumCard';
+import { GET_LIBRARY_ALBUMS } from '../graphql/library';
 
 const mockAlbum = {
   id: '123',
@@ -17,16 +19,37 @@ const mockAlbum = {
   source: 'tidal' as const,
 };
 
+const mocks = [
+  {
+    request: {
+      query: GET_LIBRARY_ALBUMS,
+    },
+    result: {
+      data: {
+        getLibraryAlbums: [],
+      },
+    },
+  },
+];
+
 describe('AlbumCard Component', () => {
   test('renders album information', () => {
-    render(<AlbumCard album={mockAlbum} />);
+    render(
+      <MockedProvider mocks={mocks}>
+        <AlbumCard album={mockAlbum} />
+      </MockedProvider>
+    );
 
     expect(screen.getByText('Abbey Road')).toBeInTheDocument();
     expect(screen.getByText('The Beatles')).toBeInTheDocument();
   });
 
   test('displays album artwork', () => {
-    render(<AlbumCard album={mockAlbum} />);
+    render(
+      <MockedProvider mocks={mocks}>
+        <AlbumCard album={mockAlbum} />
+      </MockedProvider>
+    );
 
     const img = screen.getByRole('img', { name: /abbey road/i });
     expect(img).toBeInTheDocument();
@@ -34,26 +57,42 @@ describe('AlbumCard Component', () => {
   });
 
   test('uses thumbnail URL for performance', () => {
-    render(<AlbumCard album={mockAlbum} />);
+    render(
+      <MockedProvider mocks={mocks}>
+        <AlbumCard album={mockAlbum} />
+      </MockedProvider>
+    );
 
     const img = screen.getByRole('img');
     expect(img).toHaveAttribute('src', expect.stringContaining('w=320&h=320'));
   });
 
   test('shows track count', () => {
-    render(<AlbumCard album={mockAlbum} />);
+    render(
+      <MockedProvider mocks={mocks}>
+        <AlbumCard album={mockAlbum} />
+      </MockedProvider>
+    );
 
     expect(screen.getByText(/17 track/i)).toBeInTheDocument();
   });
 
   test('displays release date', () => {
-    render(<AlbumCard album={mockAlbum} />);
+    render(
+      <MockedProvider mocks={mocks}>
+        <AlbumCard album={mockAlbum} />
+      </MockedProvider>
+    );
 
     expect(screen.getByText(/1969/i)).toBeInTheDocument();
   });
 
   test('shows link to Tidal', () => {
-    render(<AlbumCard album={mockAlbum} />);
+    render(
+      <MockedProvider mocks={mocks}>
+        <AlbumCard album={mockAlbum} />
+      </MockedProvider>
+    );
 
     const link = screen.getByRole('link', { name: /view on tidal/i });
     expect(link).toBeInTheDocument();
@@ -63,19 +102,31 @@ describe('AlbumCard Component', () => {
 
   test('displays explicit badge when album is explicit', () => {
     const explicitAlbum = { ...mockAlbum, explicit: true };
-    render(<AlbumCard album={explicitAlbum} />);
+    render(
+      <MockedProvider mocks={mocks}>
+        <AlbumCard album={explicitAlbum} />
+      </MockedProvider>
+    );
 
     expect(screen.getByText(/explicit/i)).toBeInTheDocument();
   });
 
   test('does not show explicit badge for clean albums', () => {
-    render(<AlbumCard album={mockAlbum} />);
+    render(
+      <MockedProvider mocks={mocks}>
+        <AlbumCard album={mockAlbum} />
+      </MockedProvider>
+    );
 
     expect(screen.queryByText(/explicit/i)).not.toBeInTheDocument();
   });
 
   test('falls back to placeholder on image error', () => {
-    render(<AlbumCard album={mockAlbum} />);
+    render(
+      <MockedProvider mocks={mocks}>
+        <AlbumCard album={mockAlbum} />
+      </MockedProvider>
+    );
 
     const img = screen.getByRole('img');
     fireEvent.error(img);
@@ -84,7 +135,11 @@ describe('AlbumCard Component', () => {
   });
 
   test('sets loading lazy for performance', () => {
-    render(<AlbumCard album={mockAlbum} />);
+    render(
+      <MockedProvider mocks={mocks}>
+        <AlbumCard album={mockAlbum} />
+      </MockedProvider>
+    );
 
     const img = screen.getByRole('img');
     expect(img).toHaveAttribute('loading', 'lazy');
@@ -95,7 +150,11 @@ describe('AlbumCard Component', () => {
       ...mockAlbum,
       artists: ['Artist 1', 'Artist 2', 'Artist 3'],
     };
-    render(<AlbumCard album={multiArtistAlbum} />);
+    render(
+      <MockedProvider mocks={mocks}>
+        <AlbumCard album={multiArtistAlbum} />
+      </MockedProvider>
+    );
 
     // Primary artist should be shown
     expect(screen.getByText('The Beatles')).toBeInTheDocument();
@@ -117,14 +176,22 @@ describe('AlbumCard Component', () => {
       source: 'tidal' as const,
     };
 
-    render(<AlbumCard album={minimalAlbum} />);
+    render(
+      <MockedProvider mocks={mocks}>
+        <AlbumCard album={minimalAlbum} />
+      </MockedProvider>
+    );
 
     expect(screen.getByText('Test Album')).toBeInTheDocument();
     expect(screen.getByText('Test Artist')).toBeInTheDocument();
   });
 
   test('has accessible alt text for images', () => {
-    render(<AlbumCard album={mockAlbum} />);
+    render(
+      <MockedProvider mocks={mocks}>
+        <AlbumCard album={mockAlbum} />
+      </MockedProvider>
+    );
 
     const img = screen.getByRole('img');
     expect(img).toHaveAttribute('alt', expect.stringContaining('Abbey Road'));

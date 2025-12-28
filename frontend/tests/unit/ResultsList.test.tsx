@@ -1,6 +1,36 @@
 import { describe, test, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { MockedProvider } from '@apollo/client/testing';
 import { ResultsList } from '../../src/components/ResultsList';
+import { GET_LIBRARY_ALBUMS, GET_LIBRARY_TRACKS } from '../../src/graphql/library';
+import type { ReactElement } from 'react';
+
+const mocks = [
+  {
+    request: {
+      query: GET_LIBRARY_ALBUMS,
+    },
+    result: {
+      data: {
+        getLibraryAlbums: [],
+      },
+    },
+  },
+  {
+    request: {
+      query: GET_LIBRARY_TRACKS,
+    },
+    result: {
+      data: {
+        getLibraryTracks: [],
+      },
+    },
+  },
+];
+
+const renderWithApollo = (ui: ReactElement) => {
+  return render(<MockedProvider mocks={mocks}>{ui}</MockedProvider>);
+};
 
 const mockResults = {
   albums: [
@@ -75,25 +105,25 @@ const mockResults = {
 describe('ResultsList Organization', () => {
   describe('Section Headings', () => {
     test('displays Albums section heading', () => {
-      render(<ResultsList results={mockResults} />);
+      renderWithApollo(<ResultsList results={mockResults} />);
 
       expect(screen.getByRole('heading', { name: /albums/i })).toBeInTheDocument();
     });
 
     test('displays Tracks section heading', () => {
-      render(<ResultsList results={mockResults} />);
+      renderWithApollo(<ResultsList results={mockResults} />);
 
       expect(screen.getByRole('heading', { name: /tracks/i })).toBeInTheDocument();
     });
 
     test('shows album count in Albums heading', () => {
-      render(<ResultsList results={mockResults} />);
+      renderWithApollo(<ResultsList results={mockResults} />);
 
       expect(screen.getByRole('heading', { name: /albums \(150\)/i })).toBeInTheDocument();
     });
 
     test('shows track count in Tracks heading', () => {
-      render(<ResultsList results={mockResults} />);
+      renderWithApollo(<ResultsList results={mockResults} />);
 
       expect(screen.getByRole('heading', { name: /tracks \(1200\)/i })).toBeInTheDocument();
     });
@@ -101,35 +131,35 @@ describe('ResultsList Organization', () => {
 
   describe('Visual Separation', () => {
     test('albums are in albums-section', () => {
-      const { container } = render(<ResultsList results={mockResults} />);
+      const { container } = renderWithApollo(<ResultsList results={mockResults} />);
 
       const albumsSection = container.querySelector('.albums-section');
       expect(albumsSection).toBeInTheDocument();
     });
 
     test('tracks are in tracks-section', () => {
-      const { container } = render(<ResultsList results={mockResults} />);
+      const { container } = renderWithApollo(<ResultsList results={mockResults} />);
 
       const tracksSection = container.querySelector('.tracks-section');
       expect(tracksSection).toBeInTheDocument();
     });
 
     test('albums use grid layout', () => {
-      const { container } = render(<ResultsList results={mockResults} />);
+      const { container } = renderWithApollo(<ResultsList results={mockResults} />);
 
       const albumsGrid = container.querySelector('.albums-grid');
       expect(albumsGrid).toBeInTheDocument();
     });
 
     test('tracks use list layout', () => {
-      const { container } = render(<ResultsList results={mockResults} />);
+      const { container } = renderWithApollo(<ResultsList results={mockResults} />);
 
       const tracksList = container.querySelector('.tracks-list');
       expect(tracksList).toBeInTheDocument();
     });
 
     test('sections are visually distinct', () => {
-      const { container } = render(<ResultsList results={mockResults} />);
+      const { container } = renderWithApollo(<ResultsList results={mockResults} />);
 
       const albumsSection = container.querySelector('.albums-section');
       const tracksSection = container.querySelector('.tracks-section');
@@ -140,21 +170,22 @@ describe('ResultsList Organization', () => {
 
   describe('Section Content', () => {
     test('renders all albums in albums section', () => {
-      render(<ResultsList results={mockResults} />);
+      renderWithApollo(<ResultsList results={mockResults} />);
 
-      expect(screen.getByText('Album 1')).toBeInTheDocument();
-      expect(screen.getByText('Album 2')).toBeInTheDocument();
+      // Use getAllByText since album names may appear in both album cards and track cards
+      expect(screen.getAllByText('Album 1').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Album 2').length).toBeGreaterThan(0);
     });
 
     test('renders all tracks in tracks section', () => {
-      render(<ResultsList results={mockResults} />);
+      renderWithApollo(<ResultsList results={mockResults} />);
 
       expect(screen.getByText('Track 1')).toBeInTheDocument();
       expect(screen.getByText('Track 2')).toBeInTheDocument();
     });
 
     test('albums and tracks are not mixed', () => {
-      const { container } = render(<ResultsList results={mockResults} />);
+      const { container } = renderWithApollo(<ResultsList results={mockResults} />);
 
       const albumsSection = container.querySelector('.albums-section');
       const tracksSection = container.querySelector('.tracks-section');
@@ -172,7 +203,7 @@ describe('ResultsList Organization', () => {
   describe('Conditional Rendering', () => {
     test('shows only albums section when no tracks', () => {
       const albumsOnly = { ...mockResults, tracks: [], total: { ...mockResults.total, tracks: 0 } };
-      render(<ResultsList results={albumsOnly} />);
+      renderWithApollo(<ResultsList results={albumsOnly} />);
 
       expect(screen.getByRole('heading', { name: /albums/i })).toBeInTheDocument();
       expect(screen.queryByRole('heading', { name: /tracks/i })).not.toBeInTheDocument();
@@ -180,14 +211,14 @@ describe('ResultsList Organization', () => {
 
     test('shows only tracks section when no albums', () => {
       const tracksOnly = { ...mockResults, albums: [], total: { ...mockResults.total, albums: 0 } };
-      render(<ResultsList results={tracksOnly} />);
+      renderWithApollo(<ResultsList results={tracksOnly} />);
 
       expect(screen.getByRole('heading', { name: /tracks/i })).toBeInTheDocument();
       expect(screen.queryByRole('heading', { name: /albums/i })).not.toBeInTheDocument();
     });
 
     test('shows both sections when both have results', () => {
-      render(<ResultsList results={mockResults} />);
+      renderWithApollo(<ResultsList results={mockResults} />);
 
       expect(screen.getByRole('heading', { name: /albums/i })).toBeInTheDocument();
       expect(screen.getByRole('heading', { name: /tracks/i })).toBeInTheDocument();
@@ -196,20 +227,20 @@ describe('ResultsList Organization', () => {
 
   describe('Results Summary', () => {
     test('displays total count summary', () => {
-      render(<ResultsList results={mockResults} />);
+      renderWithApollo(<ResultsList results={mockResults} />);
 
       expect(screen.getByText(/found 150 albums and 1200 tracks/i)).toBeInTheDocument();
     });
 
     test('shows cached indicator when results are cached', () => {
       const cachedResults = { ...mockResults, cached: true };
-      render(<ResultsList results={cachedResults} />);
+      renderWithApollo(<ResultsList results={cachedResults} />);
 
       expect(screen.getByText(/cached/i)).toBeInTheDocument();
     });
 
     test('does not show cached indicator for fresh results', () => {
-      render(<ResultsList results={mockResults} />);
+      renderWithApollo(<ResultsList results={mockResults} />);
 
       expect(screen.queryByText(/cached/i)).not.toBeInTheDocument();
     });
@@ -223,13 +254,13 @@ describe('ResultsList Organization', () => {
         tracks: [],
         total: { albums: 0, tracks: 0 },
       };
-      render(<ResultsList results={emptyResults} />);
+      renderWithApollo(<ResultsList results={emptyResults} />);
 
       expect(screen.getByText(/no results found/i)).toBeInTheDocument();
     });
 
     test('returns null when results prop is null', () => {
-      const { container } = render(<ResultsList results={null} />);
+      const { container } = renderWithApollo(<ResultsList results={null} />);
 
       expect(container.firstChild).toBeNull();
     });
@@ -237,7 +268,7 @@ describe('ResultsList Organization', () => {
 
   describe('Layout Organization', () => {
     test('albums section appears before tracks section', () => {
-      const { container } = render(<ResultsList results={mockResults} />);
+      const { container } = renderWithApollo(<ResultsList results={mockResults} />);
 
       const sections = container.querySelectorAll('section');
       expect(sections[0]).toHaveClass('albums-section');
@@ -245,7 +276,7 @@ describe('ResultsList Organization', () => {
     });
 
     test('uses semantic HTML sections', () => {
-      const { container } = render(<ResultsList results={mockResults} />);
+      const { container } = renderWithApollo(<ResultsList results={mockResults} />);
 
       const albumsSection = container.querySelector('.albums-section');
       const tracksSection = container.querySelector('.tracks-section');
