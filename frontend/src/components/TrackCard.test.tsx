@@ -1,6 +1,8 @@
 import { describe, test, expect } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { MockedProvider } from '@apollo/client/testing';
 import { TrackCard } from './TrackCard';
+import { GET_LIBRARY_TRACKS } from '../graphql/library';
 
 const mockTrack = {
   id: '456',
@@ -17,9 +19,26 @@ const mockTrack = {
   source: 'tidal' as const,
 };
 
+const mocks = [
+  {
+    request: {
+      query: GET_LIBRARY_TRACKS,
+    },
+    result: {
+      data: {
+        getLibraryTracks: [],
+      },
+    },
+  },
+];
+
 describe('TrackCard Component', () => {
   test('renders track information', () => {
-    render(<TrackCard track={mockTrack} />);
+    render(
+      <MockedProvider mocks={mocks}>
+        <TrackCard track={mockTrack} />
+      </MockedProvider>
+    );
 
     expect(screen.getByText('Come Together')).toBeInTheDocument();
     expect(screen.getByText('The Beatles')).toBeInTheDocument();
@@ -27,7 +46,11 @@ describe('TrackCard Component', () => {
   });
 
   test('displays album artwork', () => {
-    render(<TrackCard track={mockTrack} />);
+    render(
+      <MockedProvider mocks={mocks}>
+        <TrackCard track={mockTrack} />
+      </MockedProvider>
+    );
 
     const img = screen.getByRole('img', { name: /come together/i });
     expect(img).toBeInTheDocument();
@@ -35,14 +58,22 @@ describe('TrackCard Component', () => {
   });
 
   test('uses thumbnail URL for artwork', () => {
-    render(<TrackCard track={mockTrack} />);
+    render(
+      <MockedProvider mocks={mocks}>
+        <TrackCard track={mockTrack} />
+      </MockedProvider>
+    );
 
     const img = screen.getByRole('img');
     expect(img).toHaveAttribute('src', expect.stringContaining('w=320&h=320'));
   });
 
   test('displays track duration', () => {
-    render(<TrackCard track={mockTrack} />);
+    render(
+      <MockedProvider mocks={mocks}>
+        <TrackCard track={mockTrack} />
+      </MockedProvider>
+    );
 
     // 259 seconds = 4:19
     expect(screen.getByText(/4:19/i)).toBeInTheDocument();
@@ -59,7 +90,11 @@ describe('TrackCard Component', () => {
 
     tests.forEach(({ duration, expected }) => {
       const track = { ...mockTrack, duration };
-      const { unmount } = render(<TrackCard track={track} />);
+      const { unmount } = render(
+        <MockedProvider mocks={mocks}>
+          <TrackCard track={track} />
+        </MockedProvider>
+      );
 
       expect(screen.getByText(expected)).toBeInTheDocument();
 
@@ -68,7 +103,11 @@ describe('TrackCard Component', () => {
   });
 
   test('shows link to Tidal', () => {
-    render(<TrackCard track={mockTrack} />);
+    render(
+      <MockedProvider mocks={mocks}>
+        <TrackCard track={mockTrack} />
+      </MockedProvider>
+    );
 
     const link = screen.getByRole('link', { name: /view on tidal/i });
     expect(link).toBeInTheDocument();
@@ -78,19 +117,31 @@ describe('TrackCard Component', () => {
 
   test('displays explicit badge when track is explicit', () => {
     const explicitTrack = { ...mockTrack, explicit: true };
-    render(<TrackCard track={explicitTrack} />);
+    render(
+      <MockedProvider mocks={mocks}>
+        <TrackCard track={explicitTrack} />
+      </MockedProvider>
+    );
 
     expect(screen.getByText(/explicit/i)).toBeInTheDocument();
   });
 
   test('does not show explicit badge for clean tracks', () => {
-    render(<TrackCard track={mockTrack} />);
+    render(
+      <MockedProvider mocks={mocks}>
+        <TrackCard track={mockTrack} />
+      </MockedProvider>
+    );
 
     expect(screen.queryByText(/explicit/i)).not.toBeInTheDocument();
   });
 
   test('falls back to placeholder on image error', () => {
-    render(<TrackCard track={mockTrack} />);
+    render(
+      <MockedProvider mocks={mocks}>
+        <TrackCard track={mockTrack} />
+      </MockedProvider>
+    );
 
     const img = screen.getByRole('img');
     fireEvent.error(img);
@@ -99,7 +150,11 @@ describe('TrackCard Component', () => {
   });
 
   test('sets loading lazy for performance', () => {
-    render(<TrackCard track={mockTrack} />);
+    render(
+      <MockedProvider mocks={mocks}>
+        <TrackCard track={mockTrack} />
+      </MockedProvider>
+    );
 
     const img = screen.getByRole('img');
     expect(img).toHaveAttribute('loading', 'lazy');
@@ -110,7 +165,11 @@ describe('TrackCard Component', () => {
       ...mockTrack,
       artists: ['The Beatles', 'Eric Clapton'],
     };
-    render(<TrackCard track={featuredTrack} />);
+    render(
+      <MockedProvider mocks={mocks}>
+        <TrackCard track={featuredTrack} />
+      </MockedProvider>
+    );
 
     // Primary artist should be shown
     expect(screen.getByText('The Beatles')).toBeInTheDocument();
@@ -132,7 +191,11 @@ describe('TrackCard Component', () => {
       source: 'tidal' as const,
     };
 
-    render(<TrackCard track={minimalTrack} />);
+    render(
+      <MockedProvider mocks={mocks}>
+        <TrackCard track={minimalTrack} />
+      </MockedProvider>
+    );
 
     expect(screen.getByText('Test Track')).toBeInTheDocument();
     expect(screen.getByText('Test Artist')).toBeInTheDocument();
@@ -140,14 +203,22 @@ describe('TrackCard Component', () => {
   });
 
   test('has accessible alt text for images', () => {
-    render(<TrackCard track={mockTrack} />);
+    render(
+      <MockedProvider mocks={mocks}>
+        <TrackCard track={mockTrack} />
+      </MockedProvider>
+    );
 
     const img = screen.getByRole('img');
     expect(img).toHaveAttribute('alt', expect.stringContaining('Come Together'));
   });
 
   test('album title is clickable or informative', () => {
-    render(<TrackCard track={mockTrack} />);
+    render(
+      <MockedProvider mocks={mocks}>
+        <TrackCard track={mockTrack} />
+      </MockedProvider>
+    );
 
     const albumInfo = screen.getByText('Abbey Road');
     expect(albumInfo).toBeInTheDocument();

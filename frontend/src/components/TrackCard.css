@@ -87,13 +87,71 @@
   background: #0052a3;
 }
 
+.add-to-library-btn-track {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 1.25rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-to-library-btn-track:hover:not(:disabled) {
+  background: #059669;
+  transform: scale(1.1);
+}
+
+.add-to-library-btn-track:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.add-to-library-btn-track.in-library {
+  background: #6b7280;
+}
+
+.add-to-library-btn-track.success {
+  background: #10b981;
+}
+
+.add-to-library-btn-track.error {
+  background: #ef4444;
+}
+
+.add-error-message-track {
+  position: absolute;
+  bottom: -2rem;
+  right: 1rem;
+  padding: 0.5rem;
+  background: #fee2e2;
+  color: #dc2626;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
 @media (max-width: 768px) {
   .track-card {
     flex-wrap: wrap;
+    position: relative;
   }
 
   .tidal-link-small {
     width: 100%;
     text-align: center;
+  }
+
+  .add-error-message-track {
+    right: auto;
+    left: 1rem;
   }
 }

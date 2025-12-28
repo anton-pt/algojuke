@@ -575,4 +575,323 @@ export class TidalService {
       timestamp: Date.now(),
     };
   }
+
+  /**
+   * Fetch album track listing from Tidal API
+   *
+   * @param albumId - Tidal album identifier
+   * @param countryCode - Country code for regional content (default: 'US')
+   * @returns Array of track information with position, title, duration, etc.
+   */
+  async getAlbumTrackListing(
+    albumId: string,
+    countryCode: string = 'US'
+  ): Promise<Array<{
+    position: number;
+    title: string;
+    duration: number;
+    tidalId?: string;
+    explicit?: boolean;
+  }>> {
+    const token = await this.tokenService.getValidToken();
+    const url = `${this.apiBaseUrl}/v2/albums/${albumId}/relationships/items`;
+
+    try {
+      const response = await this.rateLimiter.executeWithRetry(async () => {
+        return await axios.get(url, {
+          headers: {
+            'accept': 'application/vnd.api+json',
+            'Authorization': `Bearer ${token}`,
+          },
+          params: {
+            countryCode,
+            include: 'items', // Required to include track details in response
+          },
+          timeout: 5000,
+        });
+      });
+
+      // Transform JSON:API response to track listing
+      const trackListing = (response.data.included || [])
+        .filter((item: any) => item.type === 'tracks')
+        .map((track: any, index: number) => ({
+          position: index + 1,
+          title: track.attributes?.title || 'Unknown Track',
+          duration: track.attributes?.duration ? this.parseDuration(track.attributes.duration) : 0,
+          tidalId: track.id,
+          explicit: track.attributes?.explicit || false,
+        }));
+
+      logger.info('album_track_listing_fetched', {
+        albumId,
+        trackCount: trackListing.length,
+      });
+
+      return trackListing;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+          logger.error('album_track_listing_timeout', { albumId, error: String(error) });
+          throw new TimeoutError('Request to Tidal API timed out');
+        }
+        if (error.response?.status === 429) {
+          logger.error('album_track_listing_rate_limit', { albumId });
+          throw new RateLimitError();
+        }
+        if (error.response?.status && error.response.status >= 500) {
+          logger.error('album_track_listing_api_error', {
+            albumId,
+            status: error.response.status
+          });
+          throw new ApiUnavailableError('Tidal API is temporarily unavailable');
+        }
+      }
+
+      logger.error('album_track_listing_error', { albumId, error: String(error) });
+      throw new ApiUnavailableError('Failed to fetch album track listing');
+    }
+  }
+
+  /**
+   * Fetch album metadata by ID from Tidal API
+   *
+   * @param albumId - Tidal album ID
+   * @param countryCode - Country code for regional content (default: 'US')
+   * @returns Album metadata including title, artist, cover, release date, etc.
+   */
+  async getAlbumById(
+    albumId: string,
+    countryCode: string = 'US'
+  ): Promise<{
+    id: string;
+    title: string;
+    artist: { id: string; name: string };
+    cover?: string;
+    releaseDate?: string;
+    numberOfTracks?: number;
+    duration?: number;
+    explicit?: boolean;
+    popularity?: number;
+  }> {
+    const token = await this.tokenService.getValidToken();
+
+    // Use query params for proper JSON:API format
+    const queryParams = new URLSearchParams({
+      countryCode,
+      include: 'artists,coverArt',
+    });
+    const url = `${this.apiBaseUrl}/v2/albums/${albumId}?${queryParams.toString()}`;
+
+    try {
+      const response = await this.rateLimiter.executeWithRetry(async () => {
+        return await axios.get(url, {
+          headers: {
+            'accept': 'application/vnd.api+json',
+            'Authorization': `Bearer ${token}`,
+          },
+          timeout: 5000,
+        });
+      });
+
+      const album = response.data.data;
+      const attributes = album.attributes || {};
+      const included = response.data.included || [];
+
+      // Build lookup maps from included resources
+      const lookupMaps = this.buildLookupMaps(included);
+
+      // Get artist name from relationships
+      const artistIds = album.relationships?.artists?.data;
+      let artistName = 'Unknown Artist';
+      let artistId = '';
+      if (Array.isArray(artistIds) && artistIds.length > 0) {
+        artistId = artistIds[0].id;
+        artistName = lookupMaps.artistMap.get(artistId) || 'Unknown Artist';
+      }
+
+      // Get cover art URL from relationships
+      const coverArtData = album.relationships?.coverArt?.data;
+      let coverUrl: string | undefined;
+      if (Array.isArray(coverArtData) && coverArtData.length > 0) {
+        coverUrl = lookupMaps.artworkMap.get(coverArtData[0].id) || undefined;
+      }
+
+      const albumData = {
+        id: album.id,
+        title: attributes.title || 'Unknown Album',
+        artist: {
+          id: artistId,
+          name: artistName,
+        },
+        cover: coverUrl,
+        releaseDate: attributes.releaseDate,
+        numberOfTracks: attributes.numberOfTracks,
+        duration: attributes.duration,
+        explicit: attributes.explicit || false,
+        popularity: attributes.popularity,
+      };
+
+      logger.info('album_fetched', { albumId, title: albumData.title });
+      return albumData;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+          logger.error('album_fetch_timeout', { albumId, error: String(error) });
+          throw new TimeoutError('Request to Tidal API timed out');
+        }
+        if (error.response?.status === 429) {
+          logger.error('album_fetch_rate_limit', { albumId });
+          throw new RateLimitError();
+        }
+        if (error.response?.status === 404) {
+          logger.error('album_not_found', { albumId });
+          throw new Error('Album not found on Tidal');
+        }
+        if (error.response?.status && error.response.status >= 500) {
+          logger.error('album_fetch_api_error', {
+            albumId,
+            status: error.response.status
+          });
+          throw new ApiUnavailableError('Tidal API is temporarily unavailable');
+        }
+      }
+
+      logger.error('album_fetch_error', { albumId, error: String(error) });
+      throw new ApiUnavailableError('Failed to fetch album from Tidal');
+    }
+  }
+
+  /**
+   * Fetch track metadata by ID from Tidal API
+   *
+   * @param trackId - Tidal track ID
+   * @param countryCode - Country code for regional content (default: 'US')
+   * @returns Track metadata including title, artist, album, duration, etc.
+   */
+  async getTrackById(
+    trackId: string,
+    countryCode: string = 'US'
+  ): Promise<{
+    id: string;
+    title: string;
+    artist: { id: string; name: string };
+    album?: { id: string; title: string; cover?: string };
+    duration: number;
+    isrc?: string;
+    explicit?: boolean;
+    popularity?: number;
+  }> {
+    const token = await this.tokenService.getValidToken();
+
+    // Use query params for proper JSON:API format
+    const queryParams = new URLSearchParams({
+      countryCode,
+      include: 'artists,albums',
+    });
+    const url = `${this.apiBaseUrl}/v2/tracks/${trackId}?${queryParams.toString()}`;
+
+    try {
+      const response = await this.rateLimiter.executeWithRetry(async () => {
+        return await axios.get(url, {
+          headers: {
+            'accept': 'application/vnd.api+json',
+            'Authorization': `Bearer ${token}`,
+          },
+          timeout: 5000,
+        });
+      });
+
+      const track = response.data.data;
+      const attributes = track.attributes || {};
+      const included = response.data.included || [];
+
+      // Build lookup maps from included resources
+      const lookupMaps = this.buildLookupMaps(included);
+
+      // Get artist name from relationships
+      const artistIds = track.relationships?.artists?.data;
+      let artistName = 'Unknown Artist';
+      let artistId = '';
+      if (Array.isArray(artistIds) && artistIds.length > 0) {
+        artistId = artistIds[0].id;
+        artistName = lookupMaps.artistMap.get(artistId) || 'Unknown Artist';
+      }
+
+      // Get album info from relationships - need to fetch album separately for cover art
+      const albumIds = track.relationships?.albums?.data;
+      let albumData: { id: string; title: string; cover?: string } | undefined;
+      if (Array.isArray(albumIds) && albumIds.length > 0) {
+        const albumId = albumIds[0].id;
+
+        // Find basic album info from included data
+        const albumResource = included.find(
+          (resource) => resource.type === 'albums' && resource.id === albumId
+        );
+        const albumTitle = albumResource?.attributes?.title || 'Unknown Album';
+
+        // Fetch full album details to get cover art
+        try {
+          const albumDetails = await this.getAlbumById(albumId, countryCode);
+          albumData = {
+            id: albumId,
+            title: albumTitle,
+            cover: albumDetails.cover,
+          };
+        } catch (error) {
+          // If album fetch fails, still return basic info without cover
+          logger.warn('album_fetch_for_track_failed', {
+            trackId,
+            albumId,
+            error: String(error)
+          });
+          albumData = {
+            id: albumId,
+            title: albumTitle,
+          };
+        }
+      }
+
+      const trackData = {
+        id: track.id,
+        title: attributes.title || 'Unknown Track',
+        artist: {
+          id: artistId,
+          name: artistName,
+        },
+        album: albumData,
+        duration: attributes.duration ? this.parseDuration(attributes.duration) : 0,
+        isrc: attributes.isrc,
+        explicit: attributes.explicit || false,
+        popularity: attributes.popularity,
+      };
+
+      logger.info('track_fetched', { trackId, title: trackData.title });
+      return trackData;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+          logger.error('track_fetch_timeout', { trackId, error: String(error) });
+          throw new TimeoutError('Request to Tidal API timed out');
+        }
+        if (error.response?.status === 429) {
+          logger.error('track_fetch_rate_limit', { trackId });
+          throw new RateLimitError();
+        }
+        if (error.response?.status === 404) {
+          logger.error('track_not_found', { trackId });
+          throw new Error('Track not found on Tidal');
+        }
+        if (error.response?.status && error.response.status >= 500) {
+          logger.error('track_fetch_api_error', {
+            trackId,
+            status: error.response.status
+          });
+          throw new ApiUnavailableError('Tidal API is temporarily unavailable');
+        }
+      }
+
+      logger.error('track_fetch_error', { trackId, error: String(error) });
+      throw new ApiUnavailableError('Failed to fetch track from Tidal');
+    }
+  }
 }

@@ -1,4 +1,4 @@
-import { expect, afterEach } from 'vitest';
+import { afterEach } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
@@ -6,6 +6,3 @@ import '@testing-library/jest-dom';
 afterEach(() => {
   cleanup();
 });
-
-// Make expect available globally for tests
-globalThis.expect = expect;

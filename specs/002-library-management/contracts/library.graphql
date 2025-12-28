@@ -1,0 +1,182 @@
+# GraphQL Schema: Personal Music Library
+# Feature: 002-library-management
+# Date: 2025-12-28
+
+"""
+Represents an album in the user's personal library
+"""
+type LibraryAlbum {
+  """Unique identifier"""
+  id: ID!
+
+  """Tidal album identifier"""
+  tidalAlbumId: String!
+
+  """Album title"""
+  title: String!
+
+  """Primary artist name"""
+  artistName: String!
+
+  """URL to album cover art"""
+  coverArtUrl: String
+
+  """Album release date (ISO 8601 format)"""
+  releaseDate: String
+
+  """Number of tracks on the album"""
+  trackCount: Int!
+
+  """Track listing with titles and durations"""
+  trackListing: [TrackInfo!]!
+
+  """When the album was added to the library (ISO 8601 timestamp)"""
+  createdAt: String!
+}
+
+"""
+Information about a track within an album
+"""
+type TrackInfo {
+  """Position on the album"""
+  position: Int!
+
+  """Track title"""
+  title: String!
+
+  """Duration in seconds"""
+  duration: Int!
+
+  """Tidal track identifier (if available)"""
+  tidalId: String
+
+  """Whether track contains explicit content"""
+  explicit: Boolean
+}
+
+"""
+Represents an individual track in the user's personal library
+"""
+type LibraryTrack {
+  """Unique identifier"""
+  id: ID!
+
+  """Tidal track identifier"""
+  tidalTrackId: String!
+
+  """Track title"""
+  title: String!
+
+  """Primary artist name"""
+  artistName: String!
+
+  """Album name (if track belongs to an album)"""
+  albumName: String
+
+  """Track duration in seconds"""
+  duration: Int!
+
+  """URL to track/album cover art"""
+  coverArtUrl: String
+
+  """When the track was added to the library (ISO 8601 timestamp)"""
+  createdAt: String!
+}
+
+"""
+Input for adding an album to the library
+"""
+input AddAlbumToLibraryInput {
+  """Tidal album identifier"""
+  tidalAlbumId: String!
+}
+
+"""
+Input for adding a track to the library
+"""
+input AddTrackToLibraryInput {
+  """Tidal track identifier"""
+  tidalTrackId: String!
+}
+
+"""
+Error returned when an item already exists in the library
+"""
+type DuplicateLibraryItemError {
+  """Error message"""
+  message: String!
+
+  """ID of the existing item"""
+  existingItemId: ID!
+}
+
+"""
+Error returned when Tidal API is unavailable
+"""
+type TidalApiUnavailableError {
+  """Error message"""
+  message: String!
+
+  """Whether the operation can be retried"""
+  retryable: Boolean!
+}
+
+"""
+Result of adding an album to the library
+"""
+union AddAlbumToLibraryResult = LibraryAlbum | DuplicateLibraryItemError | TidalApiUnavailableError
+
+"""
+Result of adding a track to the library
+"""
+union AddTrackToLibraryResult = LibraryTrack | DuplicateLibraryItemError | TidalApiUnavailableError
+
+type Query {
+  """
+  Get all albums in the user's library, sorted alphabetically by artist then title
+  """
+  getLibraryAlbums: [LibraryAlbum!]!
+
+  """
+  Get all tracks in the user's library, sorted alphabetically by artist then title
+  """
+  getLibraryTracks: [LibraryTrack!]!
+
+  """
+  Get a specific album from the library by ID
+  """
+  getLibraryAlbum(id: ID!): LibraryAlbum
+
+  """
+  Get a specific track from the library by ID
+  """
+  getLibraryTrack(id: ID!): LibraryTrack
+}
+
+type Mutation {
+  """
+  Add an album to the user's library
+  Fetches complete metadata from Tidal API including track listing
+  Returns error if album already exists or Tidal API is unavailable
+  """
+  addAlbumToLibrary(input: AddAlbumToLibraryInput!): AddAlbumToLibraryResult!
+
+  """
+  Add a track to the user's library
+  Fetches complete metadata from Tidal API
+  Returns error if track already exists or Tidal API is unavailable
+  """
+  addTrackToLibrary(input: AddTrackToLibraryInput!): AddTrackToLibraryResult!
+
+  """
+  Remove an album from the user's library
+  Returns true if successful, throws error if album not found
+  """
+  removeAlbumFromLibrary(id: ID!): Boolean!
+
+  """
+  Remove a track from the user's library
+  Returns true if successful, throws error if track not found
+  """
+  removeTrackFromLibrary(id: ID!): Boolean!
+}

@@ -1,0 +1,29 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: algojuke-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-algojuke}
+      POSTGRES_USER: ${POSTGRES_USER:-algojuke_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-algojuke_user} -d ${POSTGRES_DB:-algojuke}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - algojuke-network
+
+volumes:
+  postgres_data:
+
+networks:
+  algojuke-network:
+    driver: bridge
