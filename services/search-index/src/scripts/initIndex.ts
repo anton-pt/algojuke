@@ -62,7 +62,7 @@ async function createCollection(collectionName: string): Promise<void> {
   await qdrantClient.createCollection(collectionName, config);
 
   console.log(
-    `[initIndex] INFO: Created collection '${collectionName}' with 4096-dim dense + sparse vectors`
+    `[initIndex] INFO: Created collection '${collectionName}' with 1024-dim dense + sparse vectors`
   );
 }
 

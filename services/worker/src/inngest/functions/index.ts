@@ -11,11 +11,13 @@
  */
 
 import { demoTask } from "./demoTask.js";
+import { trackIngestion } from "./trackIngestion.js";
 
 /**
  * Array of all Inngest functions to be served by this worker
  *
  * Currently registered functions:
  * - demoTask: Infrastructure validation demo task with 5-step workflow
+ * - trackIngestion: Track ingestion pipeline (feature 006)
  */
-export const functions = [demoTask];
+export const functions = [demoTask, trackIngestion];

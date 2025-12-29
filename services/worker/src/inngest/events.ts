@@ -278,18 +278,7 @@ export type DemoTaskFailedEvent = z.infer<typeof DemoTaskFailedEvent>["data"];
 // ============================================================================
 
 /**
- * Combined event schemas for Inngest client initialization
- *
- * Usage:
- * ```typescript
- * import { Inngest } from "inngest";
- * import { demoEvents } from "./contracts/events";
- *
- * export const inngest = new Inngest({
- *   id: "algojuke-worker",
- *   schemas: demoEvents
- * });
- * ```
+ * Demo event schemas for infrastructure validation
  */
 export const demoEvents = new EventSchemas().fromZod({
   "demo/task.requested": {
@@ -395,28 +384,224 @@ export function createStepResult(
 }
 
 // ============================================================================
-// Future Extension Point
+// Track Ingestion Events (Feature 006)
 // ============================================================================
 
 /**
- * **PLACEHOLDER FOR FUTURE IMPLEMENTATION**
- *
- * This file demonstrates the event schema pattern for the task queue
- * infrastructure. When implementing actual domain workflows (e.g., track
- * enrichment), create similar event schemas following this structure:
- *
- * 1. Define event-specific types (e.g., `EnrichmentRequestedEvent`)
- * 2. Use Zod for runtime validation
- * 3. Create EventSchemas collection
- * 4. Export TypeScript types for compile-time safety
- * 5. Provide helper functions for event creation
- *
- * Example for future track enrichment:
- * ```typescript
- * export const trackEnrichmentEvents = new EventSchemas().fromZod({
- *   "track/enrichment.requested": TrackEnrichmentRequestedEvent,
- *   "track/enrichment.completed": TrackEnrichmentCompletedEvent,
- *   "track/enrichment.failed": TrackEnrichmentFailedEvent,
- * });
- * ```
+ * Ingestion pipeline step names
  */
+export const IngestionStepName = z.enum([
+  "fetch-audio-features",
+  "fetch-lyrics",
+  "generate-interpretation",
+  "embed-interpretation",
+  "store-document",
+  "emit-completion",
+]);
+
+export type IngestionStepName = z.infer<typeof IngestionStepName>;
+
+/**
+ * Event: track/ingestion.requested
+ *
+ * Triggers the track ingestion pipeline. Accepts ISRC and track metadata
+ * from Tidal API to populate the vector search index.
+ */
+export const TrackIngestionRequestedEvent = z.object({
+  name: z.literal("track/ingestion.requested"),
+  data: z.object({
+    /**
+     * ISO 3901 ISRC (12 alphanumeric characters)
+     * @example "USRC11700001"
+     */
+    isrc: z.string().length(12).regex(/^[A-Z0-9]{12}$/i, {
+      message: "ISRC must be 12 alphanumeric characters",
+    }),
+
+    /**
+     * Track title from Tidal API
+     */
+    title: z.string().min(1),
+
+    /**
+     * Artist name from Tidal API
+     */
+    artist: z.string().min(1),
+
+    /**
+     * Album name from Tidal API
+     */
+    album: z.string().min(1),
+
+    /**
+     * Priority modifier (-600 to +600 seconds)
+     * Positive values = higher priority
+     * @default 0
+     */
+    priority: PriorityModifier.optional(),
+
+    /**
+     * Override idempotency, force re-ingestion
+     * @default false
+     */
+    force: z.boolean().optional(),
+  }),
+});
+
+export type TrackIngestionRequestedEvent = z.infer<
+  typeof TrackIngestionRequestedEvent
+>["data"];
+
+/**
+ * Event: track/ingestion.completed
+ *
+ * Emitted upon successful pipeline completion.
+ */
+export const TrackIngestionCompletedEvent = z.object({
+  name: z.literal("track/ingestion.completed"),
+  data: z.object({
+    /**
+     * ISRC of ingested track
+     */
+    isrc: z.string(),
+
+    /**
+     * Inngest function run ID
+     */
+    runId: z.string(),
+
+    /**
+     * Completion timestamp (Unix epoch ms)
+     */
+    completedAt: z.number().int().positive(),
+
+    /**
+     * Total execution time in milliseconds
+     */
+    durationMs: z.number().int().positive(),
+
+    /**
+     * Summary of ingested data
+     */
+    result: z.object({
+      hasLyrics: z.boolean(),
+      hasAudioFeatures: z.boolean(),
+      hasInterpretation: z.boolean(),
+      embeddingDimensions: z.number().int(),
+    }),
+  }),
+});
+
+export type TrackIngestionCompletedEvent = z.infer<
+  typeof TrackIngestionCompletedEvent
+>["data"];
+
+/**
+ * Event: track/ingestion.failed
+ *
+ * Emitted when pipeline permanently fails (after exhausting retries).
+ */
+export const TrackIngestionFailedEvent = z.object({
+  name: z.literal("track/ingestion.failed"),
+  data: z.object({
+    /**
+     * ISRC of failed track
+     */
+    isrc: z.string(),
+
+    /**
+     * Inngest function run ID
+     */
+    runId: z.string(),
+
+    /**
+     * Error message
+     */
+    error: z.string(),
+
+    /**
+     * Step that caused final failure
+     */
+    failedStep: IngestionStepName.optional(),
+
+    /**
+     * Number of retry attempts made
+     */
+    retries: z.number().int().nonnegative(),
+
+    /**
+     * Failure timestamp (Unix epoch ms)
+     */
+    failedAt: z.number().int().positive(),
+  }),
+});
+
+export type TrackIngestionFailedEvent = z.infer<
+  typeof TrackIngestionFailedEvent
+>["data"];
+
+/**
+ * Combined track ingestion event schemas
+ */
+export const trackIngestionEvents = new EventSchemas().fromZod({
+  "track/ingestion.requested": {
+    data: TrackIngestionRequestedEvent.shape.data,
+  },
+  "track/ingestion.completed": {
+    data: TrackIngestionCompletedEvent.shape.data,
+  },
+  "track/ingestion.failed": {
+    data: TrackIngestionFailedEvent.shape.data,
+  },
+});
+
+/**
+ * TypeScript type for all track ingestion events
+ */
+export type TrackIngestionEvent =
+  | (TrackIngestionRequestedEvent & { name: "track/ingestion.requested" })
+  | (TrackIngestionCompletedEvent & { name: "track/ingestion.completed" })
+  | (TrackIngestionFailedEvent & { name: "track/ingestion.failed" });
+
+/**
+ * Type guard to check if event is track-ingestion-related
+ */
+export function isTrackIngestionEvent(
+  eventName: string
+): eventName is TrackIngestionEvent["name"] {
+  return eventName.startsWith("track/ingestion.");
+}
+
+// ============================================================================
+// Combined Event Schemas (All Events)
+// ============================================================================
+
+/**
+ * Combined event schemas for Inngest client initialization
+ *
+ * Includes all event types:
+ * - Demo events (infrastructure validation)
+ * - Track ingestion events (feature 006)
+ */
+export const allEvents = new EventSchemas().fromZod({
+  // Demo events
+  "demo/task.requested": {
+    data: DemoTaskRequestedEvent.shape.data,
+  },
+  "demo/task.completed": {
+    data: DemoTaskCompletedEvent.shape.data,
+  },
+  "demo/task.failed": {
+    data: DemoTaskFailedEvent.shape.data,
+  },
+  // Track ingestion events
+  "track/ingestion.requested": {
+    data: TrackIngestionRequestedEvent.shape.data,
+  },
+  "track/ingestion.completed": {
+    data: TrackIngestionCompletedEvent.shape.data,
+  },
+  "track/ingestion.failed": {
+    data: TrackIngestionFailedEvent.shape.data,
+  },
+});
