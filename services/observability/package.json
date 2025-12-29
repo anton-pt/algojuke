@@ -1,0 +1,32 @@
+{
+  "name": "@algojuke/observability",
+  "version": "0.1.0",
+  "description": "Langfuse-based observability service for LLM, vector search, and HTTP tracing",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "type-check": "tsc --noEmit",
+    "demo:generation": "npx tsx scripts/demo-generation-trace.ts",
+    "demo:search": "npx tsx scripts/demo-search-trace.ts",
+    "demo:http": "npx tsx scripts/demo-http-trace.ts",
+    "demo:correlated": "npx tsx scripts/demo-correlated-trace.ts"
+  },
+  "dependencies": {
+    "langfuse": "^3.0.0",
+    "zod": "^3.24.1",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.10",
+    "typescript": "~5.3.3",
+    "vitest": "^1.6.0",
+    "tsx": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

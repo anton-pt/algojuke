@@ -12,6 +12,8 @@ Auto-generated from all feature plans. Last updated: 2025-12-27
 - PostgreSQL (via existing TypeORM setup) + Inngest managed state store (SQLite for dev, PostgreSQL for production self-hosting) (003-background-task-queue)
 - TypeScript 5.3.3 / Node.js 20.x + Qdrant client library (qdrant-js), Zod (schema validation), Docker (004-vector-search-index)
 - Qdrant vector database (Docker container with volume persistence) (004-vector-search-index)
+- TypeScript 5.3.3 / Node.js 20.x + @langfuse/tracing, @langfuse/otel, @opentelemetry/sdk-node, zod (005-llm-observability)
+- Langfuse-managed (PostgreSQL, ClickHouse, MinIO, Redis) - all in Docker (005-llm-observability)
 
 ## Project Structure
 
@@ -35,17 +37,32 @@ algojuke/
 │   │   │   └── test-rate-limits.sh    # Rate limit validation
 │   │   ├── README.md                  # Worker service documentation
 │   │   └── VALIDATION.md              # End-to-end validation checklist
-│   └── search-index/           # Vector search index infrastructure
+│   ├── search-index/           # Vector search index infrastructure
+│   │   ├── src/
+│   │   │   ├── client/                # Qdrant client
+│   │   │   ├── schema/                # Collection and document schemas
+│   │   │   ├── scripts/               # Init scripts and test utilities
+│   │   │   └── utils/                 # ISRC hashing
+│   │   ├── tests/
+│   │   │   ├── contract/              # Schema validation tests
+│   │   │   └── integration/           # Search operation tests
+│   │   └── README.md                  # Search index documentation
+│   └── observability/          # LLM observability service (Langfuse)
 │       ├── src/
-│       │   ├── client/                # Qdrant client
-│       │   ├── schema/                # Collection and document schemas
-│       │   ├── scripts/               # Init scripts and test utilities
-│       │   └── utils/                 # ISRC hashing
+│       │   ├── config.ts              # Configuration (Zod validation)
+│       │   ├── client.ts              # Langfuse client wrapper
+│       │   ├── generation.ts          # LLM generation spans
+│       │   ├── search.ts              # Vector search spans
+│       │   ├── http.ts                # HTTP call spans
+│       │   ├── context.ts             # Trace context propagation
+│       │   └── schemas/               # Zod validation schemas
 │       ├── tests/
 │       │   ├── contract/              # Schema validation tests
-│       │   └── integration/           # Search operation tests
-│       └── README.md                  # Search index documentation
-├── docker-compose.yml          # Inngest Dev Server + PostgreSQL + Qdrant
+│       │   └── integration/           # Langfuse integration tests
+│       ├── scripts/                   # Demo scripts
+│       └── README.md                  # Observability documentation
+├── docker-compose.yml          # All services (Inngest, PostgreSQL, Qdrant, Langfuse)
+├── docker-compose.langfuse.yml # Langfuse infrastructure
 └── CLAUDE.md                   # This file
 ```
 
@@ -104,6 +121,36 @@ npm run init-index tracks-test  # Initialize test collection
 
 Access at http://localhost:6333/dashboard when Qdrant is running.
 
+### Observability Service (LLM Tracing)
+
+```bash
+# Setup
+cd services/observability
+npm install
+
+# Testing
+npm test                 # Run all tests (91 tests)
+npm run test:watch       # Run tests in watch mode
+npm run type-check       # TypeScript type checking
+
+# Demo scripts
+npm run demo:generation  # LLM generation tracing
+npm run demo:search      # Vector search tracing
+npm run demo:http        # HTTP call tracing
+npm run demo:correlated  # Correlated multi-operation traces
+
+# Infrastructure
+docker compose up -d     # Start all services including Langfuse
+```
+
+### Langfuse Dashboard
+
+Access at http://localhost:3000 when Langfuse is running.
+- **Login**: `admin@localhost.dev` / `adminadmin`
+- **Projects**:
+  - `algojuke` - Application backend operations
+  - `algojuke-ingestion` - Background task/ingestion pipeline operations
+
 ## Code Style
 
 - TypeScript strict mode
@@ -111,9 +158,9 @@ Access at http://localhost:6333/dashboard when Qdrant is running.
 - Follow standard conventions
 
 ## Recent Changes
+- 005-llm-observability: Added TypeScript 5.3.3 / Node.js 20.x + @langfuse/tracing, @langfuse/otel, @opentelemetry/sdk-node, zod
 - 004-vector-search-index: Added TypeScript 5.3.3 / Node.js 20.x + Qdrant client library (qdrant-js), Zod (schema validation), Docker
 - 003-background-task-queue: Added TypeScript 5.3.3 / Node.js 20.x
-- 002-library-management: Added TypeScript 5.3.3 / Node.js 20.x (backend), TypeScript 5.3.3 / React 18.2.0 (frontend) + Apollo Server 4.x + Apollo Client 3.x (GraphQL), TypeORM (ORM), pg (PostgreSQL driver), axios 1.6+ (Tidal API), Vitest 1.x (testing), React Testing Library (frontend tests)
 
 
 <!-- MANUAL ADDITIONS START -->
