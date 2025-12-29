@@ -67,9 +67,41 @@ services:
           cpus: '1.0'
           memory: 2048M
 
+  # TEI (Text Embeddings Inference) for generating embeddings
+  # NOTE: TEI only supports linux/amd64. On Apple Silicon (arm64), Docker will
+  # emulate via Rosetta 2 which is slower but functional.
+  # Model: mixedbread-ai/mxbai-embed-large-v1 produces 1024-dimensional embeddings
+  tei:
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.7.2
+    platform: linux/amd64
+    container_name: algojuke-tei
+    restart: unless-stopped
+    command: --model-id mixedbread-ai/mxbai-embed-large-v1
+    ports:
+      - "8080:80"
+    volumes:
+      - tei_cache:/data
+    networks:
+      - algojuke-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 4096M
+        reservations:
+          cpus: '1.0'
+          memory: 2048M
+
 volumes:
   postgres_data:
   qdrant_data:
+  tei_cache:
 
 networks:
   algojuke-network:

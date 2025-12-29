@@ -15,11 +15,11 @@ export const PRODUCTION_COLLECTION_NAME = 'tracks';
 /**
  * Vector configuration for track collection
  *
- * Includes dense vector (interpretation_embedding): 4096-dim semantic search with float16 vectors
+ * Includes dense vector (interpretation_embedding): 1024-dim semantic search with float16 vectors
  */
 export const VECTOR_CONFIG = {
   interpretation_embedding: {
-    size: 4096,
+    size: 1024,
     distance: 'Cosine',
     on_disk: false, // Keep in memory for performance
     datatype: 'float16', // Use float16 for embedding vectors

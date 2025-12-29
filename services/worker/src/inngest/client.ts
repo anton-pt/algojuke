@@ -9,14 +9,14 @@
  */
 
 import { Inngest } from "inngest";
-import { demoEvents } from "./events.js";
+import { allEvents } from "./events.js";
 
 /**
- * Inngest client instance with typed demo event schemas
+ * Inngest client instance with typed event schemas
  *
  * Configuration:
  * - id: "algojuke-worker" - Unique identifier for this worker app
- * - schemas: demoEvents - Type-safe event schemas from events.ts
+ * - schemas: allEvents - Type-safe event schemas from events.ts
  *
  * Usage:
  * ```typescript
@@ -43,5 +43,5 @@ import { demoEvents } from "./events.js";
  */
 export const inngest = new Inngest({
   id: "algojuke-worker",
-  schemas: demoEvents,
+  schemas: allEvents,
 });

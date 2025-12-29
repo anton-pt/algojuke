@@ -14,6 +14,8 @@ Auto-generated from all feature plans. Last updated: 2025-12-27
 - Qdrant vector database (Docker container with volume persistence) (004-vector-search-index)
 - TypeScript 5.3.3 / Node.js 20.x + @langfuse/tracing, @langfuse/otel, @opentelemetry/sdk-node, zod (005-llm-observability)
 - Langfuse-managed (PostgreSQL, ClickHouse, MinIO, Redis) - all in Docker (005-llm-observability)
+- TypeScript 5.3.3 / Node.js 20.x + Inngest 3.22.12, Vercel AI SDK (`ai`, `@ai-sdk/anthropic`), Zod 3.x, axios 1.6+ (006-track-ingestion-pipeline)
+- Qdrant (vector index), Inngest (step memoization) (006-track-ingestion-pipeline)
 
 ## Project Structure
 
@@ -158,9 +160,9 @@ Access at http://localhost:3000 when Langfuse is running.
 - Follow standard conventions
 
 ## Recent Changes
+- 006-track-ingestion-pipeline: Added TypeScript 5.3.3 / Node.js 20.x + Inngest 3.22.12, Vercel AI SDK (`ai`, `@ai-sdk/anthropic`), Zod 3.x, axios 1.6+
 - 005-llm-observability: Added TypeScript 5.3.3 / Node.js 20.x + @langfuse/tracing, @langfuse/otel, @opentelemetry/sdk-node, zod
 - 004-vector-search-index: Added TypeScript 5.3.3 / Node.js 20.x + Qdrant client library (qdrant-js), Zod (schema validation), Docker
-- 003-background-task-queue: Added TypeScript 5.3.3 / Node.js 20.x
 
 
 <!-- MANUAL ADDITIONS START -->
