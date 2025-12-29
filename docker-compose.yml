@@ -21,6 +21,26 @@ services:
     networks:
       - algojuke-network
 
+  inngest:
+    image: inngest/inngest:v1.15.3
+    container_name: algojuke-inngest
+    restart: unless-stopped
+    command: inngest dev
+    ports:
+      - "8288:8288"
+    environment:
+      - INNGEST_DEV=1
+    networks:
+      - algojuke-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8288/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Note: Inngest Dev Server stores run history in-memory for the current session
+    # For production deployments, Inngest Cloud retains run history based on plan tier
+    # See: https://www.inngest.com/docs/platform/monitor/event-history
+
 volumes:
   postgres_data:
 
