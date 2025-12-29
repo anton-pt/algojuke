@@ -41,8 +41,34 @@ services:
     # For production deployments, Inngest Cloud retains run history based on plan tier
     # See: https://www.inngest.com/docs/platform/monitor/event-history
 
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: algojuke-qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"  # HTTP API
+      - "6334:6334"  # gRPC API
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - algojuke-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:6333/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4096M
+        reservations:
+          cpus: '1.0'
+          memory: 2048M
+
 volumes:
   postgres_data:
+  qdrant_data:
 
 networks:
   algojuke-network:
