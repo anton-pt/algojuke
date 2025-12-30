@@ -16,6 +16,8 @@ Auto-generated from all feature plans. Last updated: 2025-12-27
 - Langfuse-managed (PostgreSQL, ClickHouse, MinIO, Redis) - all in Docker (005-llm-observability)
 - TypeScript 5.3.3 / Node.js 20.x + Inngest 3.22.12, Vercel AI SDK (`ai`, `@ai-sdk/anthropic`), Zod 3.x, axios 1.6+ (006-track-ingestion-pipeline)
 - Qdrant (vector index), Inngest (step memoization) (006-track-ingestion-pipeline)
+- TypeScript 5.3.3 / Node.js 20.x + Apollo Server 4.x (GraphQL), TypeORM, Inngest 3.22.12, @qdrant/js-client-rest, axios 1.6+ (007-library-ingestion-scheduling)
+- PostgreSQL (library data via TypeORM), Qdrant (vector index existence checks), Inngest (task queue) (007-library-ingestion-scheduling)
 
 ## Project Structure
 
@@ -159,10 +161,51 @@ Access at http://localhost:3000 when Langfuse is running.
 - ES2022 target
 - Follow standard conventions
 
+## Environment Variables
+
+### Backend Service
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `PORT` | No | `4000` | GraphQL API server port |
+| `NODE_ENV` | No | `development` | Runtime environment |
+| `DATABASE_URL` | Yes | - | PostgreSQL connection string |
+| `TIDAL_CLIENT_ID` | Yes | - | Tidal API client ID |
+| `TIDAL_CLIENT_SECRET` | Yes | - | Tidal API client secret |
+| `SEARCH_CACHE_TTL` | No | `3600` | Search cache TTL in seconds |
+
+### Ingestion Scheduling (007)
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `QDRANT_URL` | No | `http://localhost:6333` | Qdrant server URL |
+| `QDRANT_COLLECTION` | No | `tracks` | Qdrant collection name |
+| `INNGEST_EVENT_KEY` | Prod only | - | Inngest event key (required in production) |
+| `INNGEST_APP_ID` | No | `algojuke-backend` | Inngest application ID |
+| `INGESTION_CONCURRENCY` | No | `10` | Max parallel scheduling operations |
+| `INGESTION_SLA_MS` | No | `5000` | SLA threshold for scheduling (ms) |
+
+### Worker Service
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `INNGEST_DEV` | Dev only | `1` | Enable Inngest dev mode |
+| `ANTHROPIC_API_KEY` | Yes | - | Anthropic API key for LLM |
+| `MUSIXMATCH_API_KEY` | Yes | - | Musixmatch API key for lyrics |
+| `RECCOBEATS_API_KEY` | Yes | - | ReccoBeats API key for audio features |
+
+### Observability (Langfuse)
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `LANGFUSE_PUBLIC_KEY` | Yes | - | Langfuse public key |
+| `LANGFUSE_SECRET_KEY` | Yes | - | Langfuse secret key |
+| `LANGFUSE_BASEURL` | No | `http://localhost:3000` | Langfuse server URL |
+
 ## Recent Changes
+- 007-library-ingestion-scheduling: Added TypeScript 5.3.3 / Node.js 20.x + Apollo Server 4.x (GraphQL), TypeORM, Inngest 3.22.12, @qdrant/js-client-rest, axios 1.6+
 - 006-track-ingestion-pipeline: Added TypeScript 5.3.3 / Node.js 20.x + Inngest 3.22.12, Vercel AI SDK (`ai`, `@ai-sdk/anthropic`), Zod 3.x, axios 1.6+
 - 005-llm-observability: Added TypeScript 5.3.3 / Node.js 20.x + @langfuse/tracing, @langfuse/otel, @opentelemetry/sdk-node, zod
-- 004-vector-search-index: Added TypeScript 5.3.3 / Node.js 20.x + Qdrant client library (qdrant-js), Zod (schema validation), Docker
 
 
 <!-- MANUAL ADDITIONS START -->

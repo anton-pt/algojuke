@@ -8,6 +8,8 @@ import { CacheService } from './services/cacheService.js';
 import { TidalTokenService } from './services/tidalTokenService.js';
 import { TidalService } from './services/tidalService.js';
 import { LibraryService } from './services/libraryService.js';
+import { IngestionScheduler } from './services/ingestionScheduler.js';
+import { createBackendQdrantClient } from './clients/qdrantClient.js';
 import { searchResolver } from './resolvers/searchResolver.js';
 import { libraryResolvers } from './resolvers/library.js';
 import { logger } from './utils/logger.js';
@@ -70,10 +72,23 @@ async function startServer() {
     await initializeDatabase();
     logger.info('database_initialized', { message: 'Database connection established' });
 
-    // Initialize library service with repositories
+    // Initialize library service with repositories and ingestion scheduler
     const albumRepository = AppDataSource.getRepository(LibraryAlbum);
     const trackRepository = AppDataSource.getRepository(LibraryTrack);
-    const libraryService = new LibraryService(albumRepository, trackRepository, tidalService);
+
+    // Initialize Qdrant client and ingestion scheduler for automatic track ingestion
+    const qdrantClient = createBackendQdrantClient();
+    const ingestionScheduler = new IngestionScheduler(qdrantClient);
+    logger.info('ingestion_scheduler_initialized', {
+      qdrantUrl: process.env.QDRANT_URL || 'http://localhost:6333',
+    });
+
+    const libraryService = new LibraryService(
+      albumRepository,
+      trackRepository,
+      tidalService,
+      ingestionScheduler
+    );
 
     // Start Apollo Server
     const { url } = await startStandaloneServer(server, {

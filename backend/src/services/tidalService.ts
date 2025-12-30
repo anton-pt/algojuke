@@ -653,6 +653,102 @@ export class TidalService {
   }
 
   /**
+   * Batch fetch ISRCs for multiple tracks by their Tidal IDs
+   *
+   * Uses the batch tracks API to efficiently retrieve ISRCs for multiple tracks.
+   * Chunks requests into batches of 20 tracks (Tidal API limit).
+   *
+   * @param tidalIds - Array of Tidal track IDs
+   * @param countryCode - Country code for regional content (default: 'US')
+   * @returns Map of Tidal track ID to ISRC (or undefined if not available)
+   */
+  async batchFetchTrackIsrcs(
+    tidalIds: string[],
+    countryCode: string = 'US'
+  ): Promise<Map<string, string | undefined>> {
+    const result = new Map<string, string | undefined>();
+
+    if (tidalIds.length === 0) {
+      return result;
+    }
+
+    const token = await this.tokenService.getValidToken();
+    const BATCH_SIZE = 20; // Tidal API limit per request
+
+    // Process in chunks of 20
+    for (let i = 0; i < tidalIds.length; i += BATCH_SIZE) {
+      const chunk = tidalIds.slice(i, i + BATCH_SIZE);
+
+      try {
+        const url = `${this.apiBaseUrl}/v2/tracks`;
+        const response = await this.rateLimiter.executeWithRetry(async () => {
+          return await axios.get(url, {
+            headers: {
+              'accept': 'application/vnd.api+json',
+              'Authorization': `Bearer ${token}`,
+            },
+            params: {
+              countryCode,
+              'filter[id]': chunk.join(','),
+            },
+            timeout: 10000, // Longer timeout for batch request
+          });
+        });
+
+        // Extract ISRCs from response
+        const tracks = response.data.data || [];
+        for (const track of tracks) {
+          const isrc = track.attributes?.isrc;
+          result.set(track.id, isrc || undefined);
+        }
+
+        // Mark any tracks not in response as undefined
+        for (const id of chunk) {
+          if (!result.has(id)) {
+            result.set(id, undefined);
+          }
+        }
+
+        logger.info('batch_track_isrcs_fetched', {
+          chunkIndex: Math.floor(i / BATCH_SIZE),
+          chunkSize: chunk.length,
+          totalTracks: tidalIds.length,
+          isrcsFound: tracks.filter((t: { attributes?: { isrc?: string } }) => t.attributes?.isrc).length,
+        });
+      } catch (error) {
+        logger.error('batch_track_isrcs_error', {
+          chunkIndex: Math.floor(i / BATCH_SIZE),
+          error: error instanceof Error ? error.message : String(error),
+        });
+
+        // Mark all tracks in failed chunk as undefined
+        for (const id of chunk) {
+          if (!result.has(id)) {
+            result.set(id, undefined);
+          }
+        }
+
+        // Re-throw for critical errors
+        if (axios.isAxiosError(error)) {
+          if (error.response?.status === 429) {
+            const retryAfter = error.response.headers?.['retry-after'];
+            throw new RateLimitError(retryAfter ? parseInt(retryAfter) : undefined);
+          }
+          if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+            throw new TimeoutError('Request to Tidal API timed out');
+          }
+          if (error.response?.status && error.response.status >= 500) {
+            throw new ApiUnavailableError('Tidal API is temporarily unavailable');
+          }
+        }
+        // For other errors, continue with next chunk (graceful degradation)
+      }
+    }
+
+    return result;
+  }
+
+  /**
    * Fetch album metadata by ID from Tidal API
    *
    * @param albumId - Tidal album ID
@@ -803,7 +899,8 @@ export class TidalService {
 
       const track = response.data.data;
       const attributes = track.attributes || {};
-      const included = response.data.included || [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const included: Array<JsonApiResource<any>> = response.data.included || [];
 
       // Build lookup maps from included resources
       const lookupMaps = this.buildLookupMaps(included);

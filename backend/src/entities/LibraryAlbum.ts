@@ -14,6 +14,7 @@ export interface TrackInfo {
   duration: number;
   tidalId?: string;
   explicit?: boolean;
+  isrc?: string;
 }
 
 @Entity('library_albums')
