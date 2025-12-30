@@ -69,6 +69,7 @@ export interface TrackIngestionRequest {
   title: string;
   artist: string;
   album: string;
+  artworkUrl?: string | null;
 }
 
 /**
@@ -89,6 +90,7 @@ export interface TrackSchedulingResult {
 export interface AlbumTrackInfo {
   isrc: string;
   title: string;
+  artworkUrl?: string | null;
 }
 
 /**
@@ -189,6 +191,7 @@ export class IngestionScheduler {
         title: request.title,
         artist: request.artist,
         album: request.album,
+        artworkUrl: request.artworkUrl,
       });
 
       const durationMs = Date.now() - startTime;
@@ -225,7 +228,7 @@ export class IngestionScheduler {
     const results: TrackBatchResult[] = [];
 
     // Separate valid and invalid tracks
-    const validTracks: Array<{ isrc: string; title: string }> = [];
+    const validTracks: Array<{ isrc: string; title: string; artworkUrl?: string | null }> = [];
 
     for (const track of request.tracks) {
       if (!track.isrc || track.isrc.trim() === "") {
@@ -248,6 +251,7 @@ export class IngestionScheduler {
         validTracks.push({
           isrc: track.isrc.toUpperCase(),
           title: track.title,
+          artworkUrl: track.artworkUrl,
         });
       }
     }
@@ -280,7 +284,7 @@ export class IngestionScheduler {
     }
 
     // Separate tracks into already-indexed and to-schedule
-    const tracksToSchedule: Array<{ isrc: string; title: string }> = [];
+    const tracksToSchedule: Array<{ isrc: string; title: string; artworkUrl?: string | null }> = [];
 
     for (const track of validTracks) {
       const exists = existsMap.get(track.isrc) ?? false;
@@ -307,6 +311,7 @@ export class IngestionScheduler {
             title: track.title,
             artist: request.artistName,
             album: request.albumTitle,
+            artworkUrl: track.artworkUrl,
           });
           return { ...track, scheduled: true } as TrackBatchResult;
         } catch (error) {

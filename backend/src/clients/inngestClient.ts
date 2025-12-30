@@ -52,6 +52,11 @@ export const TrackIngestionRequestedEventSchema = z.object({
   album: z.string().min(1),
 
   /**
+   * Album artwork URL from Tidal API (optional)
+   */
+  artworkUrl: z.string().url().optional().nullable(),
+
+  /**
    * Priority modifier (-600 to +600 seconds)
    * Positive values = higher priority
    */

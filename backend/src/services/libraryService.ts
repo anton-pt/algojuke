@@ -185,6 +185,7 @@ export class LibraryService {
             .map(track => ({
               isrc: track.isrc!,
               title: track.title,
+              artworkUrl: savedAlbum.coverArtUrl,
             }));
 
           if (tracksWithIsrcs.length > 0) {
@@ -337,6 +338,7 @@ export class LibraryService {
               title: savedTrack.title,
               artist: savedTrack.artistName,
               album: savedTrack.albumName || 'Unknown Album',
+              artworkUrl: savedTrack.coverArtUrl,
             });
           } catch (error) {
             // Log error but don't fail the library addition
