@@ -52,6 +52,12 @@ type TrackInfo {
 
   """Whether track contains explicit content"""
   explicit: Boolean
+
+  """ISRC identifier for the track (ISO 3901)"""
+  isrc: String
+
+  """Whether this track has been indexed in the vector search (computed from Qdrant)"""
+  isIndexed: Boolean!
 }
 
 """
@@ -81,6 +87,20 @@ type LibraryTrack {
 
   """When the track was added to the library (ISO 8601 timestamp)"""
   createdAt: String!
+
+  """Track metadata including ISRC"""
+  metadata: TrackMetadata
+
+  """Whether this track has been indexed in the vector search (computed from Qdrant)"""
+  isIndexed: Boolean!
+}
+
+"""
+Track metadata containing ISRC and other optional fields
+"""
+type TrackMetadata {
+  """ISRC identifier for the track (ISO 3901)"""
+  isrc: String
 }
 
 """

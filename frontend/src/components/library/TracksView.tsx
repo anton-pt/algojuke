@@ -1,7 +1,9 @@
 import { useQuery, useMutation } from '@apollo/client';
 import { GET_LIBRARY_TRACKS, REMOVE_TRACK_FROM_LIBRARY } from '../../graphql/library';
 import { LibraryTrackCard, LibraryTrack } from './LibraryTrackCard';
+import { TrackAccordion } from './TrackAccordion';
 import { useUndoDelete } from '../../hooks/useUndoDelete';
+import { useTrackMetadata } from '../../hooks/useTrackMetadata';
 import './TracksView.css';
 
 export function TracksView() {
@@ -20,6 +22,16 @@ export function TracksView() {
       await removeTrackMutation({ variables: { id: trackId } });
     },
   });
+
+  // Track metadata accordion state
+  const {
+    loading: metadataLoading,
+    error: metadataError,
+    metadata,
+    toggleTrack,
+    isExpanded,
+    retry,
+  } = useTrackMetadata();
 
   if (loading) {
     return (
@@ -59,11 +71,22 @@ export function TracksView() {
     <div className="tracks-view">
       <div className="tracks-list">
         {visibleTracks.map((track) => (
-          <LibraryTrackCard
+          <TrackAccordion
             key={track.id}
-            track={track}
-            onDelete={handleDelete}
-          />
+            trackId={track.id}
+            isrc={track.metadata?.isrc}
+            isExpanded={isExpanded(track.id)}
+            onToggle={() => toggleTrack(track.id, track.metadata?.isrc)}
+            loading={isExpanded(track.id) && metadataLoading}
+            error={isExpanded(track.id) ? metadataError : null}
+            metadata={isExpanded(track.id) ? metadata : null}
+            onRetry={retry}
+          >
+            <LibraryTrackCard
+              track={track}
+              onDelete={handleDelete}
+            />
+          </TrackAccordion>
         ))}
       </div>
     </div>

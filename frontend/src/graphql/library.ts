@@ -64,6 +64,8 @@ export const GET_LIBRARY_ALBUM = gql`
         duration
         tidalId
         explicit
+        isrc
+        isIndexed
       }
       createdAt
     }
@@ -113,6 +115,10 @@ export const GET_LIBRARY_TRACKS = gql`
       duration
       coverArtUrl
       createdAt
+      metadata {
+        isrc
+      }
+      isIndexed
     }
   }
 `;

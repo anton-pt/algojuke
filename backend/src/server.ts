@@ -12,6 +12,9 @@ import { IngestionScheduler } from './services/ingestionScheduler.js';
 import { createBackendQdrantClient } from './clients/qdrantClient.js';
 import { searchResolver } from './resolvers/searchResolver.js';
 import { libraryResolvers } from './resolvers/library.js';
+import { trackMetadataResolvers } from './resolvers/trackMetadata.js';
+import { TrackMetadataService } from './services/trackMetadataService.js';
+import { createIsrcDataLoader } from './loaders/isrcDataLoader.js';
 import { logger } from './utils/logger.js';
 import { initializeDatabase, AppDataSource } from './config/database.js';
 import { LibraryAlbum } from './entities/LibraryAlbum.js';
@@ -35,18 +38,24 @@ const librarySchema = readFileSync(
   'utf-8'
 );
 
-const typeDefs = [searchSchema, librarySchema];
+const trackMetadataSchema = readFileSync(
+  join(__dirname, 'schema', 'trackMetadata.graphql'),
+  'utf-8'
+);
+
+const typeDefs = [searchSchema, librarySchema, trackMetadataSchema];
 
 // Initialize services (these will be created fresh after DB initialization)
 const cache = new CacheService(parseInt(process.env.SEARCH_CACHE_TTL || '3600'));
 const tokenService = new TidalTokenService();
 const tidalService = new TidalService(tokenService);
 
-// Merge resolvers from search and library
+// Merge resolvers from search, library, and track metadata
 const mergedResolvers = {
   Query: {
     ...searchResolver.Query,
     ...libraryResolvers.Query,
+    ...trackMetadataResolvers.Query,
   },
   Mutation: {
     ...libraryResolvers.Mutation,
@@ -54,7 +63,11 @@ const mergedResolvers = {
   AddAlbumToLibraryResult: libraryResolvers.AddAlbumToLibraryResult,
   AddTrackToLibraryResult: libraryResolvers.AddTrackToLibraryResult,
   LibraryAlbum: libraryResolvers.LibraryAlbum,
-  LibraryTrack: libraryResolvers.LibraryTrack,
+  LibraryTrack: {
+    ...libraryResolvers.LibraryTrack,
+    ...trackMetadataResolvers.LibraryTrack,
+  },
+  TrackInfo: trackMetadataResolvers.TrackInfo,
 };
 
 // Create Apollo Server
@@ -83,6 +96,10 @@ async function startServer() {
       qdrantUrl: process.env.QDRANT_URL || 'http://localhost:6333',
     });
 
+    // Initialize track metadata service for extended metadata display
+    const trackMetadataService = new TrackMetadataService(qdrantClient);
+    logger.info('track_metadata_service_initialized');
+
     const libraryService = new LibraryService(
       albumRepository,
       trackRepository,
@@ -97,6 +114,9 @@ async function startServer() {
         tidalService,
         cache,
         libraryService,
+        trackMetadataService,
+        // Create a new DataLoader per request for proper batching and caching
+        isrcDataLoader: createIsrcDataLoader(trackMetadataService),
         dataSources: {
           db: AppDataSource,
         },

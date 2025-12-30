@@ -9,6 +9,7 @@ import { QdrantClient } from "@qdrant/js-client-rest";
 import { getIngestionConfig } from "../config/ingestion.js";
 import { hashIsrcToUuid } from "../utils/isrcHash.js";
 import { logger } from "../utils/logger.js";
+import type { TrackPayload } from "../types/trackMetadata.js";
 
 /**
  * Backend Qdrant client wrapper
@@ -125,6 +126,64 @@ export class BackendQdrantClient {
       return true;
     } catch {
       return false;
+    }
+  }
+
+  /**
+   * Retrieve full track payload from Qdrant by ISRC
+   *
+   * Used by Track Metadata Display feature (008) to fetch
+   * lyrics, interpretation, and audio features for display.
+   *
+   * Implements fail-open behavior:
+   * If Qdrant is unavailable, returns null.
+   *
+   * @param isrc - ISRC to retrieve (will be normalized to uppercase)
+   * @returns TrackPayload if found, null otherwise
+   */
+  async getTrackPayload(isrc: string): Promise<TrackPayload | null> {
+    try {
+      const normalizedIsrc = isrc.toUpperCase();
+      const uuid = hashIsrcToUuid(normalizedIsrc);
+
+      const points = await this.client.retrieve(this.collection, {
+        ids: [uuid],
+        with_payload: true,
+        with_vector: false,
+      });
+
+      if (points.length === 0) {
+        return null;
+      }
+
+      const payload = points[0].payload as Record<string, unknown>;
+
+      return {
+        isrc: String(payload.isrc ?? normalizedIsrc),
+        title: String(payload.title ?? ''),
+        artist: String(payload.artist ?? ''),
+        album: String(payload.album ?? ''),
+        lyrics: payload.lyrics != null ? String(payload.lyrics) : null,
+        interpretation: payload.interpretation != null ? String(payload.interpretation) : null,
+        acousticness: typeof payload.acousticness === 'number' ? payload.acousticness : null,
+        danceability: typeof payload.danceability === 'number' ? payload.danceability : null,
+        energy: typeof payload.energy === 'number' ? payload.energy : null,
+        instrumentalness: typeof payload.instrumentalness === 'number' ? payload.instrumentalness : null,
+        key: typeof payload.key === 'number' ? payload.key : null,
+        liveness: typeof payload.liveness === 'number' ? payload.liveness : null,
+        loudness: typeof payload.loudness === 'number' ? payload.loudness : null,
+        mode: typeof payload.mode === 'number' ? payload.mode : null,
+        speechiness: typeof payload.speechiness === 'number' ? payload.speechiness : null,
+        tempo: typeof payload.tempo === 'number' ? payload.tempo : null,
+        valence: typeof payload.valence === 'number' ? payload.valence : null,
+      };
+    } catch (error) {
+      logger.warn("qdrant_get_payload_failed", {
+        event: "qdrant_error",
+        isrc,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return null;
     }
   }
 }

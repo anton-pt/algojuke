@@ -2,6 +2,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@apollo/client';
 import { GET_LIBRARY_ALBUM, GET_LIBRARY_ALBUMS, REMOVE_ALBUM_FROM_LIBRARY } from '../../graphql/library';
 import { useUndoDelete } from '../../hooks/useUndoDelete';
+import { useTrackMetadata } from '../../hooks/useTrackMetadata';
+import { TrackMetadataPanel } from './TrackMetadataPanel';
+import { IndexedBadge } from './IndexedBadge';
 import './AlbumDetailView.css';
 
 interface TrackInfo {
@@ -10,6 +13,8 @@ interface TrackInfo {
   duration: number;
   tidalId?: string;
   explicit?: boolean;
+  isrc?: string;
+  isIndexed?: boolean;
 }
 
 interface LibraryAlbumDetail {
@@ -64,6 +69,16 @@ export function AlbumDetailView() {
       await removeAlbumMutation({ variables: { id: albumId } });
     },
   });
+
+  // Track metadata accordion state for album tracks
+  const {
+    loading: metadataLoading,
+    error: metadataError,
+    metadata,
+    toggleTrack,
+    isExpanded,
+    retry,
+  } = useTrackMetadata();
 
   if (loading) {
     return (
@@ -142,27 +157,53 @@ export function AlbumDetailView() {
 
       <div className="album-detail-tracks">
         <h2>Track Listing</h2>
-        <table className="track-listing-table">
-          <thead>
-            <tr>
-              <th className="track-number">#</th>
-              <th className="track-title">Title</th>
-              <th className="track-duration">Duration</th>
-            </tr>
-          </thead>
-          <tbody>
-            {album.trackListing.map((track) => (
-              <tr key={track.position}>
-                <td className="track-number">{track.position}</td>
-                <td className="track-title">
-                  {track.title}
-                  {track.explicit && <span className="explicit-indicator">E</span>}
-                </td>
-                <td className="track-duration">{formatDuration(track.duration)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="track-listing-accordion">
+          {album.trackListing.map((track) => {
+            const trackKey = `${album.id}-${track.position}`;
+            const expanded = isExpanded(trackKey);
+
+            return (
+              <div
+                key={track.position}
+                className={`track-listing-row ${expanded ? 'expanded' : ''}`}
+              >
+                <div
+                  className="track-listing-header"
+                  onClick={() => toggleTrack(trackKey, track.isrc)}
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={expanded}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      toggleTrack(trackKey, track.isrc);
+                    }
+                  }}
+                >
+                  <span className="track-number">{track.position}</span>
+                  <span className="track-title">
+                    {track.title}
+                    {track.explicit && <span className="explicit-indicator">E</span>}
+                    <IndexedBadge isIndexed={track.isIndexed} size="small" />
+                  </span>
+                  <span className="track-duration">{formatDuration(track.duration)}</span>
+                  <span className={`track-expand-indicator ${expanded ? 'up' : 'down'}`}>▼</span>
+                </div>
+                {expanded && (
+                  <div className="track-listing-panel">
+                    <TrackMetadataPanel
+                      loading={metadataLoading}
+                      error={metadataError}
+                      metadata={metadata}
+                      hasIsrc={!!track.isrc}
+                      onRetry={retry}
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

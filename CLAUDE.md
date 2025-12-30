@@ -18,6 +18,8 @@ Auto-generated from all feature plans. Last updated: 2025-12-27
 - Qdrant (vector index), Inngest (step memoization) (006-track-ingestion-pipeline)
 - TypeScript 5.3.3 / Node.js 20.x + Apollo Server 4.x (GraphQL), TypeORM, Inngest 3.22.12, @qdrant/js-client-rest, axios 1.6+ (007-library-ingestion-scheduling)
 - PostgreSQL (library data via TypeORM), Qdrant (vector index existence checks), Inngest (task queue) (007-library-ingestion-scheduling)
+- TypeScript 5.3.3 / Node.js 20.x (backend), TypeScript 5.3.3 / React 18.2.0 (frontend) + Apollo Server 4.x + Apollo Client 3.x (GraphQL), Qdrant JS client, Zod (validation), Vitest (testing) (008-track-metadata-display)
+- PostgreSQL (library data via TypeORM), Qdrant (vector index with track documents) (008-track-metadata-display)
 
 ## Project Structure
 
@@ -203,9 +205,9 @@ Access at http://localhost:3000 when Langfuse is running.
 | `LANGFUSE_BASEURL` | No | `http://localhost:3000` | Langfuse server URL |
 
 ## Recent Changes
+- 008-track-metadata-display: Added TypeScript 5.3.3 / Node.js 20.x (backend), TypeScript 5.3.3 / React 18.2.0 (frontend) + Apollo Server 4.x + Apollo Client 3.x (GraphQL), Qdrant JS client, Zod (validation), Vitest (testing)
 - 007-library-ingestion-scheduling: Added TypeScript 5.3.3 / Node.js 20.x + Apollo Server 4.x (GraphQL), TypeORM, Inngest 3.22.12, @qdrant/js-client-rest, axios 1.6+
 - 006-track-ingestion-pipeline: Added TypeScript 5.3.3 / Node.js 20.x + Inngest 3.22.12, Vercel AI SDK (`ai`, `@ai-sdk/anthropic`), Zod 3.x, axios 1.6+
-- 005-llm-observability: Added TypeScript 5.3.3 / Node.js 20.x + @langfuse/tracing, @langfuse/otel, @opentelemetry/sdk-node, zod
 
 
 <!-- MANUAL ADDITIONS START -->
