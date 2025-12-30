@@ -1,0 +1,112 @@
+/**
+ * Styles for DiscoverySearchBar component
+ *
+ * Feature: 009-semantic-discovery-search
+ */
+
+.discovery-search-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.discovery-search-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.discovery-search-input {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1rem;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+  line-height: 1.5;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.discovery-search-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.discovery-search-input:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.discovery-search-input::placeholder {
+  color: #888;
+}
+
+.discovery-search-input-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.discovery-search-hint {
+  font-size: 0.8125rem;
+  color: #666;
+  font-style: italic;
+  flex: 1;
+}
+
+.discovery-search-char-count {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.discovery-search-char-count.near-limit {
+  color: #f59e0b;
+}
+
+.discovery-search-char-count.at-limit {
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.discovery-search-button {
+  padding: 0.875rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.2s;
+  align-self: center;
+}
+
+.discovery-search-button:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.discovery-search-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.discovery-search-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.discovery-search-error {
+  padding: 0.75rem 1rem;
+  background-color: #fee2e2;
+  color: #dc2626;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  text-align: center;
+}

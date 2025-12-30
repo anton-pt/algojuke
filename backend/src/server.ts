@@ -13,7 +13,9 @@ import { createBackendQdrantClient } from './clients/qdrantClient.js';
 import { searchResolver } from './resolvers/searchResolver.js';
 import { libraryResolvers } from './resolvers/library.js';
 import { trackMetadataResolvers } from './resolvers/trackMetadata.js';
+import { discoveryResolvers } from './resolvers/discoveryResolver.js';
 import { TrackMetadataService } from './services/trackMetadataService.js';
+import { DiscoveryService } from './services/discoveryService.js';
 import { createIsrcDataLoader } from './loaders/isrcDataLoader.js';
 import { logger } from './utils/logger.js';
 import { initializeDatabase, AppDataSource } from './config/database.js';
@@ -43,19 +45,25 @@ const trackMetadataSchema = readFileSync(
   'utf-8'
 );
 
-const typeDefs = [searchSchema, librarySchema, trackMetadataSchema];
+const discoverySchema = readFileSync(
+  join(__dirname, 'schema', 'discovery.graphql'),
+  'utf-8'
+);
+
+const typeDefs = [searchSchema, librarySchema, trackMetadataSchema, discoverySchema];
 
 // Initialize services (these will be created fresh after DB initialization)
 const cache = new CacheService(parseInt(process.env.SEARCH_CACHE_TTL || '3600'));
 const tokenService = new TidalTokenService();
 const tidalService = new TidalService(tokenService);
 
-// Merge resolvers from search, library, and track metadata
+// Merge resolvers from search, library, track metadata, and discovery
 const mergedResolvers = {
   Query: {
     ...searchResolver.Query,
     ...libraryResolvers.Query,
     ...trackMetadataResolvers.Query,
+    ...discoveryResolvers.Query,
   },
   Mutation: {
     ...libraryResolvers.Mutation,
@@ -68,6 +76,7 @@ const mergedResolvers = {
     ...trackMetadataResolvers.LibraryTrack,
   },
   TrackInfo: trackMetadataResolvers.TrackInfo,
+  DiscoverySearchResult: discoveryResolvers.DiscoverySearchResult,
 };
 
 // Create Apollo Server
@@ -100,6 +109,10 @@ async function startServer() {
     const trackMetadataService = new TrackMetadataService(qdrantClient);
     logger.info('track_metadata_service_initialized');
 
+    // Initialize discovery service for semantic search
+    const discoveryService = new DiscoveryService({ qdrantClient });
+    logger.info('discovery_service_initialized');
+
     const libraryService = new LibraryService(
       albumRepository,
       trackRepository,
@@ -115,6 +128,7 @@ async function startServer() {
         cache,
         libraryService,
         trackMetadataService,
+        discoveryService,
         // Create a new DataLoader per request for proper batching and caching
         isrcDataLoader: createIsrcDataLoader(trackMetadataService),
         dataSources: {

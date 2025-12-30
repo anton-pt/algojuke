@@ -20,6 +20,8 @@ Auto-generated from all feature plans. Last updated: 2025-12-27
 - PostgreSQL (library data via TypeORM), Qdrant (vector index existence checks), Inngest (task queue) (007-library-ingestion-scheduling)
 - TypeScript 5.3.3 / Node.js 20.x (backend), TypeScript 5.3.3 / React 18.2.0 (frontend) + Apollo Server 4.x + Apollo Client 3.x (GraphQL), Qdrant JS client, Zod (validation), Vitest (testing) (008-track-metadata-display)
 - PostgreSQL (library data via TypeORM), Qdrant (vector index with track documents) (008-track-metadata-display)
+- TypeScript 5.3.3 / Node.js 20.x (backend), TypeScript 5.3.3 / React 18.2.0 (frontend) + Apollo Server 4.x + Apollo Client 3.x (GraphQL), @qdrant/js-client-rest (Qdrant), Vercel AI SDK (`ai`, `@ai-sdk/anthropic`), axios (HTTP), Zod 3.x (validation), Vitest (testing) (009-semantic-discovery-search)
+- Qdrant vector database (hybrid search with dense vectors + BM25), no new persistent storage needed (009-semantic-discovery-search)
 
 ## Project Structure
 
@@ -205,9 +207,9 @@ Access at http://localhost:3000 when Langfuse is running.
 | `LANGFUSE_BASEURL` | No | `http://localhost:3000` | Langfuse server URL |
 
 ## Recent Changes
+- 009-semantic-discovery-search: Added TypeScript 5.3.3 / Node.js 20.x (backend), TypeScript 5.3.3 / React 18.2.0 (frontend) + Apollo Server 4.x + Apollo Client 3.x (GraphQL), @qdrant/js-client-rest (Qdrant), Vercel AI SDK (`ai`, `@ai-sdk/anthropic`), axios (HTTP), Zod 3.x (validation), Vitest (testing)
 - 008-track-metadata-display: Added TypeScript 5.3.3 / Node.js 20.x (backend), TypeScript 5.3.3 / React 18.2.0 (frontend) + Apollo Server 4.x + Apollo Client 3.x (GraphQL), Qdrant JS client, Zod (validation), Vitest (testing)
 - 007-library-ingestion-scheduling: Added TypeScript 5.3.3 / Node.js 20.x + Apollo Server 4.x (GraphQL), TypeORM, Inngest 3.22.12, @qdrant/js-client-rest, axios 1.6+
-- 006-track-ingestion-pipeline: Added TypeScript 5.3.3 / Node.js 20.x + Inngest 3.22.12, Vercel AI SDK (`ai`, `@ai-sdk/anthropic`), Zod 3.x, axios 1.6+
 
 
 <!-- MANUAL ADDITIONS START -->

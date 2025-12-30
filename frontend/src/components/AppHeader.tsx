@@ -14,6 +14,12 @@ export function AppHeader() {
             Search
           </NavLink>
           <NavLink
+            to="/discover"
+            className={({ isActive }) => isActive ? 'app-nav-link active' : 'app-nav-link'}
+          >
+            Discover
+          </NavLink>
+          <NavLink
             to="/library/albums"
             className={({ isActive }) => isActive ? 'app-nav-link active' : 'app-nav-link'}
           >
