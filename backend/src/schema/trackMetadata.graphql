@@ -1,0 +1,110 @@
+# Track Metadata Display - GraphQL Schema Extensions
+# Feature: 008-track-metadata-display
+# Date: 2025-12-30
+
+"""
+Audio analysis features from the track ingestion pipeline.
+All fields are nullable as they may not be available for every track.
+Values come from the ReccoBeats API during ingestion.
+"""
+type AudioFeatures {
+  """Acoustic vs electronic character (0.0 = electronic, 1.0 = acoustic)"""
+  acousticness: Float
+
+  """Suitability for dancing based on tempo, rhythm, beat (0.0 to 1.0)"""
+  danceability: Float
+
+  """Intensity and liveliness (0.0 to 1.0)"""
+  energy: Float
+
+  """Likelihood of no vocals (0.0 to 1.0, >0.5 = likely instrumental)"""
+  instrumentalness: Float
+
+  """
+  Pitch class notation (-1 = no key detected, 0 = C, 1 = C♯/D♭, ..., 11 = B)
+  """
+  key: Int
+
+  """Probability of live audience presence (0.0 to 1.0)"""
+  liveness: Float
+
+  """Average loudness in decibels (-60 to 0 dB)"""
+  loudness: Float
+
+  """Musical mode (0 = minor, 1 = major)"""
+  mode: Int
+
+  """Presence of spoken words (0.0 to 1.0, >0.66 = speech-like)"""
+  speechiness: Float
+
+  """Beats per minute (0 to 250)"""
+  tempo: Float
+
+  """Musical positivity (0.0 = sad/dark, 1.0 = happy/uplifting)"""
+  valence: Float
+}
+
+"""
+Extended metadata for a track retrieved from the vector search index.
+Contains lyrics, interpretation, and audio features populated by the
+track ingestion pipeline (spec 006).
+"""
+type ExtendedTrackMetadata {
+  """ISRC identifier for the track (ISO 3901, 12 characters)"""
+  isrc: String!
+
+  """
+  Full lyrics text, null for instrumental tracks.
+  May be very long - UI should use scrollable container.
+  """
+  lyrics: String
+
+  """
+  LLM-generated natural language summary of lyric themes, mood, and content.
+  Null for instrumental tracks or if interpretation generation failed.
+  """
+  interpretation: String
+
+  """
+  Structured audio analysis features.
+  Null if audio features were not available from ReccoBeats API.
+  """
+  audioFeatures: AudioFeatures
+}
+
+"""
+Result of checking indexed status for a single ISRC
+"""
+type IndexedStatusResult {
+  """ISRC that was checked"""
+  isrc: String!
+
+  """Whether this ISRC exists in the vector search index"""
+  isIndexed: Boolean!
+}
+
+extend type Query {
+  """
+  Retrieve extended metadata for a single track by ISRC.
+
+  Returns null if:
+  - The track is not found in the vector index
+  - The ISRC is invalid
+  - Qdrant is unavailable
+
+  Use this query when the user expands a track's accordion panel
+  to view detailed lyrics, interpretation, and audio features.
+  """
+  getExtendedTrackMetadata(isrc: String!): ExtendedTrackMetadata
+
+  """
+  Check indexed status for multiple tracks by ISRC (batch operation).
+
+  Returns indexed status for each provided ISRC. If Qdrant is unavailable,
+  returns all tracks as not indexed (fail-open behavior).
+
+  Use this query to prefetch indexed status for a list of tracks,
+  e.g., when loading a view with many tracks.
+  """
+  checkIndexedStatus(isrcs: [String!]!): [IndexedStatusResult!]!
+}

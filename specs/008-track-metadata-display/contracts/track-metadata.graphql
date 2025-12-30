@@ -1,0 +1,215 @@
+# Track Metadata Display - GraphQL Schema Extensions
+# Feature: 008-track-metadata-display
+# Date: 2025-12-30
+
+# =============================================================================
+# NEW TYPES
+# =============================================================================
+
+"""
+Audio analysis features from the track ingestion pipeline.
+All fields are nullable as they may not be available for every track.
+Values come from the ReccoBeats API during ingestion.
+"""
+type AudioFeatures {
+  """Acoustic vs electronic character (0.0 = electronic, 1.0 = acoustic)"""
+  acousticness: Float
+
+  """Suitability for dancing based on tempo, rhythm, beat (0.0 to 1.0)"""
+  danceability: Float
+
+  """Intensity and liveliness (0.0 to 1.0)"""
+  energy: Float
+
+  """Likelihood of no vocals (0.0 to 1.0, >0.5 = likely instrumental)"""
+  instrumentalness: Float
+
+  """
+  Pitch class notation (-1 = no key detected, 0 = C, 1 = C♯/D♭, ..., 11 = B)
+  """
+  key: Int
+
+  """Probability of live audience presence (0.0 to 1.0)"""
+  liveness: Float
+
+  """Average loudness in decibels (-60 to 0 dB)"""
+  loudness: Float
+
+  """Musical mode (0 = minor, 1 = major)"""
+  mode: Int
+
+  """Presence of spoken words (0.0 to 1.0, >0.66 = speech-like)"""
+  speechiness: Float
+
+  """Beats per minute (0 to 250)"""
+  tempo: Float
+
+  """Musical positivity (0.0 = sad/dark, 1.0 = happy/uplifting)"""
+  valence: Float
+}
+
+"""
+Extended metadata for a track retrieved from the vector search index.
+Contains lyrics, interpretation, and audio features populated by the
+track ingestion pipeline (spec 006).
+"""
+type ExtendedTrackMetadata {
+  """ISRC identifier for the track (ISO 3901, 12 characters)"""
+  isrc: String!
+
+  """
+  Full lyrics text, null for instrumental tracks.
+  May be very long - UI should use scrollable container.
+  """
+  lyrics: String
+
+  """
+  LLM-generated natural language summary of lyric themes, mood, and content.
+  Null for instrumental tracks or if interpretation generation failed.
+  """
+  interpretation: String
+
+  """
+  Structured audio analysis features.
+  Null if audio features were not available from ReccoBeats API.
+  """
+  audioFeatures: AudioFeatures
+}
+
+# =============================================================================
+# EXTENDED EXISTING TYPES
+# =============================================================================
+
+"""
+Extension to LibraryTrack to include indexed status.
+"""
+extend type LibraryTrack {
+  """
+  Whether this track has been processed by the ingestion pipeline
+  and exists in the vector search index.
+
+  Returns false if:
+  - Track has no ISRC in metadata
+  - Track has not been ingested yet
+  - Qdrant is unavailable (fail-open behavior)
+  """
+  isIndexed: Boolean!
+}
+
+"""
+Extension to TrackInfo (album track listing) to include indexed status.
+"""
+extend type TrackInfo {
+  """
+  Whether this track has been processed by the ingestion pipeline
+  and exists in the vector search index.
+
+  Returns false if:
+  - Track has no ISRC
+  - Track has not been ingested yet
+  - Qdrant is unavailable (fail-open behavior)
+  """
+  isIndexed: Boolean!
+}
+
+# =============================================================================
+# QUERIES
+# =============================================================================
+
+extend type Query {
+  """
+  Retrieve extended metadata for a single track by ISRC.
+
+  Returns null if:
+  - The track is not found in the vector index
+  - The ISRC is invalid
+  - Qdrant is unavailable
+
+  Use this query when the user expands a track's accordion panel
+  to view detailed lyrics, interpretation, and audio features.
+
+  Example:
+  ```graphql
+  query GetTrackDetails($isrc: String!) {
+    getExtendedTrackMetadata(isrc: $isrc) {
+      isrc
+      lyrics
+      interpretation
+      audioFeatures {
+        tempo
+        energy
+        valence
+        key
+        mode
+      }
+    }
+  }
+  ```
+  """
+  getExtendedTrackMetadata(isrc: String!): ExtendedTrackMetadata
+}
+
+# =============================================================================
+# USAGE EXAMPLES
+# =============================================================================
+
+# Example 1: Library tracks with indexed status
+# Use this when loading the Tracks view to show indexed badges
+#
+# query GetLibraryTracksWithStatus {
+#   getLibraryTracks {
+#     id
+#     tidalTrackId
+#     title
+#     artistName
+#     albumName
+#     duration
+#     coverArtUrl
+#     metadata {
+#       isrc
+#     }
+#     isIndexed  # <-- New field
+#   }
+# }
+
+# Example 2: Album detail with track indexed status
+# Use this when viewing album track listings
+#
+# query GetLibraryAlbumWithTrackStatus($id: ID!) {
+#   getLibraryAlbum(id: $id) {
+#     id
+#     title
+#     artistName
+#     trackListing {
+#       trackNumber
+#       title
+#       duration
+#       isrc
+#       isIndexed  # <-- New field
+#     }
+#   }
+# }
+
+# Example 3: Extended metadata for accordion panel
+# Use this when user clicks to expand a track's details
+#
+# query GetExtendedMetadata($isrc: String!) {
+#   getExtendedTrackMetadata(isrc: $isrc) {
+#     isrc
+#     lyrics
+#     interpretation
+#     audioFeatures {
+#       acousticness
+#       danceability
+#       energy
+#       instrumentalness
+#       key
+#       liveness
+#       loudness
+#       mode
+#       speechiness
+#       tempo
+#       valence
+#     }
+#   }
+# }

@@ -1,0 +1,90 @@
+.track-accordion {
+  margin-bottom: 0.5rem;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.2s ease;
+}
+
+.track-accordion:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.track-accordion.expanded {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Header (clickable area) */
+.track-accordion-header {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+}
+
+.track-accordion-header:focus {
+  outline: 2px solid var(--primary-color, #1a73e8);
+  outline-offset: -2px;
+}
+
+.track-accordion-header:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Ensure child content fills the space */
+.track-accordion-header > *:first-child {
+  flex: 1;
+}
+
+/* Expand indicator */
+.track-accordion-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  color: var(--text-secondary, #666);
+}
+
+.chevron {
+  font-size: 0.75rem;
+  transition: transform 0.2s ease;
+}
+
+.chevron.up {
+  transform: rotate(180deg);
+}
+
+/* Panel content */
+.track-accordion-panel {
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Override nested track card styling when inside accordion */
+.track-accordion .library-track-card {
+  box-shadow: none;
+  margin-bottom: 0;
+  border-radius: 8px 8px 0 0;
+}
+
+.track-accordion.expanded .library-track-card {
+  border-radius: 8px 8px 0 0;
+}
+
+/* Hide the delete button in accordion mode (keep row clickable) */
+.track-accordion .library-track-delete {
+  margin-right: 8px;
+}

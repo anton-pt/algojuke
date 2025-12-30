@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { IndexedBadge } from './IndexedBadge';
 import './LibraryTrackCard.css';
 
 export interface LibraryTrack {
@@ -11,6 +12,10 @@ export interface LibraryTrack {
   duration: number;
   coverArtUrl: string | null;
   createdAt: string;
+  metadata?: {
+    isrc?: string;
+  } | null;
+  isIndexed?: boolean;
 }
 
 interface LibraryTrackCardProps {
@@ -55,7 +60,10 @@ export function LibraryTrackCard({ track, onDelete }: LibraryTrackCardProps) {
       </div>
       <div className="library-track-info">
         <div className="library-track-main">
-          <h3 className="library-track-title">{track.title}</h3>
+          <h3 className="library-track-title">
+            {track.title}
+            <IndexedBadge isIndexed={track.isIndexed} size="small" />
+          </h3>
           <p className="library-track-artist">{track.artistName}</p>
         </div>
         <div className="library-track-meta">
