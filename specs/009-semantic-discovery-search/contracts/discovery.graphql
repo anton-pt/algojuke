@@ -1,0 +1,190 @@
+# GraphQL Schema: Semantic Discovery Search
+#
+# Feature: 009-semantic-discovery-search
+# Date: 2025-12-30
+#
+# This schema extends the existing GraphQL API to add semantic discovery
+# search capabilities for indexed tracks.
+
+# =============================================================================
+# Types
+# =============================================================================
+
+"""
+A track result from discovery search with relevance score.
+"""
+type DiscoveryResult {
+  """Qdrant point ID (UUID derived from ISRC)"""
+  id: ID!
+
+  """Track ISRC (12 alphanumeric characters)"""
+  isrc: String!
+
+  """Track title"""
+  title: String!
+
+  """Artist name"""
+  artist: String!
+
+  """Album name"""
+  album: String!
+
+  """RRF-combined relevance score (higher = more relevant)"""
+  score: Float!
+
+  """Album artwork URL (if available from indexed data)"""
+  artworkUrl: String
+}
+
+"""
+Response from a discovery search query.
+"""
+type DiscoverySearchResponse {
+  """Ordered list of matching tracks (by descending score)"""
+  results: [DiscoveryResult!]!
+
+  """Original user query"""
+  query: String!
+
+  """LLM-generated expanded search queries (1-3)"""
+  expandedQueries: [String!]!
+
+  """Current page (0-indexed)"""
+  page: Int!
+
+  """Results per page (default: 20)"""
+  pageSize: Int!
+
+  """Total matching results (capped at 100)"""
+  totalResults: Int!
+
+  """Whether more results are available"""
+  hasMore: Boolean!
+}
+
+"""
+Error returned when discovery search fails.
+"""
+type DiscoverySearchError {
+  """Error message for display"""
+  message: String!
+
+  """Error code for programmatic handling"""
+  code: DiscoveryErrorCode!
+
+  """Whether the operation can be retried"""
+  retryable: Boolean!
+}
+
+"""
+Error codes for discovery search failures.
+"""
+enum DiscoveryErrorCode {
+  """User query is empty or whitespace-only"""
+  EMPTY_QUERY
+
+  """Query expansion LLM is unavailable"""
+  LLM_UNAVAILABLE
+
+  """Embedding service is unavailable"""
+  EMBEDDING_UNAVAILABLE
+
+  """Vector search index is unavailable"""
+  INDEX_UNAVAILABLE
+
+  """Search operation timed out (30s limit)"""
+  TIMEOUT
+
+  """Internal server error"""
+  INTERNAL_ERROR
+}
+
+"""
+Union type for discovery search result (success or error).
+"""
+union DiscoverySearchResult = DiscoverySearchResponse | DiscoverySearchError
+
+# =============================================================================
+# Input Types
+# =============================================================================
+
+"""
+Input for discovery search query.
+"""
+input DiscoverySearchInput {
+  """Natural language query describing desired mood/theme (required)"""
+  query: String!
+
+  """Page number (0-indexed, default: 0)"""
+  page: Int
+
+  """Results per page (default: 20, max: 20)"""
+  pageSize: Int
+}
+
+# =============================================================================
+# Queries
+# =============================================================================
+
+extend type Query {
+  """
+  Search indexed tracks using natural language description.
+
+  The query is expanded into 1-3 search queries by Claude Haiku 4.5,
+  converted to embeddings, and used for hybrid search (vector + BM25)
+  with Reciprocal Rank Fusion scoring.
+
+  Returns up to 100 results total across pages.
+
+  Example:
+  ```graphql
+  query {
+    discoverTracks(input: { query: "uplifting songs about overcoming adversity" }) {
+      ... on DiscoverySearchResponse {
+        results {
+          title
+          artist
+          album
+          score
+        }
+        expandedQueries
+        hasMore
+      }
+      ... on DiscoverySearchError {
+        message
+        code
+        retryable
+      }
+    }
+  }
+  ```
+  """
+  discoverTracks(input: DiscoverySearchInput!): DiscoverySearchResult!
+}
+
+# =============================================================================
+# Notes
+# =============================================================================
+
+# Extended Metadata Display:
+# When a user expands a track in the UI, use the existing query from
+# 008-track-metadata-display to fetch lyrics, interpretation, and audio features:
+#
+# query GetExtendedTrackMetadata($isrc: String!) {
+#   getExtendedTrackMetadata(isrc: $isrc) {
+#     lyrics
+#     interpretation
+#     audioFeatures { ... }
+#   }
+# }
+
+# Pagination:
+# - Page is 0-indexed
+# - Default pageSize is 20, max is 20
+# - Total results capped at 100 (5 pages max)
+# - hasMore indicates if more results available within the 100 cap
+
+# Performance:
+# - Target: <10 seconds for complete search (SC-001)
+# - Timeout: 30 seconds (FR-018)
+# - Includes LLM query expansion + embedding generation + hybrid search

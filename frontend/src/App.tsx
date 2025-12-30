@@ -6,6 +6,7 @@ import { UndoDeleteProvider } from './contexts/UndoDeleteContext';
 import { AppHeader } from './components/AppHeader';
 import { SearchPage } from './pages/SearchPage';
 import { LibraryPage } from './pages/LibraryPage';
+import { DiscoverPage } from './pages/DiscoverPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import './App.css';
 
@@ -19,6 +20,7 @@ export function App() {
             <AppHeader />
             <Routes>
               <Route path="/" element={<SearchPage />} />
+              <Route path="/discover" element={<DiscoverPage />} />
               <Route path="/library/*" element={<LibraryPage />} />
             </Routes>
           </BrowserRouter>

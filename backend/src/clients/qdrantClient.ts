@@ -1,8 +1,13 @@
 /**
  * Qdrant Client for Backend Service
  *
- * Provides track existence checking for ingestion scheduling.
- * Used to skip scheduling for tracks already in the vector index.
+ * Provides track existence checking for ingestion scheduling
+ * and hybrid search for semantic discovery.
+ *
+ * Features:
+ * - Track existence checking (007-library-ingestion-scheduling)
+ * - Track payload retrieval (008-track-metadata-display)
+ * - Hybrid search with RRF fusion (009-semantic-discovery-search)
  */
 
 import { QdrantClient } from "@qdrant/js-client-rest";
@@ -10,6 +15,7 @@ import { getIngestionConfig } from "../config/ingestion.js";
 import { hashIsrcToUuid } from "../utils/isrcHash.js";
 import { logger } from "../utils/logger.js";
 import type { TrackPayload } from "../types/trackMetadata.js";
+import type { SparseVector, DiscoveryResult } from "../types/discovery.js";
 
 /**
  * Backend Qdrant client wrapper
@@ -184,6 +190,112 @@ export class BackendQdrantClient {
         error: error instanceof Error ? error.message : String(error),
       });
       return null;
+    }
+  }
+
+  /**
+   * Perform hybrid search with RRF fusion
+   *
+   * Combines dense vector similarity and sparse BM25 search
+   * using Qdrant's Reciprocal Rank Fusion.
+   *
+   * @param queries - Array of expanded queries with dense and sparse vectors
+   * @param options - Search options (limit, offset, prefetchLimit)
+   * @returns Array of discovery results ordered by RRF score
+   */
+  async hybridSearch(
+    queries: Array<{
+      denseVector: number[];
+      sparseVector: SparseVector;
+    }>,
+    options: {
+      limit: number;
+      offset: number;
+      prefetchLimit?: number;
+    }
+  ): Promise<DiscoveryResult[]> {
+    const { limit, offset, prefetchLimit = offset + limit + 50 } = options;
+
+    try {
+      // Build prefetch array: dense + sparse for each query
+      const prefetch = queries.flatMap((q) => [
+        {
+          query: q.denseVector,
+          using: "interpretation_embedding",
+          limit: prefetchLimit,
+        },
+        {
+          query: {
+            indices: q.sparseVector.indices,
+            values: q.sparseVector.values,
+          },
+          using: "text_sparse",
+          limit: prefetchLimit,
+        },
+      ]);
+
+      // Execute hybrid search with RRF fusion
+      const result = await this.client.query(this.collection, {
+        prefetch,
+        query: { fusion: "rrf" },
+        limit,
+        offset,
+        with_payload: true,
+      });
+
+      // Transform results to DiscoveryResult format
+      const discoveryResults: DiscoveryResult[] = [];
+      const seenIsrcs = new Set<string>();
+
+      for (const point of result.points) {
+        const payload = point.payload as Record<string, unknown>;
+        const isrc = String(payload.isrc ?? "");
+
+        // Deduplicate by ISRC (keep first/highest scored)
+        if (seenIsrcs.has(isrc.toUpperCase())) {
+          continue;
+        }
+        seenIsrcs.add(isrc.toUpperCase());
+
+        discoveryResults.push({
+          id: String(point.id),
+          isrc,
+          title: String(payload.title ?? ""),
+          artist: String(payload.artist ?? ""),
+          album: String(payload.album ?? ""),
+          score: point.score ?? 0,
+          artworkUrl: payload.artworkUrl != null ? String(payload.artworkUrl) : null,
+        });
+      }
+
+      return discoveryResults;
+    } catch (error) {
+      logger.error("qdrant_hybrid_search_failed", {
+        event: "qdrant_error",
+        queryCount: queries.length,
+        limit,
+        offset,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get the total count of points in the collection
+   *
+   * @returns Total number of indexed tracks
+   */
+  async getCollectionCount(): Promise<number> {
+    try {
+      const info = await this.client.getCollection(this.collection);
+      return info.points_count ?? 0;
+    } catch (error) {
+      logger.warn("qdrant_get_count_failed", {
+        event: "qdrant_error",
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return 0;
     }
   }
 }

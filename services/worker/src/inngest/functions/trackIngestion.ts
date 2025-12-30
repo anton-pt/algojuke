@@ -91,7 +91,7 @@ export const trackIngestion = inngest.createFunction(
   },
   { event: "track/ingestion.requested" },
   async ({ event, step, runId }) => {
-    const { isrc, title, artist, album, force } = event.data;
+    const { isrc, title, artist, album, artworkUrl, force } = event.data;
     const startTime = Date.now();
 
     // Create observability trace for this ingestion
@@ -247,6 +247,7 @@ export const trackIngestion = inngest.createFunction(
           title,
           artist,
           album,
+          artworkUrl: artworkUrl ?? null,
           lyrics: lyrics?.lyrics_body ?? null,
           interpretation: interpretation?.text ?? null,
         };
