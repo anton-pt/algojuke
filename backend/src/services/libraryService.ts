@@ -3,6 +3,7 @@ import { Repository } from 'typeorm';
 import { LibraryAlbum, TrackInfo } from '../entities/LibraryAlbum.js';
 import { LibraryTrack } from '../entities/LibraryTrack.js';
 import { TidalService } from './tidalService.js';
+import { IngestionScheduler } from './ingestionScheduler.js';
 import {
   LibraryError,
   DuplicateItemError,
@@ -21,15 +22,18 @@ export class LibraryService {
   private albumRepository: Repository<LibraryAlbum>;
   private trackRepository: Repository<LibraryTrack>;
   private tidalService: TidalService;
+  private ingestionScheduler: IngestionScheduler | null;
 
   constructor(
     albumRepository: Repository<LibraryAlbum>,
     trackRepository: Repository<LibraryTrack>,
-    tidalService: TidalService
+    tidalService: TidalService,
+    ingestionScheduler?: IngestionScheduler
   ) {
     this.albumRepository = albumRepository;
     this.trackRepository = trackRepository;
     this.tidalService = tidalService;
+    this.ingestionScheduler = ingestionScheduler ?? null;
   }
 
   /**
@@ -115,6 +119,35 @@ export class LibraryService {
         );
       }
 
+      // Fetch ISRCs for all tracks in the album (for ingestion scheduling)
+      const trackTidalIds = trackListing
+        .filter(t => t.tidalId)
+        .map(t => t.tidalId!);
+
+      if (trackTidalIds.length > 0) {
+        try {
+          const isrcMap = await this.tidalService.batchFetchTrackIsrcs(trackTidalIds);
+
+          // Update trackListing with ISRCs
+          trackListing = trackListing.map(track => ({
+            ...track,
+            isrc: track.tidalId ? isrcMap.get(track.tidalId) : undefined,
+          }));
+
+          logger.info('album_isrcs_fetched', {
+            tidalAlbumId,
+            totalTracks: trackListing.length,
+            isrcsFound: trackListing.filter(t => t.isrc).length,
+          });
+        } catch (error: any) {
+          // Log error but don't fail the album addition - proceed without ISRCs
+          logger.albumTrackListingError(
+            albumData.title,
+            `Failed to fetch ISRCs: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+
       // Create library album entity
       const libraryAlbum = new LibraryAlbum();
       libraryAlbum.tidalAlbumId = tidalAlbumId;
@@ -143,6 +176,42 @@ export class LibraryService {
           durationMs: duration,
           performanceCheck: duration < 3000 ? 'PASS' : 'FAIL',
         });
+
+        // Schedule ingestion for all album tracks (fire-and-forget pattern)
+        // Library addition succeeds even if scheduling fails
+        if (this.ingestionScheduler && trackListing.length > 0) {
+          const tracksWithIsrcs = trackListing
+            .filter(track => track.isrc)
+            .map(track => ({
+              isrc: track.isrc!,
+              title: track.title,
+            }));
+
+          if (tracksWithIsrcs.length > 0) {
+            try {
+              await this.ingestionScheduler.scheduleAlbumTracks({
+                albumTitle: savedAlbum.title,
+                artistName: savedAlbum.artistName,
+                tracks: tracksWithIsrcs,
+              });
+            } catch (error) {
+              // Log error but don't fail the library addition
+              logger.error('album_ingestion_scheduling_failed', {
+                tidalAlbumId,
+                albumTitle: savedAlbum.title,
+                trackCount: tracksWithIsrcs.length,
+                error: error instanceof Error ? error.message : String(error),
+              });
+            }
+          } else {
+            logger.warn('album_no_isrcs_for_ingestion', {
+              tidalAlbumId,
+              albumTitle: savedAlbum.title,
+              totalTracks: trackListing.length,
+            });
+          }
+        }
+
         return savedAlbum;
       } catch (error: any) {
         logger.error('database_save_album_failed', {
@@ -258,6 +327,27 @@ export class LibraryService {
           durationMs: duration,
           performanceCheck: duration < 3000 ? 'PASS' : 'FAIL',
         });
+
+        // Schedule ingestion (fire-and-forget pattern)
+        // Library addition succeeds even if scheduling fails
+        if (this.ingestionScheduler && trackData.isrc) {
+          try {
+            await this.ingestionScheduler.scheduleTrack({
+              isrc: trackData.isrc,
+              title: savedTrack.title,
+              artist: savedTrack.artistName,
+              album: savedTrack.albumName || 'Unknown Album',
+            });
+          } catch (error) {
+            // Log error but don't fail the library addition
+            logger.error('ingestion_scheduling_failed', {
+              tidalTrackId,
+              isrc: trackData.isrc,
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
+        }
+
         return savedTrack;
       } catch (error: any) {
         logger.error('database_save_track_failed', {

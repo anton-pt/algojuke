@@ -92,6 +92,109 @@ class Logger {
   apiError(endpoint: string, status: number, error: string): void {
     this.error('api_error', { endpoint, status, error });
   }
+
+  // ============================================================================
+  // Ingestion Scheduling Logging Methods
+  // ============================================================================
+
+  /**
+   * Log successful ingestion scheduling
+   */
+  ingestionScheduled(
+    isrc: string,
+    trackTitle: string,
+    durationMs: number
+  ): void {
+    this.info('ingestion_scheduled', {
+      isrc,
+      trackTitle,
+      result: 'success',
+      durationMs,
+    });
+  }
+
+  /**
+   * Log skipped ingestion (track already indexed or invalid)
+   */
+  ingestionSkipped(
+    isrc: string,
+    trackTitle: string | undefined,
+    reason: 'already_indexed' | 'missing_isrc' | 'invalid_isrc'
+  ): void {
+    this.info('ingestion_skipped', {
+      isrc,
+      trackTitle,
+      result: 'skipped',
+      reason,
+    });
+  }
+
+  /**
+   * Log ingestion scheduling error
+   */
+  ingestionError(
+    isrc: string | undefined,
+    trackTitle: string | undefined,
+    error: string,
+    durationMs?: number
+  ): void {
+    this.error('ingestion_error', {
+      isrc,
+      trackTitle,
+      result: 'error',
+      error,
+      durationMs,
+    });
+  }
+
+  /**
+   * Log album batch scheduling results
+   */
+  albumIngestionBatch(
+    albumTitle: string,
+    totalTracks: number,
+    scheduledCount: number,
+    skippedCount: number,
+    durationMs: number
+  ): void {
+    this.info('album_ingestion_batch', {
+      albumTitle,
+      totalTracks,
+      scheduledCount,
+      skippedCount,
+      durationMs,
+    });
+  }
+
+  /**
+   * Log album track listing error
+   */
+  albumTrackListingError(albumTitle: string, error: string): void {
+    this.error('album_track_listing_error', {
+      albumTitle,
+      error,
+    });
+  }
+
+  /**
+   * Log Qdrant check error (fail-open scenario)
+   */
+  qdrantCheckError(isrcCount: number, error: string): void {
+    this.warn('qdrant_check_error', {
+      isrcCount,
+      error,
+    });
+  }
+
+  /**
+   * Log Inngest send error
+   */
+  inngestSendError(isrc: string, error: string): void {
+    this.error('inngest_send_error', {
+      isrc,
+      error,
+    });
+  }
 }
 
 export const logger = new Logger();
