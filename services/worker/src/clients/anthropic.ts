@@ -11,8 +11,9 @@ import { buildInterpretationPrompt } from "../prompts/lyricsInterpretation.js";
 
 /**
  * Model identifier for Claude Sonnet 4.5
+ * Using the alias for better SDK compatibility
  */
-export const CLAUDE_MODEL = "claude-sonnet-4-5-20250929";
+export const CLAUDE_MODEL = "claude-sonnet-4-5";
 
 /**
  * Interpretation result from LLM
@@ -61,7 +62,7 @@ export function createAnthropicClient(): LLMClient {
         const result = await generateText({
           model: anthropic(CLAUDE_MODEL),
           prompt: buildInterpretationPrompt(title, artist, album, lyrics),
-          maxTokens: 1024,
+          maxOutputTokens: 1024,
         });
 
         // Validate response
@@ -76,8 +77,8 @@ export function createAnthropicClient(): LLMClient {
         return {
           text: result.text.trim(),
           model: CLAUDE_MODEL,
-          inputTokens: result.usage?.promptTokens ?? 0,
-          outputTokens: result.usage?.completionTokens ?? 0,
+          inputTokens: result.usage?.inputTokens ?? 0,
+          outputTokens: result.usage?.outputTokens ?? 0,
         };
       } catch (error) {
         // Re-throw APIError as-is

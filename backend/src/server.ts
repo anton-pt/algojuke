@@ -1,5 +1,9 @@
 import { ApolloServer } from '@apollo/server';
-import { startStandaloneServer } from '@apollo/server/standalone';
+import { expressMiddleware } from '@apollo/server/express4';
+import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
+import express from 'express';
+import http from 'http';
+import cors from 'cors';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -14,9 +18,12 @@ import { searchResolver } from './resolvers/searchResolver.js';
 import { libraryResolvers } from './resolvers/library.js';
 import { trackMetadataResolvers } from './resolvers/trackMetadata.js';
 import { discoveryResolvers } from './resolvers/discoveryResolver.js';
+import { chatResolvers } from './resolvers/chatResolver.js';
 import { TrackMetadataService } from './services/trackMetadataService.js';
 import { DiscoveryService } from './services/discoveryService.js';
+import { ChatService } from './services/chatService.js';
 import { createIsrcDataLoader } from './loaders/isrcDataLoader.js';
+import { createChatRoutes } from './routes/chatRoutes.js';
 import { logger } from './utils/logger.js';
 import { initializeDatabase, AppDataSource } from './config/database.js';
 import { LibraryAlbum } from './entities/LibraryAlbum.js';
@@ -50,23 +57,30 @@ const discoverySchema = readFileSync(
   'utf-8'
 );
 
-const typeDefs = [searchSchema, librarySchema, trackMetadataSchema, discoverySchema];
+const chatSchema = readFileSync(
+  join(__dirname, 'schema', 'chat.graphql'),
+  'utf-8'
+);
+
+const typeDefs = [searchSchema, librarySchema, trackMetadataSchema, discoverySchema, chatSchema];
 
 // Initialize services (these will be created fresh after DB initialization)
 const cache = new CacheService(parseInt(process.env.SEARCH_CACHE_TTL || '3600'));
 const tokenService = new TidalTokenService();
 const tidalService = new TidalService(tokenService);
 
-// Merge resolvers from search, library, track metadata, and discovery
+// Merge resolvers from search, library, track metadata, discovery, and chat
 const mergedResolvers = {
   Query: {
     ...searchResolver.Query,
     ...libraryResolvers.Query,
     ...trackMetadataResolvers.Query,
     ...discoveryResolvers.Query,
+    ...chatResolvers.Query,
   },
   Mutation: {
     ...libraryResolvers.Mutation,
+    ...chatResolvers.Mutation,
   },
   AddAlbumToLibraryResult: libraryResolvers.AddAlbumToLibraryResult,
   AddTrackToLibraryResult: libraryResolvers.AddTrackToLibraryResult,
@@ -77,13 +91,11 @@ const mergedResolvers = {
   },
   TrackInfo: trackMetadataResolvers.TrackInfo,
   DiscoverySearchResult: discoveryResolvers.DiscoverySearchResult,
+  // Chat union types
+  ConversationsResult: chatResolvers.ConversationsResult,
+  ConversationResult: chatResolvers.ConversationResult,
+  DeleteConversationResult: chatResolvers.DeleteConversationResult,
 };
-
-// Create Apollo Server
-const server = new ApolloServer({
-  typeDefs,
-  resolvers: mergedResolvers,
-});
 
 // Start server
 const port = parseInt(process.env.PORT || '4000');
@@ -113,6 +125,10 @@ async function startServer() {
     const discoveryService = new DiscoveryService({ qdrantClient });
     logger.info('discovery_service_initialized');
 
+    // Initialize chat service
+    const chatService = new ChatService(AppDataSource);
+    logger.info('chat_service_initialized');
+
     const libraryService = new LibraryService(
       albumRepository,
       trackRepository,
@@ -120,25 +136,54 @@ async function startServer() {
       ingestionScheduler
     );
 
-    // Start Apollo Server
-    const { url } = await startStandaloneServer(server, {
-      listen: { port },
-      context: async () => ({
-        tidalService,
-        cache,
-        libraryService,
-        trackMetadataService,
-        discoveryService,
-        // Create a new DataLoader per request for proper batching and caching
-        isrcDataLoader: createIsrcDataLoader(trackMetadataService),
-        dataSources: {
-          db: AppDataSource,
-        },
-      }),
+    // Create Express app and HTTP server
+    const app = express();
+    const httpServer = http.createServer(app);
+
+    // Create Apollo Server with drain plugin
+    const server = new ApolloServer({
+      typeDefs,
+      resolvers: mergedResolvers,
+      plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
     });
 
+    // Start Apollo Server
+    await server.start();
+
+    // Apply middleware
+    app.use(cors());
+    app.use(express.json());
+
+    // Mount chat REST routes (for SSE streaming)
+    app.use('/api/chat', createChatRoutes(AppDataSource));
+
+    // Mount GraphQL endpoint
+    app.use(
+      '/graphql',
+      expressMiddleware(server, {
+        context: async () => ({
+          tidalService,
+          cache,
+          libraryService,
+          trackMetadataService,
+          discoveryService,
+          chatService,
+          // Create a new DataLoader per request for proper batching and caching
+          isrcDataLoader: createIsrcDataLoader(trackMetadataService),
+          dataSources: {
+            db: AppDataSource,
+          },
+        }),
+      })
+    );
+
+    // Start listening
+    await new Promise<void>((resolve) => httpServer.listen({ port }, resolve));
+
+    const url = `http://localhost:${port}/graphql`;
     logger.info('server_started', { url });
     console.log(`🚀 Server ready at ${url}`);
+    console.log(`📡 Chat SSE endpoint at http://localhost:${port}/api/chat/stream`);
   } catch (error) {
     logger.error('server_start_failed', { error: String(error) });
     console.error('Failed to start server:', error);

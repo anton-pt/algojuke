@@ -16,13 +16,14 @@
     "migration:generate": "npm run typeorm migration:generate",
     "migration:run": "npm run typeorm migration:run",
     "migration:revert": "npm run typeorm migration:revert",
-    "migration:show": "npm run typeorm migration:show"
+    "migration:show": "npm run typeorm migration:show",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^1.2.12",
+    "@ai-sdk/anthropic": "^3.0.2",
     "@apollo/server": "^4.10.0",
     "@qdrant/js-client-rest": "^1.12.0",
-    "ai": "^4.3.19",
+    "ai": "^6.0.5",
     "axios": "^1.6.5",
     "cors": "^2.8.5",
     "dataloader": "^2.2.2",

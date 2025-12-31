@@ -1,0 +1,202 @@
+# GraphQL Schema: Discover Chat Agent
+#
+# This schema defines the GraphQL types and operations for conversation
+# management. Streaming chat is handled via REST+SSE (see contracts/chat-sse.md).
+
+# =============================================================================
+# Types
+# =============================================================================
+
+"""
+A chat conversation between the user and the AI assistant.
+Sorted by most recent interaction when listed.
+"""
+type Conversation {
+  """Unique identifier (UUID), also used as Langfuse session ID"""
+  id: ID!
+
+  """Preview text from first user message (truncated to ~50 chars)"""
+  preview: String!
+
+  """When the conversation was created"""
+  createdAt: String!
+
+  """When the conversation was last updated (used for sorting)"""
+  updatedAt: String!
+
+  """Number of messages in the conversation"""
+  messageCount: Int!
+}
+
+"""
+A single message within a conversation.
+"""
+type ChatMessage {
+  """Unique identifier (UUID)"""
+  id: ID!
+
+  """Who sent the message"""
+  role: MessageRole!
+
+  """
+  Message content as structured blocks.
+  For text-only messages, this is a single text block.
+  Future: may include tool_use and tool_result blocks.
+  """
+  content: [ContentBlock!]!
+
+  """When the message was sent"""
+  createdAt: String!
+}
+
+"""
+Message sender role.
+"""
+enum MessageRole {
+  """Message from the user"""
+  user
+
+  """Message from the AI assistant"""
+  assistant
+}
+
+"""
+Content block within a message. Discriminated union by type field.
+"""
+type ContentBlock {
+  """Block type: 'text', 'tool_use', or 'tool_result'"""
+  type: String!
+
+  """Text content (present when type='text')"""
+  text: String
+
+  """Tool call ID (present when type='tool_use' or 'tool_result')"""
+  toolId: String
+
+  """Tool name (present when type='tool_use')"""
+  toolName: String
+
+  """Tool input as JSON string (present when type='tool_use')"""
+  toolInput: String
+
+  """Tool result as JSON string (present when type='tool_result')"""
+  toolResult: String
+}
+
+"""
+Full conversation with all messages.
+"""
+type ConversationWithMessages {
+  """Conversation metadata"""
+  conversation: Conversation!
+
+  """All messages in chronological order"""
+  messages: [ChatMessage!]!
+}
+
+# =============================================================================
+# Query Results (Union Types for Error Handling)
+# =============================================================================
+
+"""
+Result of listing conversations.
+"""
+union ConversationsResult = ConversationsList | ChatError
+
+type ConversationsList {
+  """List of conversations, sorted by most recent first"""
+  conversations: [Conversation!]!
+
+  """Total count of conversations"""
+  totalCount: Int!
+}
+
+"""
+Result of getting a single conversation with messages.
+"""
+union ConversationResult = ConversationWithMessages | ChatError
+
+"""
+Result of deleting a conversation.
+"""
+union DeleteConversationResult = DeleteSuccess | ChatError
+
+type DeleteSuccess {
+  """ID of the deleted conversation"""
+  deletedId: ID!
+
+  """Confirmation message"""
+  message: String!
+}
+
+"""
+Error response for chat operations.
+"""
+type ChatError {
+  """Error message for display"""
+  message: String!
+
+  """Error code for programmatic handling"""
+  code: ChatErrorCode!
+
+  """Whether the operation can be retried"""
+  retryable: Boolean!
+}
+
+"""
+Error codes for chat operations.
+"""
+enum ChatErrorCode {
+  """Conversation not found"""
+  NOT_FOUND
+
+  """Cannot delete while response is being generated"""
+  OPERATION_IN_PROGRESS
+
+  """Database operation failed"""
+  DATABASE_ERROR
+
+  """Input validation failed"""
+  VALIDATION_ERROR
+
+  """Unexpected internal error"""
+  INTERNAL_ERROR
+}
+
+# =============================================================================
+# Queries
+# =============================================================================
+
+type Query {
+  """
+  List all conversations for the current user.
+  Sorted by most recent interaction (updatedAt DESC).
+  Limited to 100 conversations per SC-004.
+  """
+  conversations: ConversationsResult!
+
+  """
+  Get a single conversation with all its messages.
+  Messages are returned in chronological order (createdAt ASC).
+  """
+  conversation(id: ID!): ConversationResult!
+}
+
+# =============================================================================
+# Mutations
+# =============================================================================
+
+type Mutation {
+  """
+  Delete a conversation and all its messages.
+  Returns error if conversation is not found or if a response is in progress.
+  """
+  deleteConversation(id: ID!): DeleteConversationResult!
+
+  """
+  Create a new empty conversation.
+  Used when user explicitly starts a new chat.
+  Returns the created conversation.
+  """
+  createConversation: ConversationResult!
+}

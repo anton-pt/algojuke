@@ -1,0 +1,85 @@
+/**
+ * Chat Error Boundary Styles
+ *
+ * Feature: 010-discover-chat
+ */
+
+.chat-error-boundary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 24px;
+  background-color: var(--bg-primary, #ffffff);
+}
+
+.chat-error-boundary__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 400px;
+  text-align: center;
+}
+
+.chat-error-boundary__icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.chat-error-boundary__title {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-primary, #1a1a1a);
+  margin: 0 0 8px;
+}
+
+.chat-error-boundary__message {
+  font-size: 16px;
+  color: var(--text-secondary, #6b7280);
+  line-height: 1.5;
+  margin: 0 0 24px;
+}
+
+.chat-error-boundary__details {
+  width: 100%;
+  margin-bottom: 24px;
+  padding: 12px;
+  background-color: var(--bg-secondary, #f9fafb);
+  border-radius: 8px;
+  text-align: left;
+}
+
+.chat-error-boundary__details summary {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary, #6b7280);
+  cursor: pointer;
+}
+
+.chat-error-boundary__details pre {
+  margin: 8px 0 0;
+  padding: 8px;
+  font-size: 12px;
+  color: var(--error-color, #ef4444);
+  background-color: var(--error-bg, #fef2f2);
+  border-radius: 4px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.chat-error-boundary__button {
+  padding: 12px 24px;
+  background-color: var(--accent-color, #6366f1);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.chat-error-boundary__button:hover {
+  background-color: var(--accent-color-hover, #4f46e5);
+}
