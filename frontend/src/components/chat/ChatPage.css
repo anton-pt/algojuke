@@ -1,0 +1,25 @@
+/**
+ * Chat Page Styles
+ *
+ * Feature: 010-discover-chat
+ */
+
+.chat-page {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+}
+
+.chat-page__main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Mobile: full width main content */
+@media (max-width: 768px) {
+  .chat-page__main {
+    width: 100%;
+  }
+}

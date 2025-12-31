@@ -22,6 +22,25 @@ export default defineConfig({
         target: 'http://localhost:4000',
         changeOrigin: true,
       },
+      '/api': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+        // Required for SSE streaming - disable timeouts and buffering
+        timeout: 0,
+        proxyTimeout: 0,
+        configure: (proxy) => {
+          // Disable connection timeout
+          proxy.on('proxyReq', (proxyReq) => {
+            proxyReq.setHeader('Connection', 'keep-alive');
+          });
+          proxy.on('proxyRes', (proxyRes) => {
+            // Disable buffering for SSE
+            proxyRes.headers['x-accel-buffering'] = 'no';
+            proxyRes.headers['cache-control'] = 'no-cache';
+            proxyRes.headers['connection'] = 'keep-alive';
+          });
+        },
+      },
     },
   },
 });

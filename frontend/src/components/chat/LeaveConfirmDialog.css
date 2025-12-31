@@ -1,0 +1,103 @@
+/**
+ * Leave Confirmation Dialog Styles
+ *
+ * Feature: 010-discover-chat
+ */
+
+.leave-confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.leave-confirm-dialog {
+  background-color: var(--bg-primary, #ffffff);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 400px;
+  width: calc(100% - 32px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.2s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.leave-confirm-title {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary, #1a1a1a);
+}
+
+.leave-confirm-description {
+  margin: 0 0 24px;
+  font-size: 14px;
+  color: var(--text-secondary, #6b7280);
+  line-height: 1.5;
+}
+
+.leave-confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.leave-confirm-button {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.leave-confirm-button:active {
+  transform: scale(0.98);
+}
+
+.leave-confirm-button--stay {
+  background-color: var(--accent-color, #6366f1);
+  color: white;
+}
+
+.leave-confirm-button--stay:hover {
+  background-color: var(--accent-color-hover, #4f46e5);
+}
+
+.leave-confirm-button--leave {
+  background-color: transparent;
+  color: var(--text-secondary, #6b7280);
+  border: 1px solid var(--border-color, #e5e7eb);
+}
+
+.leave-confirm-button--leave:hover {
+  background-color: var(--bg-secondary, #f3f4f6);
+  color: var(--text-primary, #1a1a1a);
+}

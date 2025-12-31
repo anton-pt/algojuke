@@ -5,9 +5,34 @@
  */
 
 .discover-page {
+  display: flex;
+  flex-direction: column;
   max-width: 900px;
+  height: calc(100vh - 60px); /* Subtract header height */
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: 2rem 1rem 0;
+}
+
+.discover-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* Allow flex children to shrink */
+}
+
+/* Search view scrolls naturally */
+.discover-search-view {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 2rem;
+}
+
+/* Chat view takes full height with internal scrolling */
+.discover-chat-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .discover-header {

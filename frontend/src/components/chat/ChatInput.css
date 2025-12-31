@@ -1,0 +1,129 @@
+/**
+ * Chat Input Styles
+ *
+ * Feature: 010-discover-chat
+ */
+
+.chat-input {
+  padding: 16px;
+  background-color: var(--bg-primary, #ffffff);
+  border-top: 1px solid var(--border-color, #e5e7eb);
+}
+
+.chat-input__container {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 8px 12px;
+  background-color: var(--bg-secondary, #f9fafb);
+  border-radius: 12px;
+  border: 1px solid var(--border-color, #e5e7eb);
+}
+
+.chat-input__container:focus-within {
+  border-color: var(--accent-color, #6366f1);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+}
+
+.chat-input__textarea {
+  flex: 1;
+  min-height: 24px;
+  max-height: 200px;
+  padding: 8px 0;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text-primary, #1a1a1a);
+  resize: none;
+  outline: none;
+}
+
+.chat-input__textarea::placeholder {
+  color: var(--text-tertiary, #9ca3af);
+}
+
+.chat-input__textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.chat-input__actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding-bottom: 4px;
+}
+
+.chat-input__button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, opacity 0.2s;
+}
+
+.chat-input__button--send {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background-color: var(--accent-color, #6366f1);
+  color: white;
+}
+
+.chat-input__button--send:hover:not(:disabled) {
+  background-color: var(--accent-color-hover, #4f46e5);
+}
+
+.chat-input__button--send:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.chat-input__button--cancel {
+  background-color: var(--error-color, #ef4444);
+  color: white;
+}
+
+.chat-input__button--cancel:hover {
+  background-color: var(--error-color-hover, #dc2626);
+}
+
+.chat-input__button-icon {
+  font-size: 16px;
+}
+
+.chat-input__button-text {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .chat-input__button--cancel .chat-input__button-text {
+    display: inline;
+  }
+}
+
+.chat-input__error {
+  max-width: 800px;
+  margin: 8px auto 0;
+  font-size: 13px;
+  color: var(--error-color, #ef4444);
+  text-align: center;
+}
+
+.chat-input__hint {
+  max-width: 800px;
+  margin: 8px auto 0;
+  font-size: 12px;
+  color: var(--text-tertiary, #9ca3af);
+  text-align: center;
+}

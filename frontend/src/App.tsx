@@ -20,7 +20,7 @@ export function App() {
             <AppHeader />
             <Routes>
               <Route path="/" element={<SearchPage />} />
-              <Route path="/discover" element={<DiscoverPage />} />
+              <Route path="/discover/*" element={<DiscoverPage />} />
               <Route path="/library/*" element={<LibraryPage />} />
             </Routes>
           </BrowserRouter>

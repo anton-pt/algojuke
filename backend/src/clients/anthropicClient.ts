@@ -16,8 +16,9 @@ import { buildQueryExpansionPrompt } from "../prompts/queryExpansion.js";
 
 /**
  * Claude Haiku 4.5 model ID
+ * Using the alias for better SDK compatibility
  */
-export const QUERY_EXPANSION_MODEL = "claude-haiku-4-5-20251001";
+export const QUERY_EXPANSION_MODEL = "claude-haiku-4-5";
 
 /**
  * Schema for query expansion response
@@ -74,7 +75,7 @@ export function createAnthropicClient(): AnthropicClient {
         const result = await generateText({
           model: anthropic(QUERY_EXPANSION_MODEL),
           prompt: buildQueryExpansionPrompt(userQuery),
-          maxTokens: 200,
+          maxOutputTokens: 200,
         });
 
         const { text, usage } = result;
@@ -105,8 +106,8 @@ export function createAnthropicClient(): AnthropicClient {
         return {
           queries,
           model: QUERY_EXPANSION_MODEL,
-          inputTokens: usage.promptTokens,
-          outputTokens: usage.completionTokens,
+          inputTokens: usage.inputTokens ?? 0,
+          outputTokens: usage.outputTokens ?? 0,
         };
       } catch (error) {
         // Handle API errors
