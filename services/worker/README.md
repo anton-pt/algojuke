@@ -467,6 +467,63 @@ docker compose logs inngest
 
 **Solution**: Tests have been simplified to unit tests that don't require Inngest runtime. Run `npm test` to verify current tests pass.
 
+## Short Description Generation
+
+The track ingestion pipeline generates short descriptions (single sentence, max 50 words) for each track to provide context in search results.
+
+### Pipeline Step
+
+Short descriptions are generated as step 4 in the track ingestion pipeline:
+
+1. fetch-audio-features
+2. fetch-lyrics
+3. generate-interpretation (Claude Sonnet 4.5)
+4. **generate-short-description** (Claude Haiku 4.5)
+5. embed-interpretation
+6. store-document
+7. emit-completion
+
+### Prompt Selection Logic
+
+The pipeline uses different prompts based on available data:
+
+| Data Available | Prompt Used |
+|----------------|-------------|
+| Interpretation | `buildShortDescriptionPrompt` - Summarizes the interpretation |
+| Audio features only | `buildInstrumentalShortDescriptionPrompt` - Describes sonic characteristics |
+| Metadata only | `buildMetadataOnlyShortDescriptionPrompt` - Brief neutral description |
+
+### Graceful Failure
+
+If short description generation fails:
+- Error is logged
+- `null` is stored in `short_description` field
+- Pipeline continues to completion
+- Qdrant document is still upserted
+
+### Backfill Script
+
+For existing tracks without short descriptions:
+
+```bash
+# Run backfill (resumes from last position)
+npx tsx scripts/backfill-short-descriptions.ts
+
+# Reset and start from beginning
+npx tsx scripts/backfill-short-descriptions.ts --reset
+```
+
+**Rate limit**: 1 track every 2 seconds (30 tracks/minute)
+
+**Progress tracking**:
+- Progress saved to `.backfill-progress.json`
+- Resumes automatically after interruption
+- Shows ETA and counts during execution
+
+**Langfuse tracing**:
+- Each generation traced as `llm-short-description-backfill`
+- Scroll operations traced as `qdrant-scroll`
+
 ## Next Steps
 
 This infrastructure validation establishes the foundation for:

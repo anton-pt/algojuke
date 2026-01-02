@@ -29,6 +29,9 @@ export const TrackDocumentSchema = z.object({
   lyrics: z.string().nullable().optional(),
   interpretation: z.string().nullable().optional(),
 
+  // Short description for agent context in search results
+  short_description: z.string().max(500).nullable().optional(),
+
   // Vector embedding (4096-dimensional from Qwen3-Embedding-8B)
   interpretation_embedding: z
     .array(z.number())

@@ -11,7 +11,9 @@
 import { describe, it, expect } from "vitest";
 import {
   CLAUDE_MODEL,
+  CLAUDE_HAIKU_MODEL,
   type InterpretationResult,
+  type ShortDescriptionResult,
   type LLMClient,
 } from "../../src/clients/anthropic.js";
 import { buildInterpretationPrompt } from "../../src/prompts/lyricsInterpretation.js";
@@ -19,7 +21,11 @@ import { buildInterpretationPrompt } from "../../src/prompts/lyricsInterpretatio
 describe("Anthropic Client Contract", () => {
   describe("Model Constants", () => {
     it("should use Claude Sonnet 4.5 model", () => {
-      expect(CLAUDE_MODEL).toBe("claude-sonnet-4-5-20250929");
+      expect(CLAUDE_MODEL).toBe("claude-sonnet-4-5");
+    });
+
+    it("should use Claude Haiku 4.5 model for short descriptions", () => {
+      expect(CLAUDE_HAIKU_MODEL).toBe("claude-haiku-4-5-20251001");
     });
   });
 
@@ -56,10 +62,22 @@ describe("Anthropic Client Contract", () => {
             outputTokens: 50,
           };
         },
+        generateShortDescription: async (
+          prompt: string
+        ): Promise<ShortDescriptionResult> => {
+          return {
+            text: "A test short description.",
+            model: CLAUDE_HAIKU_MODEL,
+            inputTokens: 50,
+            outputTokens: 20,
+          };
+        },
       };
 
       expect(mockClient.generateInterpretation).toBeDefined();
       expect(typeof mockClient.generateInterpretation).toBe("function");
+      expect(mockClient.generateShortDescription).toBeDefined();
+      expect(typeof mockClient.generateShortDescription).toBe("function");
     });
   });
 

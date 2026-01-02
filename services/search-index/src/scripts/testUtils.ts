@@ -5,7 +5,7 @@
  * and generating fixtures for contract and integration tests.
  */
 
-import { randomBytes, randomUUID } from 'crypto';
+import { randomUUID } from 'crypto';
 import { qdrantClient } from '../client/qdrant.js';
 import { hashIsrcToUuid } from '../utils/isrcHash.js';
 import { getCollectionConfig } from '../schema/trackCollection.js';
