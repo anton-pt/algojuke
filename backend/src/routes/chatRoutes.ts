@@ -6,19 +6,46 @@
  */
 
 import { Router, Request, Response } from 'express';
+import { Repository } from 'typeorm';
 import { ChatService } from '../services/chatService.js';
 import { ChatStreamService, SSEEvent } from '../services/chatStreamService.js';
 import { ChatStreamRequestSchema } from '../schemas/chat.js';
 import { logger } from '../utils/logger.js';
 import { DataSource } from 'typeorm';
+import { DiscoveryService } from '../services/discoveryService.js';
+import { TrackMetadataService } from '../services/trackMetadataService.js';
+import { TidalService } from '../services/tidalService.js';
+import { BackendQdrantClient } from '../clients/qdrantClient.js';
+import { LibraryTrack } from '../entities/LibraryTrack.js';
+import { LibraryAlbum } from '../entities/LibraryAlbum.js';
+
+/**
+ * Options for chat routes with tool support
+ */
+interface ChatRoutesOptions {
+  dataSource: DataSource;
+  discoveryService: DiscoveryService;
+  trackMetadataService: TrackMetadataService;
+  tidalService: TidalService;
+  qdrantClient: BackendQdrantClient;
+  libraryTrackRepository: Repository<LibraryTrack>;
+  libraryAlbumRepository: Repository<LibraryAlbum>;
+}
 
 /**
  * Create chat routes with dependencies
  */
-export function createChatRoutes(dataSource: DataSource): Router {
+export function createChatRoutes(options: ChatRoutesOptions): Router {
   const router = Router();
-  const chatService = new ChatService(dataSource);
-  const streamService = new ChatStreamService(chatService);
+  const chatService = new ChatService(options.dataSource);
+  const streamService = new ChatStreamService(chatService, {
+    discoveryService: options.discoveryService,
+    trackMetadataService: options.trackMetadataService,
+    tidalService: options.tidalService,
+    qdrantClient: options.qdrantClient,
+    libraryTrackRepository: options.libraryTrackRepository,
+    libraryAlbumRepository: options.libraryAlbumRepository,
+  });
 
   /**
    * POST /api/chat/stream
@@ -29,7 +56,7 @@ export function createChatRoutes(dataSource: DataSource): Router {
     // Validate request body
     const validation = ChatStreamRequestSchema.safeParse(req.body);
     if (!validation.success) {
-      const errors = validation.error.errors.map(e => ({
+      const errors = validation.error.issues.map((e) => ({
         field: e.path.join('.'),
         message: e.message,
       }));
@@ -119,6 +146,6 @@ export function createChatRoutes(dataSource: DataSource): Router {
 /**
  * Express middleware to attach chat routes
  */
-export function chatRoutesMiddleware(dataSource: DataSource) {
-  return createChatRoutes(dataSource);
+export function chatRoutesMiddleware(options: ChatRoutesOptions) {
+  return createChatRoutes(options);
 }
