@@ -64,6 +64,29 @@ export interface IndexedTrackResult extends TrackResult {
   score: number; // Relevance score (0-1, higher is better)
   lyrics?: string; // Full lyrics text
   interpretation?: string; // AI-generated thematic interpretation
+  shortDescription?: string; // AI-generated short summary (max 500 chars)
+  audioFeatures?: AudioFeatures;
+}
+
+/**
+ * Optimized track result for agent semantic search
+ *
+ * Feature: 013-agent-tool-optimization
+ *
+ * Contains shortDescription instead of full interpretation/lyrics
+ * to reduce token usage. Use batchMetadata for full details.
+ */
+export interface OptimizedIndexedTrackResult {
+  isrc: string; // ISO 3901 ISRC
+  title: string;
+  artist: string;
+  album: string;
+  artworkUrl?: string; // Album cover URL
+  duration?: number; // Track duration in seconds
+  inLibrary: boolean; // Is track in user's library?
+  isIndexed: true; // Always true (from vector index)
+  score: number; // Relevance score (0-1, higher is better)
+  shortDescription: string | null; // Max 500 chars (from feature 012)
   audioFeatures?: AudioFeatures;
 }
 
@@ -93,10 +116,24 @@ interface BaseToolOutput {
 }
 
 /**
- * Semantic Search Tool Output
+ * Semantic Search Tool Output (Original - kept for compatibility)
  */
 export interface SemanticSearchOutput extends BaseToolOutput {
   tracks: IndexedTrackResult[];
+  query: string; // The original query (for display purposes)
+  totalFound: number; // Total number of tracks found
+}
+
+/**
+ * Optimized Semantic Search Tool Output
+ *
+ * Feature: 013-agent-tool-optimization
+ *
+ * Uses OptimizedIndexedTrackResult instead of IndexedTrackResult
+ * to reduce payload size by ~70%.
+ */
+export interface OptimizedSemanticSearchOutput extends BaseToolOutput {
+  tracks: OptimizedIndexedTrackResult[];
   query: string; // The original query (for display purposes)
   totalFound: number; // Total number of tracks found
 }
@@ -138,6 +175,7 @@ export interface AlbumTracksOutput extends BaseToolOutput {
  */
 export type ToolOutput =
   | SemanticSearchOutput
+  | OptimizedSemanticSearchOutput
   | TidalSearchOutput
   | BatchMetadataOutput
   | AlbumTracksOutput;

@@ -2,10 +2,31 @@
  * Semantic Search Tool
  *
  * Feature: 011-agent-tools
+ * Updated: 013-agent-tool-optimization
  *
  * Searches indexed tracks by mood, theme, or lyrical content using
- * hybrid vector + BM25 search. Returns tracks with full metadata
- * including lyrics, interpretation, and audio features.
+ * hybrid vector + BM25 search.
+ *
+ * ## Optimization (013): Two-Tier Metadata Approach
+ *
+ * Returns tracks with `shortDescription` (max 50 words) instead of
+ * full interpretation/lyrics to reduce token usage by ~70%.
+ *
+ * ### When to Use batchMetadata Instead
+ *
+ * Use the batchMetadata tool after semanticSearch when you need:
+ * - **Full lyrics** - To quote or reference specific lines
+ * - **Detailed interpretation** - For in-depth thematic analysis
+ * - **Artist intent** - To explain the meaning behind a track
+ *
+ * ### Typical Workflow
+ *
+ * 1. semanticSearch → Get 20+ tracks with shortDescription (scanning)
+ * 2. Select 3-5 key tracks based on relevance score and shortDescription
+ * 3. batchMetadata → Get full details for those 3-5 tracks (deep dive)
+ *
+ * This keeps the agent response fast (~70% token reduction) while
+ * maintaining recommendation quality for key tracks.
  */
 
 import { Repository } from 'typeorm';
@@ -14,11 +35,18 @@ import { TrackMetadataService } from '../trackMetadataService.js';
 import { LibraryTrack } from '../../entities/LibraryTrack.js';
 import { LibraryAlbum } from '../../entities/LibraryAlbum.js';
 import { SemanticSearchInputSchema, type SemanticSearchInput } from '../../schemas/agentTools.js';
-import type { SemanticSearchOutput, IndexedTrackResult, AudioFeatures } from '../../types/agentTools.js';
+import type {
+  SemanticSearchOutput,
+  IndexedTrackResult,
+  AudioFeatures,
+  OptimizedIndexedTrackResult,
+  OptimizedSemanticSearchOutput,
+} from '../../types/agentTools.js';
 import { isDiscoverySearchError, type DiscoverySearchResponse } from '../../types/discovery.js';
 import { createToolError, type ToolError } from '../../types/agentTools.js';
 import { getLibraryIsrcs } from './libraryStatus.js';
 import { logger } from '../../utils/logger.js';
+import { type OptimizedSearchResult } from '../../clients/qdrantClient.js';
 
 // -----------------------------------------------------------------------------
 // Types
@@ -110,28 +138,98 @@ async function enrichResults(
   return enrichedTracks;
 }
 
+/**
+ * Transform optimized search results to OptimizedIndexedTrackResult
+ *
+ * Feature: 013-agent-tool-optimization (T007)
+ *
+ * Unlike enrichResults, this function uses the optimized search results
+ * directly from hybridSearchOptimized without additional Qdrant calls.
+ * Returns shortDescription instead of interpretation/lyrics.
+ */
+function enrichResultsOptimized(
+  optimizedResults: OptimizedSearchResult[],
+  libraryIsrcs: Set<string>
+): OptimizedIndexedTrackResult[] {
+  return optimizedResults.map((result) => {
+    const isrc = result.isrc.toUpperCase();
+
+    // Build audio features if any are present
+    let audioFeatures: AudioFeatures | undefined;
+    if (
+      result.acousticness !== null ||
+      result.danceability !== null ||
+      result.energy !== null ||
+      result.instrumentalness !== null ||
+      result.key !== null ||
+      result.liveness !== null ||
+      result.loudness !== null ||
+      result.mode !== null ||
+      result.speechiness !== null ||
+      result.tempo !== null ||
+      result.valence !== null
+    ) {
+      audioFeatures = {
+        acousticness: result.acousticness ?? undefined,
+        danceability: result.danceability ?? undefined,
+        energy: result.energy ?? undefined,
+        instrumentalness: result.instrumentalness ?? undefined,
+        key: result.key ?? undefined,
+        liveness: result.liveness ?? undefined,
+        loudness: result.loudness ?? undefined,
+        mode: result.mode ?? undefined,
+        speechiness: result.speechiness ?? undefined,
+        tempo: result.tempo ?? undefined,
+        valence: result.valence ?? undefined,
+      };
+    }
+
+    return {
+      isrc,
+      title: result.title,
+      artist: result.artist,
+      album: result.album,
+      artworkUrl: undefined, // Not included in optimized payload
+      duration: undefined, // Not available from search
+      inLibrary: libraryIsrcs.has(isrc),
+      isIndexed: true as const,
+      score: result.score,
+      shortDescription: result.shortDescription,
+      audioFeatures,
+    };
+  });
+}
+
 // -----------------------------------------------------------------------------
 // Tool Implementation
 // -----------------------------------------------------------------------------
 
 /**
- * Execute semantic search tool
+ * Execute semantic search tool (optimized)
+ *
+ * Feature: 013-agent-tool-optimization (T008)
+ *
+ * Uses hybridSearchOptimized to return shortDescription instead of
+ * full interpretation/lyrics, reducing token usage by ~70%.
+ *
+ * For full track details, use the batchMetadata tool with specific ISRCs.
  *
  * @param input - Validated semantic search input
  * @param context - Required services and repositories
- * @returns SemanticSearchOutput with enriched track results
+ * @returns OptimizedSemanticSearchOutput with shortDescription tracks
  * @throws ToolError on validation or service errors
  */
 export async function executeSemanticSearch(
   input: SemanticSearchInput,
   context: SemanticSearchContext
-): Promise<SemanticSearchOutput> {
+): Promise<OptimizedSemanticSearchOutput> {
   const startTime = Date.now();
   const userId = context.userId || CURRENT_USER_ID;
 
   logger.info('semantic_search_tool_start', {
     query: input.query.slice(0, 100),
     limit: input.limit,
+    optimized: true, // T010: Log that we're using optimized path
   });
 
   // Validate input
@@ -146,21 +244,22 @@ export async function executeSemanticSearch(
   const { query, limit } = validationResult.data;
 
   try {
-    // Execute hybrid search via discovery service
-    const discoveryResult = await context.discoveryService.search({
+    // Execute OPTIMIZED hybrid search via discovery service (T008)
+    // This uses hybridSearchOptimized internally, returning only shortDescription
+    const discoveryResult = await context.discoveryService.searchOptimized({
       query,
-      page: 0,
-      pageSize: limit,
+      limit,
     });
 
     // Check for discovery errors
-    if (isDiscoverySearchError(discoveryResult)) {
-      const retryable = discoveryResult.retryable;
+    // Use inline check since optimized result has different type than DiscoverySearchResult
+    if ('code' in discoveryResult && 'retryable' in discoveryResult) {
+      const errorResult = discoveryResult as { code: string; message: string; retryable: boolean };
       throw createToolError(
-        discoveryResult.message,
-        retryable,
+        errorResult.message,
+        errorResult.retryable,
         false,
-        discoveryResult.code
+        errorResult.code
       );
     }
 
@@ -173,13 +272,13 @@ export async function executeSemanticSearch(
       context.libraryTrackRepository,
       context.libraryAlbumRepository,
       userId,
-      'semantic_search'
+      'semantic_search_optimized'
     );
 
-    // Enrich results with full metadata and library status
-    const enrichedTracks = await enrichResults(
-      discoveryResult,
-      context.trackMetadataService,
+    // Enrich results with library status (T007)
+    // Uses optimized enrichment - no additional Qdrant calls needed
+    const enrichedTracks = enrichResultsOptimized(
+      discoveryResult.results,
       libraryIsrcs
     );
 

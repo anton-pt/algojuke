@@ -475,4 +475,111 @@ describe('executeBatchMetadata', () => {
       });
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Feature 013-agent-tool-optimization: Short Description Support
+  // ---------------------------------------------------------------------------
+
+  describe('short description (feature 013)', () => {
+    it('T011: preserves interpretation and lyrics in output', async () => {
+      // Verifies that batch metadata still returns full interpretation/lyrics
+      // This is critical for the two-tier metadata approach
+      const input: BatchMetadataInput = {
+        isrcs: ['USRC17607839'],
+      };
+
+      const result = await executeBatchMetadata(input, mockContext);
+
+      // Full interpretation and lyrics MUST be present
+      expect(result.tracks[0].interpretation).toBe('A song about alienation and technology.');
+      expect(result.tracks[0].lyrics).toBe('Please could you stop the noise...');
+    });
+
+    it('T012: includes shortDescription when available', async () => {
+      // Mock response with short_description
+      mockQdrantClient.getTrackPayload.mockResolvedValue({
+        isrc: 'USRC17607839',
+        title: 'Paranoid Android',
+        artist: 'Radiohead',
+        album: 'OK Computer',
+        lyrics: 'Please could you stop the noise...',
+        interpretation: 'A song about alienation and technology.',
+        short_description: 'Epic 6-minute alt-rock masterpiece about alienation and dystopia.',
+        acousticness: 0.02,
+        danceability: 0.35,
+        energy: 0.65,
+        instrumentalness: 0.0,
+        key: 7,
+        liveness: 0.1,
+        loudness: -8.5,
+        mode: 0,
+        speechiness: 0.05,
+        tempo: 128.5,
+        valence: 0.25,
+      });
+
+      const input: BatchMetadataInput = {
+        isrcs: ['USRC17607839'],
+      };
+
+      const result = await executeBatchMetadata(input, mockContext);
+
+      // Short description should be included when available
+      expect(result.tracks[0].shortDescription).toBe('Epic 6-minute alt-rock masterpiece about alienation and dystopia.');
+    });
+
+    it('T012: shortDescription is undefined when not in payload', async () => {
+      // Original payload without short_description (pre-feature-012 track)
+      const input: BatchMetadataInput = {
+        isrcs: ['USRC17607839'],
+      };
+
+      const result = await executeBatchMetadata(input, mockContext);
+
+      // Short description should be undefined (not null) when not available
+      expect(result.tracks[0].shortDescription).toBeUndefined();
+    });
+
+    it('returns full data for on-demand metadata retrieval', async () => {
+      // This validates the two-tier approach:
+      // - semanticSearch returns shortDescription only
+      // - batchMetadata returns full interpretation + lyrics + shortDescription
+      mockQdrantClient.getTrackPayload.mockResolvedValue({
+        isrc: 'USRC17607839',
+        title: 'Paranoid Android',
+        artist: 'Radiohead',
+        album: 'OK Computer',
+        lyrics: 'Please could you stop the noise...',
+        interpretation: 'A song about alienation and technology.',
+        short_description: 'Epic alt-rock masterpiece.',
+        acousticness: 0.02,
+        danceability: 0.35,
+        energy: 0.65,
+        instrumentalness: 0.0,
+        key: 7,
+        liveness: 0.1,
+        loudness: -8.5,
+        mode: 0,
+        speechiness: 0.05,
+        tempo: 128.5,
+        valence: 0.25,
+      });
+
+      const input: BatchMetadataInput = {
+        isrcs: ['USRC17607839'],
+      };
+
+      const result = await executeBatchMetadata(input, mockContext);
+      const track = result.tracks[0];
+
+      // All three text fields should be present for on-demand retrieval
+      expect(track.interpretation).toBeDefined();
+      expect(track.lyrics).toBeDefined();
+      expect(track.shortDescription).toBeDefined();
+
+      // Full content should be available (not truncated)
+      expect(track.interpretation).toBe('A song about alienation and technology.');
+      expect(track.lyrics).toBe('Please could you stop the noise...');
+    });
+  });
 });

@@ -18,6 +18,68 @@ import type { TrackPayload } from "../types/trackMetadata.js";
 import type { SparseVector, DiscoveryResult } from "../types/discovery.js";
 
 /**
+ * Qdrant payload fields for optimized agent semantic search
+ *
+ * Feature: 013-agent-tool-optimization
+ *
+ * Excludes: interpretation, lyrics (large text fields)
+ * Includes: short_description (compact summary)
+ *
+ * Used with Qdrant's with_payload array syntax to reduce
+ * network transfer and token usage.
+ */
+export const AGENT_SEARCH_PAYLOAD_FIELDS = [
+  'isrc',
+  'title',
+  'artist',
+  'album',
+  'short_description',
+  'acousticness',
+  'danceability',
+  'energy',
+  'instrumentalness',
+  'key',
+  'liveness',
+  'loudness',
+  'mode',
+  'speechiness',
+  'tempo',
+  'valence',
+] as const;
+
+export type AgentSearchPayloadField = typeof AGENT_SEARCH_PAYLOAD_FIELDS[number];
+
+/**
+ * Optimized search result from hybridSearchOptimized
+ *
+ * Feature: 013-agent-tool-optimization
+ *
+ * Contains shortDescription instead of interpretation/lyrics.
+ * Includes all audio features for agent filtering.
+ */
+export interface OptimizedSearchResult {
+  id: string;
+  isrc: string;
+  title: string;
+  artist: string;
+  album: string;
+  score: number;
+  shortDescription: string | null;
+  // Audio features (all nullable)
+  acousticness: number | null;
+  danceability: number | null;
+  energy: number | null;
+  instrumentalness: number | null;
+  key: number | null;
+  liveness: number | null;
+  loudness: number | null;
+  mode: number | null;
+  speechiness: number | null;
+  tempo: number | null;
+  valence: number | null;
+}
+
+/**
  * Backend Qdrant client wrapper
  *
  * Provides simplified API for track existence checking.
@@ -271,6 +333,109 @@ export class BackendQdrantClient {
       return discoveryResults;
     } catch (error) {
       logger.error("qdrant_hybrid_search_failed", {
+        event: "qdrant_error",
+        queryCount: queries.length,
+        limit,
+        offset,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Perform optimized hybrid search with field selection
+   *
+   * Feature: 013-agent-tool-optimization
+   *
+   * Like hybridSearch but uses with_payload array to request only
+   * specific fields. This reduces network transfer and token usage
+   * for agent semantic search by excluding interpretation and lyrics.
+   *
+   * @param queries - Array of expanded queries with dense and sparse vectors
+   * @param options - Search options (limit, offset, prefetchLimit)
+   * @returns Array of optimized search results with short_description instead of interpretation/lyrics
+   */
+  async hybridSearchOptimized(
+    queries: Array<{
+      denseVector: number[];
+      sparseVector: SparseVector;
+    }>,
+    options: {
+      limit: number;
+      offset: number;
+      prefetchLimit?: number;
+    }
+  ): Promise<OptimizedSearchResult[]> {
+    const { limit, offset, prefetchLimit = offset + limit + 50 } = options;
+
+    try {
+      // Build prefetch array: dense + sparse for each query
+      const prefetch = queries.flatMap((q) => [
+        {
+          query: q.denseVector,
+          using: "interpretation_embedding",
+          limit: prefetchLimit,
+        },
+        {
+          query: {
+            indices: q.sparseVector.indices,
+            values: q.sparseVector.values,
+          },
+          using: "text_sparse",
+          limit: prefetchLimit,
+        },
+      ]);
+
+      // Execute hybrid search with RRF fusion and field selection
+      const result = await this.client.query(this.collection, {
+        prefetch,
+        query: { fusion: "rrf" },
+        limit,
+        offset,
+        with_payload: AGENT_SEARCH_PAYLOAD_FIELDS as unknown as string[],
+      });
+
+      // Transform results to OptimizedSearchResult format
+      const optimizedResults: OptimizedSearchResult[] = [];
+      const seenIsrcs = new Set<string>();
+
+      for (const point of result.points) {
+        const payload = point.payload as Record<string, unknown>;
+        const isrc = String(payload.isrc ?? "");
+
+        // Deduplicate by ISRC (keep first/highest scored)
+        if (seenIsrcs.has(isrc.toUpperCase())) {
+          continue;
+        }
+        seenIsrcs.add(isrc.toUpperCase());
+
+        optimizedResults.push({
+          id: String(point.id),
+          isrc,
+          title: String(payload.title ?? ""),
+          artist: String(payload.artist ?? ""),
+          album: String(payload.album ?? ""),
+          score: point.score ?? 0,
+          shortDescription: payload.short_description != null ? String(payload.short_description) : null,
+          // Audio features
+          acousticness: typeof payload.acousticness === 'number' ? payload.acousticness : null,
+          danceability: typeof payload.danceability === 'number' ? payload.danceability : null,
+          energy: typeof payload.energy === 'number' ? payload.energy : null,
+          instrumentalness: typeof payload.instrumentalness === 'number' ? payload.instrumentalness : null,
+          key: typeof payload.key === 'number' ? payload.key : null,
+          liveness: typeof payload.liveness === 'number' ? payload.liveness : null,
+          loudness: typeof payload.loudness === 'number' ? payload.loudness : null,
+          mode: typeof payload.mode === 'number' ? payload.mode : null,
+          speechiness: typeof payload.speechiness === 'number' ? payload.speechiness : null,
+          tempo: typeof payload.tempo === 'number' ? payload.tempo : null,
+          valence: typeof payload.valence === 'number' ? payload.valence : null,
+        });
+      }
+
+      return optimizedResults;
+    } catch (error) {
+      logger.error("qdrant_hybrid_search_optimized_failed", {
         event: "qdrant_error",
         queryCount: queries.length,
         limit,

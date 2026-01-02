@@ -35,6 +35,7 @@ export const SemanticSearchInputSchema = z.object({
 
   /**
    * Maximum number of results to return.
+   * Default increased to 50 (feature 013) for better initial scanning.
    */
   limit: z
     .number()
@@ -42,7 +43,7 @@ export const SemanticSearchInputSchema = z.object({
     .min(1)
     .max(50)
     .optional()
-    .default(20),
+    .default(50),
 });
 
 export type SemanticSearchInput = z.infer<typeof SemanticSearchInputSchema>;
