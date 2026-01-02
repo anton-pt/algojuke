@@ -23,6 +23,7 @@ Auto-generated from all feature plans. Last updated: 2025-12-27
 - TypeScript 5.3.3 / Node.js 20.x (backend), TypeScript 5.3.3 / React 18.2.0 (frontend) + Apollo Server 4.x + Apollo Client 3.x (GraphQL), @qdrant/js-client-rest (Qdrant), Vercel AI SDK (`ai`, `@ai-sdk/anthropic`), axios (HTTP), Zod 3.x (validation), Vitest (testing) (009-semantic-discovery-search)
 - Qdrant vector database (hybrid search with dense vectors + BM25), no new persistent storage needed (009-semantic-discovery-search)
 - PostgreSQL (via TypeORM, same database as library management) (010-discover-chat)
+- PostgreSQL (via TypeORM - conversations, messages with tool content blocks), Qdrant (vector index) (011-agent-tools)
 
 ## Project Structure
 
@@ -207,11 +208,67 @@ Access at http://localhost:3000 when Langfuse is running.
 | `LANGFUSE_SECRET_KEY` | Yes | - | Langfuse secret key |
 | `LANGFUSE_BASEURL` | No | `http://localhost:3000` | Langfuse server URL |
 
+### Chat Service (Discover Chat)
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `CHAT_MODEL` | No | `claude-haiku-4-5-20251001` | Claude model for chat (haiku/sonnet/opus) |
+| `CHAT_MAX_TOKENS` | No | `4096` | Maximum tokens for chat responses |
+
 ## Recent Changes
+- 011-agent-tools: Added TypeScript 5.3.3 / Node.js 20.x (backend), TypeScript 5.3.3 / React 18.2.0 (frontend)
 - 010-discover-chat: Added TypeScript 5.3.3 / Node.js 20.x (backend), TypeScript 5.3.3 / React 18.2.0 (frontend)
 - 009-semantic-discovery-search: Added TypeScript 5.3.3 / Node.js 20.x (backend), TypeScript 5.3.3 / React 18.2.0 (frontend) + Apollo Server 4.x + Apollo Client 3.x (GraphQL), @qdrant/js-client-rest (Qdrant), Vercel AI SDK (`ai`, `@ai-sdk/anthropic`), axios (HTTP), Zod 3.x (validation), Vitest (testing)
-- 008-track-metadata-display: Added TypeScript 5.3.3 / Node.js 20.x (backend), TypeScript 5.3.3 / React 18.2.0 (frontend) + Apollo Server 4.x + Apollo Client 3.x (GraphQL), Qdrant JS client, Zod (validation), Vitest (testing)
 
 
 <!-- MANUAL ADDITIONS START -->
+
+## Agent Tools (Feature 011)
+
+The Discover Chat agent has access to the following tools for music discovery:
+
+### Available Tools
+
+| Tool | Description | Use Case |
+|------|-------------|----------|
+| `semanticSearch` | Search indexed library by mood/theme | "Find melancholic songs about loss" |
+| `tidalSearch` | Search Tidal catalogue | "What albums does Radiohead have?" |
+| `albumTracks` | Get tracks from a Tidal album | After finding an album, see its tracks |
+| `batchMetadata` | Get full metadata for ISRCs | Enrich search results with lyrics/features |
+
+### Agent Architecture
+
+```text
+backend/src/
+├── services/
+│   ├── chatStreamService.ts           # Main agent orchestration with Vercel AI SDK v6
+│   └── agentTools/
+│       ├── semanticSearchTool.ts      # Qdrant hybrid search tool
+│       ├── tidalSearchTool.ts         # Tidal API search tool
+│       ├── albumTracksTool.ts         # Album track listing tool
+│       ├── batchMetadataTool.ts       # Batch ISRC metadata lookup
+│       ├── retry.ts                   # Retry wrapper with exponential backoff
+│       └── tracing.ts                 # Langfuse tracing for tool calls
+├── schemas/
+│   └── agentTools.ts                  # Zod schemas for tool inputs
+└── types/
+    └── agentTools.ts                  # TypeScript types for tool outputs
+```
+
+### Tool Testing
+
+```bash
+# Run agent tool tests
+cd backend
+npm test -- tests/contract/agentTools/
+
+# Run specific tool tests
+npm test -- tests/contract/agentTools/tidalSearchTool.test.ts
+npm test -- tests/contract/agentTools/batchMetadataTool.test.ts
+```
+
+### Frontend Integration
+
+Tool invocations are streamed via SSE and displayed inline in chat messages using the `ToolInvocation` component with expand/collapse functionality.
+
 <!-- MANUAL ADDITIONS END -->

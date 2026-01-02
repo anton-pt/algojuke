@@ -78,10 +78,14 @@ export type TrackIngestionRequestedEvent = z.infer<
 
 /**
  * Backend event schemas for Inngest client
+ *
+ * Note: Type assertion is needed because Inngest's types expect Zod v3
+ * but we're using Zod v4. Runtime behavior is unchanged.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const backendEvents = new EventSchemas().fromZod({
   "track/ingestion.requested": {
-    data: TrackIngestionRequestedEventSchema,
+    data: TrackIngestionRequestedEventSchema as any,
   },
 });
 

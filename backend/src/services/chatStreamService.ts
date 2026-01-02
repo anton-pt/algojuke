@@ -3,43 +3,129 @@
  *
  * Handles AI response generation using Claude via Vercel AI SDK.
  * Integrates with Langfuse for observability.
+ *
+ * Feature 011-agent-tools:
+ * - Tool definitions for semantic search, Tidal search, album tracks
+ * - Multi-step agent workflows with stopWhen (AI SDK v6)
+ * - SSE streaming for tool invocations
  */
 
-import { streamText } from 'ai';
+import { streamText, tool, stepCountIs } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
+import { Repository } from 'typeorm';
 import { ChatService } from './chatService.js';
 import { Message, ContentBlock } from '../entities/Message.js';
-import { getLangfuseClient, flushLangfuse } from '../utils/langfuse.js';
+import { getLangfuseClient, flushLangfuse, type DiscoveryTrace } from '../utils/langfuse.js';
 import { logger } from '../utils/logger.js';
+
+// Agent tool imports
+import { DiscoveryService } from './discoveryService.js';
+import { TrackMetadataService } from './trackMetadataService.js';
+import { TidalService } from './tidalService.js';
+import { BackendQdrantClient } from '../clients/qdrantClient.js';
+import { LibraryTrack } from '../entities/LibraryTrack.js';
+import { LibraryAlbum } from '../entities/LibraryAlbum.js';
+import {
+  SemanticSearchInputSchema,
+  TidalSearchInputSchema,
+  AlbumTracksInputSchema,
+  BatchMetadataInputSchema,
+  type SemanticSearchInput,
+  type TidalSearchInput,
+  type AlbumTracksInput,
+  type BatchMetadataInput,
+} from '../schemas/agentTools.js';
+import type {
+  SemanticSearchOutput,
+  TidalSearchOutput,
+  AlbumTracksOutput,
+  BatchMetadataOutput,
+  ToolError,
+} from '../types/agentTools.js';
+import { executeSemanticSearch, type SemanticSearchContext } from './agentTools/semanticSearchTool.js';
+import { executeTidalSearch, type TidalSearchContext } from './agentTools/tidalSearchTool.js';
+import { executeAlbumTracks, type AlbumTracksContext } from './agentTools/albumTracksTool.js';
+import { executeBatchMetadata, type BatchMetadataContext } from './agentTools/batchMetadataTool.js';
+import { executeWithRetry } from './agentTools/retry.js';
+import { createToolSpan } from './agentTools/tracing.js';
 
 /**
  * Model ID for chat responses
- * Using the alias for better SDK compatibility
+ *
+ * Configurable via CHAT_MODEL env var. Defaults to claude-haiku for cost efficiency.
+ * Set to 'claude-sonnet-4-5' for better reasoning on complex agentic tasks.
+ *
+ * Valid models:
+ * - claude-haiku-4-5-20251001 (default, fast/cheap)
+ * - claude-sonnet-4-5-20241022 (better reasoning)
+ * - claude-opus-4-5-20251101 (best quality)
  */
-const CHAT_MODEL = 'claude-sonnet-4-5';
+const CHAT_MODEL = process.env.CHAT_MODEL || 'claude-haiku-4-5-20251001';
 
 /**
  * Maximum tokens for response generation
  */
-const MAX_TOKENS = 4096;
+const MAX_TOKENS = parseInt(process.env.CHAT_MAX_TOKENS || '4096', 10);
 
 /**
- * System prompt for music discovery assistant
+ * Maximum steps for agent tool loops
  */
-const SYSTEM_PROMPT = `You are a music discovery assistant for AlgoJuke. Your role is to help users discover music that matches their mood and preferences.
+const MAX_STEPS = 20;
 
-Key capabilities:
-- Recommend music based on mood, theme, or emotional context
-- Discuss songs, artists, albums, and musical styles
-- Help users explore their existing music library in new ways
-- Suggest tracks based on lyric themes and interpretations
+/**
+ * Mock user ID for MVP (single-user system)
+ */
+const CURRENT_USER_ID = '00000000-0000-0000-0000-000000000001';
 
-Personality:
-- Knowledgeable and passionate about music
+/**
+ * System prompt for music discovery assistant with tool instructions
+ */
+const SYSTEM_PROMPT = `You are a music discovery assistant for AlgoJuke. Your role is to help users discover music that matches their mood and preferences, creating playlists that blend familiar tracks from their library with new discoveries.
+
+## Available Tools
+
+You have access to the following tools to help users discover music:
+
+### semanticSearch
+Search the user's indexed music library by mood, theme, or lyric content. Use this when users describe what kind of music they want (e.g., "melancholic songs about lost love", "upbeat summer vibes"). Returns tracks with full metadata including lyrics interpretation and audio features.
+
+### tidalSearch
+Search the Tidal music catalogue for artists, albums, or tracks. Use this when users want to discover new music or find specific artists/albums (e.g., "What albums does Radiohead have?", "Find songs by Björk"). Results include library and indexing status flags.
+
+### albumTracks
+Get all tracks from a specific album by its Tidal album ID. Use after tidalSearch to see what tracks are on an album the user is interested in.
+
+### batchMetadata
+Get full metadata (lyrics, interpretation, audio features) for multiple tracks by their ISRCs. Use this to get detailed information about specific tracks you want to recommend. Maximum 100 ISRCs per request. Useful when you have ISRCs from Tidal search results and want to check if they have rich metadata in the index.
+
+## Workflow Guidelines
+
+### Building Playlists
+When a user asks for music recommendations or a playlist:
+1. **Start with semanticSearch**: Find tracks in their library that match the mood/theme
+2. **Expand with tidalSearch**: Search for new discoveries that complement the library tracks
+3. **Mix familiar and new**: Create a blend of tracks the user knows with new discoveries
+4. **Explain your choices**: Tell the user why each track fits their request
+
+### Multi-Tool Workflows
+- Use multiple tools together to build comprehensive recommendations
+- After finding albums with tidalSearch, use albumTracks to explore specific albums
+- Use batchMetadata when you need detailed info about tracks you've found via Tidal
+
+### Result Presentation
+- Organize results clearly (e.g., "From Your Library" vs "New Discoveries")
+- Highlight tracks that are already indexed (richer metadata available)
+- Explain thematic connections between tracks
+
+## Track Status Flags
+- \`inLibrary: true\` = Track is in user's library
+- \`isIndexed: true\` = Track has full metadata (lyrics, interpretation, audio features)
+
+## Personality
+- Knowledgeable and passionate about music across all genres
 - Conversational but focused on music discovery
-- Ask clarifying questions to understand what the user is looking for
-
-Note: In this version, you don't have access to search tools. Engage in conversation about music and provide general recommendations. Future updates will add the ability to search the user's library and Tidal.`;
+- Thoughtful in explaining why certain tracks match the user's request
+- Enthusiastic about helping users discover new music they'll love`;
 
 /**
  * SSE Event types
@@ -70,7 +156,47 @@ export interface ErrorEvent {
   retryable: boolean;
 }
 
-export type SSEEvent = MessageStartEvent | TextDeltaEvent | MessageEndEvent | ErrorEvent;
+/**
+ * Tool call start event - sent when tool execution begins
+ */
+export interface ToolCallStartEvent {
+  type: 'tool_call_start';
+  toolCallId: string;
+  toolName: string;
+  input: unknown;
+}
+
+/**
+ * Tool call end event - sent when tool completes successfully
+ */
+export interface ToolCallEndEvent {
+  type: 'tool_call_end';
+  toolCallId: string;
+  summary: string;
+  resultCount: number;
+  durationMs: number;
+  output?: unknown;
+}
+
+/**
+ * Tool call error event - sent when tool execution fails
+ */
+export interface ToolCallErrorEvent {
+  type: 'tool_call_error';
+  toolCallId: string;
+  error: string;
+  retryable: boolean;
+  wasRetried: boolean;
+}
+
+export type SSEEvent =
+  | MessageStartEvent
+  | TextDeltaEvent
+  | MessageEndEvent
+  | ErrorEvent
+  | ToolCallStartEvent
+  | ToolCallEndEvent
+  | ToolCallErrorEvent;
 
 /**
  * Stream response result
@@ -83,13 +209,459 @@ export interface StreamResult {
 }
 
 /**
+ * Ordered content part for tracking content in streaming order
+ */
+type OrderedContentPart =
+  | { type: 'text'; content: string }
+  | { type: 'tool'; toolCallId: string };
+
+/**
+ * Tool execution context passed to tool functions
+ */
+interface ToolContext {
+  discoveryService: DiscoveryService;
+  trackMetadataService: TrackMetadataService;
+  tidalService: TidalService;
+  qdrantClient: BackendQdrantClient;
+  libraryTrackRepository: Repository<LibraryTrack>;
+  libraryAlbumRepository: Repository<LibraryAlbum>;
+  userId: string;
+  onEvent: (event: SSEEvent) => void;
+  trace: DiscoveryTrace | null;
+  // Maps for tracking tool calls for persistence (Task 4.2)
+  toolCallsMap: Map<string, { name: string; input: unknown }>;
+  toolResultsMap: Map<string, unknown>;
+}
+
+/**
  * Chat Stream Service for handling AI response generation
  */
 export class ChatStreamService {
   private chatService: ChatService;
+  private discoveryService?: DiscoveryService;
+  private trackMetadataService?: TrackMetadataService;
+  private tidalService?: TidalService;
+  private qdrantClient?: BackendQdrantClient;
+  private libraryTrackRepository?: Repository<LibraryTrack>;
+  private libraryAlbumRepository?: Repository<LibraryAlbum>;
 
-  constructor(chatService: ChatService) {
+  constructor(
+    chatService: ChatService,
+    options?: {
+      discoveryService?: DiscoveryService;
+      trackMetadataService?: TrackMetadataService;
+      tidalService?: TidalService;
+      qdrantClient?: BackendQdrantClient;
+      libraryTrackRepository?: Repository<LibraryTrack>;
+      libraryAlbumRepository?: Repository<LibraryAlbum>;
+    }
+  ) {
     this.chatService = chatService;
+    this.discoveryService = options?.discoveryService;
+    this.trackMetadataService = options?.trackMetadataService;
+    this.tidalService = options?.tidalService;
+    this.qdrantClient = options?.qdrantClient;
+    this.libraryTrackRepository = options?.libraryTrackRepository;
+    this.libraryAlbumRepository = options?.libraryAlbumRepository;
+  }
+
+  /**
+   * Create tool definitions for agent
+   *
+   * Uses the tool() helper from AI SDK. Type inference is handled by the
+   * `any` type assertion in streamOptions to avoid memory issues.
+   */
+  private createTools(context: ToolContext) {
+    const semanticSearchTool = tool({
+      description: 'Search indexed tracks in user\'s library by mood, theme, or lyrics description. Returns tracks with full metadata including lyrics interpretation and audio features.',
+      inputSchema: SemanticSearchInputSchema,
+      execute: async (input, options) => {
+        const typedInput = input as SemanticSearchInput;
+        const toolCallId = options.toolCallId;
+
+        // Track tool call for persistence (Task 4.2)
+        context.toolCallsMap.set(toolCallId, { name: 'semanticSearch', input });
+
+        // Emit tool_call_start
+        context.onEvent({
+          type: 'tool_call_start',
+          toolCallId,
+          toolName: 'semanticSearch',
+          input,
+        });
+
+        const span = createToolSpan(context.trace, {
+          toolName: 'semanticSearch',
+          toolCallId,
+          input,
+        });
+
+        const startTime = Date.now();
+
+        try {
+          const semanticContext: SemanticSearchContext = {
+            discoveryService: context.discoveryService,
+            trackMetadataService: context.trackMetadataService,
+            libraryTrackRepository: context.libraryTrackRepository,
+            libraryAlbumRepository: context.libraryAlbumRepository,
+            userId: context.userId,
+          };
+
+          const { result, wasRetried } = await executeWithRetry(
+            async () => executeSemanticSearch(typedInput, semanticContext),
+            'semanticSearch'
+          );
+
+          const durationMs = Date.now() - startTime;
+
+          span.endSuccess({
+            summary: result.summary,
+            resultCount: result.totalFound,
+            durationMs,
+            metadata: { wasRetried },
+          });
+
+          // Track tool result for persistence (Task 4.2)
+          context.toolResultsMap.set(toolCallId, result);
+
+          // Emit tool_call_end with output for frontend expand/collapse
+          context.onEvent({
+            type: 'tool_call_end',
+            toolCallId,
+            summary: result.summary,
+            resultCount: result.totalFound,
+            durationMs,
+            output: result,
+          });
+
+          return result;
+        } catch (error) {
+          const durationMs = Date.now() - startTime;
+          const toolError = error as ToolError;
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          const retryable = 'retryable' in toolError ? toolError.retryable : true;
+          const wasRetried = 'wasRetried' in toolError ? toolError.wasRetried : false;
+
+          span.endError({
+            error: errorMessage,
+            retryable,
+            wasRetried,
+            durationMs,
+          });
+
+          // Track error result for persistence (Task 4.2)
+          context.toolResultsMap.set(toolCallId, { error: errorMessage, retryable });
+
+          // Emit tool_call_error
+          context.onEvent({
+            type: 'tool_call_error',
+            toolCallId,
+            error: errorMessage,
+            retryable,
+            wasRetried,
+          });
+
+          throw error;
+        }
+      },
+    });
+
+    const tidalSearchTool = tool({
+      description: 'Search the Tidal music catalogue for tracks, albums, or artists. Returns results with library status (whether already in user\'s library) and index status (whether fully analyzed).',
+      inputSchema: TidalSearchInputSchema,
+      execute: async (input, options) => {
+        const typedInput = input as TidalSearchInput;
+        const toolCallId = options.toolCallId;
+
+        // Track tool call for persistence (Task 4.2)
+        context.toolCallsMap.set(toolCallId, { name: 'tidalSearch', input });
+
+        context.onEvent({
+          type: 'tool_call_start',
+          toolCallId,
+          toolName: 'tidalSearch',
+          input,
+        });
+
+        const span = createToolSpan(context.trace, {
+          toolName: 'tidalSearch',
+          toolCallId,
+          input,
+        });
+
+        const startTime = Date.now();
+
+        try {
+          const tidalContext: TidalSearchContext = {
+            tidalService: context.tidalService,
+            qdrantClient: context.qdrantClient,
+            libraryTrackRepository: context.libraryTrackRepository,
+            libraryAlbumRepository: context.libraryAlbumRepository,
+            userId: context.userId,
+          };
+
+          const { result, wasRetried } = await executeWithRetry(
+            async () => executeTidalSearch(typedInput, tidalContext),
+            'tidalSearch'
+          );
+
+          const durationMs = Date.now() - startTime;
+          const resultCount =
+            (result.totalFound.tracks || 0) + (result.totalFound.albums || 0);
+
+          span.endSuccess({
+            summary: result.summary,
+            resultCount,
+            durationMs,
+            metadata: { wasRetried },
+          });
+
+          // Track tool result for persistence (Task 4.2)
+          context.toolResultsMap.set(toolCallId, result);
+
+          context.onEvent({
+            type: 'tool_call_end',
+            toolCallId,
+            summary: result.summary,
+            resultCount,
+            durationMs,
+            output: result,
+          });
+
+          return result;
+        } catch (error) {
+          const durationMs = Date.now() - startTime;
+          const toolError = error as ToolError;
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          const retryable = 'retryable' in toolError ? toolError.retryable : true;
+          const wasRetried = 'wasRetried' in toolError ? toolError.wasRetried : false;
+
+          span.endError({
+            error: errorMessage,
+            retryable,
+            wasRetried,
+            durationMs,
+          });
+
+          // Track error result for persistence (Task 4.2)
+          context.toolResultsMap.set(toolCallId, { error: errorMessage, retryable });
+
+          context.onEvent({
+            type: 'tool_call_error',
+            toolCallId,
+            error: errorMessage,
+            retryable,
+            wasRetried,
+          });
+
+          throw error;
+        }
+      },
+    });
+
+    const albumTracksTool = tool({
+      description: 'Get all tracks from a specific album by its Tidal album ID. Use this after tidalSearch to see the full track listing of an album.',
+      inputSchema: AlbumTracksInputSchema,
+      execute: async (input, options) => {
+        const typedInput = input as AlbumTracksInput;
+        const toolCallId = options.toolCallId;
+
+        // Track tool call for persistence (Task 4.2)
+        context.toolCallsMap.set(toolCallId, { name: 'albumTracks', input });
+
+        context.onEvent({
+          type: 'tool_call_start',
+          toolCallId,
+          toolName: 'albumTracks',
+          input,
+        });
+
+        const span = createToolSpan(context.trace, {
+          toolName: 'albumTracks',
+          toolCallId,
+          input,
+        });
+
+        const startTime = Date.now();
+
+        try {
+          const albumContext: AlbumTracksContext = {
+            tidalService: context.tidalService,
+            qdrantClient: context.qdrantClient,
+            libraryTrackRepository: context.libraryTrackRepository,
+            libraryAlbumRepository: context.libraryAlbumRepository,
+            userId: context.userId,
+          };
+
+          const { result, wasRetried } = await executeWithRetry(
+            async () => executeAlbumTracks(typedInput, albumContext),
+            'albumTracks'
+          );
+
+          const durationMs = Date.now() - startTime;
+          const resultCount = result.tracks.length;
+
+          span.endSuccess({
+            summary: result.summary,
+            resultCount,
+            durationMs,
+            metadata: { wasRetried },
+          });
+
+          // Track tool result for persistence (Task 4.2)
+          context.toolResultsMap.set(toolCallId, result);
+
+          context.onEvent({
+            type: 'tool_call_end',
+            toolCallId,
+            summary: result.summary,
+            resultCount,
+            durationMs,
+            output: result,
+          });
+
+          return result;
+        } catch (error) {
+          const durationMs = Date.now() - startTime;
+          const toolError = error as ToolError;
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          const retryable = 'retryable' in toolError ? toolError.retryable : true;
+          const wasRetried = 'wasRetried' in toolError ? toolError.wasRetried : false;
+
+          span.endError({
+            error: errorMessage,
+            retryable,
+            wasRetried,
+            durationMs,
+          });
+
+          // Track error result for persistence (Task 4.2)
+          context.toolResultsMap.set(toolCallId, { error: errorMessage, retryable });
+
+          context.onEvent({
+            type: 'tool_call_error',
+            toolCallId,
+            error: errorMessage,
+            retryable,
+            wasRetried,
+          });
+
+          throw error;
+        }
+      },
+    });
+
+    const batchMetadataTool = tool({
+      description: 'Get full metadata (lyrics, interpretation, audio features) for multiple tracks by their ISRCs. Use this to get detailed information about specific tracks you want to recommend. Maximum 100 ISRCs per request.',
+      inputSchema: BatchMetadataInputSchema,
+      execute: async (input, options) => {
+        const typedInput = input as BatchMetadataInput;
+        const toolCallId = options.toolCallId;
+
+        // Track tool call for persistence (Task 4.2)
+        context.toolCallsMap.set(toolCallId, { name: 'batchMetadata', input });
+
+        context.onEvent({
+          type: 'tool_call_start',
+          toolCallId,
+          toolName: 'batchMetadata',
+          input,
+        });
+
+        const span = createToolSpan(context.trace, {
+          toolName: 'batchMetadata',
+          toolCallId,
+          input,
+        });
+
+        const startTime = Date.now();
+
+        try {
+          const batchContext: BatchMetadataContext = {
+            qdrantClient: context.qdrantClient,
+            libraryTrackRepository: context.libraryTrackRepository,
+            libraryAlbumRepository: context.libraryAlbumRepository,
+            userId: context.userId,
+          };
+
+          const { result, wasRetried } = await executeWithRetry(
+            async () => executeBatchMetadata(typedInput, batchContext),
+            'batchMetadata'
+          );
+
+          const durationMs = Date.now() - startTime;
+          const resultCount = result.tracks.length;
+
+          span.endSuccess({
+            summary: result.summary,
+            resultCount,
+            durationMs,
+            metadata: { wasRetried, notFoundCount: result.notFound.length },
+          });
+
+          // Track tool result for persistence (Task 4.2)
+          context.toolResultsMap.set(toolCallId, result);
+
+          context.onEvent({
+            type: 'tool_call_end',
+            toolCallId,
+            summary: result.summary,
+            resultCount,
+            durationMs,
+            output: result,
+          });
+
+          return result;
+        } catch (error) {
+          const durationMs = Date.now() - startTime;
+          const toolError = error as ToolError;
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          const retryable = 'retryable' in toolError ? toolError.retryable : true;
+          const wasRetried = 'wasRetried' in toolError ? toolError.wasRetried : false;
+
+          span.endError({
+            error: errorMessage,
+            retryable,
+            wasRetried,
+            durationMs,
+          });
+
+          // Track error result for persistence (Task 4.2)
+          context.toolResultsMap.set(toolCallId, { error: errorMessage, retryable });
+
+          context.onEvent({
+            type: 'tool_call_error',
+            toolCallId,
+            error: errorMessage,
+            retryable,
+            wasRetried,
+          });
+
+          throw error;
+        }
+      },
+    });
+
+    return {
+      semanticSearch: semanticSearchTool,
+      tidalSearch: tidalSearchTool,
+      albumTracks: albumTracksTool,
+      batchMetadata: batchMetadataTool,
+    };
+  }
+
+  /**
+   * Check if tools are available
+   */
+  private hasToolSupport(): boolean {
+    return !!(
+      this.discoveryService &&
+      this.trackMetadataService &&
+      this.tidalService &&
+      this.qdrantClient &&
+      this.libraryTrackRepository &&
+      this.libraryAlbumRepository
+    );
   }
 
   /**
@@ -110,9 +682,18 @@ export class ChatStreamService {
     let conversation: { id: string };
     let existingMessages: Message[] = [];
     let assistantMessageId = '';
-    let fullContent = '';
     let inputTokens = 0;
     let outputTokens = 0;
+    const contentBlocks: ContentBlock[] = [];
+
+    // Track tool calls for persistence
+    const toolCallsMap = new Map<string, { name: string; input: unknown }>();
+    const toolResultsMap = new Map<string, unknown>();
+
+    // Track content in streaming order for correct persistence
+    // This ensures tools appear inline where they were called, not grouped at end
+    const orderedParts: OrderedContentPart[] = [];
+    let currentTextBuffer = '';
 
     try {
       // Create or get conversation
@@ -145,6 +726,7 @@ export class ChatStreamService {
       const llmMessages = this.buildLLMMessages(existingMessages, message);
 
       // Create Langfuse trace with conversation as session
+      // Note: Per-step LLM generation tracking is handled by OpenTelemetry via experimental_telemetry
       const langfuseClient = getLangfuseClient();
       const trace = langfuseClient?.trace({
         name: 'chat-message',
@@ -152,15 +734,9 @@ export class ChatStreamService {
         metadata: {
           messageContent: message.slice(0, 100),
           messageCount: llmMessages.length,
+          toolsEnabled: this.hasToolSupport(),
         },
-        tags: ['chat', 'discover'],
-      });
-
-      // Create generation span
-      const generation = trace?.generation({
-        name: 'claude-response',
-        model: CHAT_MODEL,
-        input: llmMessages,
+        tags: ['chat', 'discover', ...(this.hasToolSupport() ? ['tools'] : [])],
       });
 
       // Send message_start event
@@ -181,6 +757,7 @@ export class ChatStreamService {
         conversationId,
         model: CHAT_MODEL,
         messageCount: llmMessages.length,
+        toolsEnabled: this.hasToolSupport(),
       });
 
       // Check if signal is already aborted before making API call
@@ -189,25 +766,56 @@ export class ChatStreamService {
         return null;
       }
 
-      const result = streamText({
+      // Create tool context if tools are available
+      const toolContext: ToolContext | null = this.hasToolSupport()
+        ? {
+            discoveryService: this.discoveryService!,
+            trackMetadataService: this.trackMetadataService!,
+            tidalService: this.tidalService!,
+            qdrantClient: this.qdrantClient!,
+            libraryTrackRepository: this.libraryTrackRepository!,
+            libraryAlbumRepository: this.libraryAlbumRepository!,
+            userId: CURRENT_USER_ID,
+            onEvent,
+            trace: trace ?? null,
+            // Task 4.2: Pass tracking maps for persistence
+            toolCallsMap,
+            toolResultsMap,
+          }
+        : null;
+
+      // Build streamText options - conditionally include tools
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const streamOptions: any = {
         model: anthropic(CHAT_MODEL),
         system: SYSTEM_PROMPT,
         messages: llmMessages,
         maxOutputTokens: MAX_TOKENS,
         abortSignal: signal,
-        onError: ({ error }) => {
+        // Enable OpenTelemetry integration for per-step Langfuse tracing
+        // This automatically creates generation spans for each LLM call with system prompt
+        experimental_telemetry: {
+          isEnabled: true,
+          functionId: 'chat-stream',
+          metadata: {
+            conversationId,
+            messageCount: llmMessages.length,
+            toolsEnabled: this.hasToolSupport(),
+          },
+        },
+        onError: ({ error }: { error: unknown }) => {
           logger.error('chat_stream_on_error', {
             conversationId,
             error: error instanceof Error ? error.message : String(error),
           });
         },
-        onChunk: ({ chunk }) => {
-          logger.info('chat_stream_on_chunk', {
+        onChunk: ({ chunk }: { chunk: { type: string } }) => {
+          logger.debug('chat_stream_on_chunk', {
             conversationId,
             chunkType: chunk.type,
           });
         },
-        onFinish: ({ text, finishReason, usage, response }) => {
+        onFinish: ({ text, finishReason, usage, response }: { text?: string; finishReason: string; usage: unknown; response?: { id: string } }) => {
           logger.info('chat_stream_on_finish', {
             conversationId,
             finishReason,
@@ -216,71 +824,162 @@ export class ChatStreamService {
             responseId: response?.id,
           });
         },
-      });
+      };
+
+      // Add tools if tool support is available
+      // In AI SDK v6, use stopWhen: stepCountIs(N) instead of maxSteps for multi-step tool calling
+      if (toolContext) {
+        streamOptions.tools = this.createTools(toolContext);
+        streamOptions.stopWhen = stepCountIs(MAX_STEPS);
+      }
+
+      const result = streamText(streamOptions);
 
       logger.info('chat_stream_llm_started', { conversationId });
 
-      // Stream text chunks
+      // Stream all events including tool calls using fullStream for multi-step support
+      // Using fullStream instead of textStream is required for stopWhen to work properly
+      // See: https://ai-sdk.dev/docs/reference/ai-sdk-core/stream-text
       let chunkCount = 0;
       let wasAborted = false;
       try {
-        for await (const chunk of result.textStream) {
-          chunkCount++;
-
-          // Track time to first token (SC-001)
-          if (chunkCount === 1) {
-            timeToFirstToken = Date.now() - requestStartTime;
-            logger.info('chat_stream_first_token', {
-              conversationId,
-              timeToFirstTokenMs: timeToFirstToken,
-              meetsTarget: timeToFirstToken <= 3000, // SC-001: within 3 seconds
-            });
-          }
-
+        for await (const event of result.fullStream) {
+          // Handle abort signal
           if (signal?.aborted) {
             logger.info('chat_stream_signal_aborted_in_loop', { conversationId, chunkCount });
             wasAborted = true;
             break;
           }
 
-          fullContent += chunk;
-          onEvent({
-            type: 'text_delta',
-            content: chunk,
-          });
+          // Handle different event types from fullStream
+          switch (event.type) {
+            case 'text-delta':
+              chunkCount++;
+
+              // Track time to first token (SC-001)
+              if (chunkCount === 1) {
+                timeToFirstToken = Date.now() - requestStartTime;
+                logger.info('chat_stream_first_token', {
+                  conversationId,
+                  timeToFirstTokenMs: timeToFirstToken,
+                  meetsTarget: timeToFirstToken <= 3000, // SC-001: within 3 seconds
+                });
+              }
+
+              // Accumulate text in buffer for ordered persistence
+              currentTextBuffer += event.text;
+              onEvent({
+                type: 'text_delta',
+                content: event.text,
+              });
+              break;
+
+            case 'tool-call':
+              // Tool call detected - flush accumulated text and record tool position
+              // This ensures content blocks are ordered: text → tool → text → tool → ...
+              if (currentTextBuffer.length > 0) {
+                orderedParts.push({ type: 'text', content: currentTextBuffer });
+                currentTextBuffer = '';
+              }
+              orderedParts.push({ type: 'tool', toolCallId: event.toolCallId });
+              logger.debug('chat_stream_tool_call', {
+                conversationId,
+                toolCallId: event.toolCallId,
+                toolName: event.toolName,
+              });
+              break;
+
+            case 'finish-step':
+              // Log step completion for debugging multi-step flows
+              logger.debug('chat_stream_finish_step', {
+                conversationId,
+                finishReason: event.finishReason,
+              });
+              break;
+
+            case 'finish':
+              // Final finish event - log completion
+              logger.info('chat_stream_finish', {
+                conversationId,
+                finishReason: event.finishReason,
+              });
+              break;
+
+            case 'error':
+              // Handle streaming errors
+              logger.error('chat_stream_error_event', {
+                conversationId,
+                error: event.error,
+              });
+              break;
+
+            // Tool call events are handled by the tool's execute function
+            // which emits tool_call_start/tool_call_end/tool_call_error events
+            default:
+              // Log other event types for debugging
+              logger.debug('chat_stream_event', {
+                conversationId,
+                eventType: event.type,
+              });
+              break;
+          }
         }
 
         // Handle abort case - save partial content and exit cleanly
-        if (wasAborted && fullContent.length > 0 && conversationId) {
+        const totalTextLength = currentTextBuffer.length + orderedParts.filter(p => p.type === 'text').reduce((sum, p) => sum + (p as { type: 'text'; content: string }).content.length, 0);
+        if (wasAborted && (totalTextLength > 0 || toolCallsMap.size > 0) && conversationId) {
           logger.info('chat_stream_saving_partial_on_abort', {
             conversationId,
             chunkCount,
-            contentLength: fullContent.length,
+            contentLength: totalTextLength,
+            toolCallCount: toolCallsMap.size,
           });
 
           try {
+            // Flush any remaining text buffer
+            if (currentTextBuffer.length > 0) {
+              orderedParts.push({ type: 'text', content: currentTextBuffer });
+            }
+
+            // Build content blocks from ordered parts (Task 4.2 fix)
+            for (const part of orderedParts) {
+              if (part.type === 'text') {
+                contentBlocks.push({ type: 'text', text: part.content });
+              } else if (part.type === 'tool') {
+                const toolCall = toolCallsMap.get(part.toolCallId);
+                if (toolCall) {
+                  contentBlocks.push({
+                    type: 'tool_use',
+                    id: part.toolCallId,
+                    name: toolCall.name,
+                    input: toolCall.input,
+                  });
+
+                  const toolResult = toolResultsMap.get(part.toolCallId);
+                  if (toolResult !== undefined) {
+                    contentBlocks.push({
+                      type: 'tool_result',
+                      tool_use_id: part.toolCallId,
+                      content: toolResult,
+                    });
+                  }
+                }
+              }
+            }
+
             const assistantMessage = await this.chatService.addAssistantMessage(
               conversationId,
-              [{ type: 'text', text: fullContent }]
+              contentBlocks.length > 0 ? contentBlocks : [{ type: 'text', text: '' }]
             );
             assistantMessageId = assistantMessage.id;
 
-            // End Langfuse generation with partial content
-            const totalDurationMs = Date.now() - requestStartTime;
-            generation?.end({
-              output: fullContent,
-              metadata: {
-                aborted: true,
-                timeToFirstTokenMs: timeToFirstToken,
-                totalDurationMs,
-              },
-            });
+            // Flush Langfuse (OpenTelemetry handles generation spans automatically)
             await flushLangfuse();
 
             logger.info('chat_stream_partial_saved', {
               conversationId,
               assistantMessageId,
-              contentLength: fullContent.length,
+              contentLength: totalTextLength,
             });
           } catch (saveError) {
             logger.error('chat_save_partial_on_abort_failed', {
@@ -300,10 +999,12 @@ export class ChatStreamService {
         // Get finish reason for logging (only if not aborted)
         const finishReason = await result.finishReason;
 
+        // Calculate total text content length for logging
+        const completedTextLength = currentTextBuffer.length + orderedParts.filter(p => p.type === 'text').reduce((sum, p) => sum + (p as { type: 'text'; content: string }).content.length, 0);
         logger.info('chat_stream_loop_completed', {
           conversationId,
           chunkCount,
-          contentLength: fullContent.length,
+          contentLength: completedTextLength,
           finishReason,
         });
       } catch (streamError) {
@@ -321,27 +1022,51 @@ export class ChatStreamService {
       inputTokens = usage.inputTokens ?? 0;
       outputTokens = usage.outputTokens ?? 0;
 
+      // Flush any remaining text buffer to ordered parts
+      if (currentTextBuffer.length > 0) {
+        orderedParts.push({ type: 'text', content: currentTextBuffer });
+        currentTextBuffer = '';
+      }
+
+      // Build final content blocks in streaming order (Task 4.2 fix)
+      // This ensures tool invocations appear inline where they were called
+      for (const part of orderedParts) {
+        if (part.type === 'text') {
+          contentBlocks.push({ type: 'text', text: part.content });
+        } else if (part.type === 'tool') {
+          const toolCall = toolCallsMap.get(part.toolCallId);
+          if (toolCall) {
+            // Add tool_use block
+            contentBlocks.push({
+              type: 'tool_use',
+              id: part.toolCallId,
+              name: toolCall.name,
+              input: toolCall.input,
+            });
+
+            // Add tool_result block (if we have a result)
+            const toolResult = toolResultsMap.get(part.toolCallId);
+            if (toolResult !== undefined) {
+              contentBlocks.push({
+                type: 'tool_result',
+                tool_use_id: part.toolCallId,
+                content: toolResult,
+              });
+            }
+          }
+        }
+      }
+
       // Save assistant message
       const assistantMessage = await this.chatService.addAssistantMessage(
         conversationId!,
-        [{ type: 'text', text: fullContent }]
+        contentBlocks.length > 0 ? contentBlocks : [{ type: 'text', text: '' }]
       );
       assistantMessageId = assistantMessage.id;
 
-      // End Langfuse generation with timing metadata (SC-001)
+      // Note: Per-step LLM generation tracking is handled by OpenTelemetry via experimental_telemetry
+      // Logging timing metadata for observability (SC-001)
       const totalDurationMs = Date.now() - requestStartTime;
-      generation?.end({
-        output: fullContent,
-        usage: {
-          input: inputTokens,
-          output: outputTokens,
-        },
-        metadata: {
-          timeToFirstTokenMs: timeToFirstToken,
-          totalDurationMs,
-          meetsTargetTTFT: timeToFirstToken !== null && timeToFirstToken <= 3000,
-        },
-      });
 
       // Send message_end event
       onEvent({
@@ -355,11 +1080,13 @@ export class ChatStreamService {
       // Flush Langfuse events
       await flushLangfuse();
 
+      // Calculate total content length for logging
+      const finalContentLength = contentBlocks.filter(b => b.type === 'text').reduce((sum, b) => sum + ((b as { type: 'text'; text: string }).text?.length || 0), 0);
       logger.info('chat_stream_completed', {
         conversationId,
         inputTokens,
         outputTokens,
-        contentLength: fullContent.length,
+        contentLength: finalContentLength,
         timeToFirstTokenMs: timeToFirstToken,
         totalDurationMs,
       });
@@ -371,12 +1098,45 @@ export class ChatStreamService {
         outputTokens,
       };
     } catch (error) {
-      // Save partial content if we have any
-      if (fullContent.length > 0 && conversationId) {
+      // Save partial content if we have any (Task 4.2: include tool blocks in order)
+      const errorTotalTextLength = currentTextBuffer.length + orderedParts.filter(p => p.type === 'text').reduce((sum, p) => sum + (p as { type: 'text'; content: string }).content.length, 0);
+      if ((errorTotalTextLength > 0 || toolCallsMap.size > 0) && conversationId) {
         try {
+          // Flush any remaining text buffer
+          if (currentTextBuffer.length > 0) {
+            orderedParts.push({ type: 'text', content: currentTextBuffer });
+          }
+
+          // Build content blocks from ordered parts
+          const errorContentBlocks: ContentBlock[] = [];
+          for (const part of orderedParts) {
+            if (part.type === 'text') {
+              errorContentBlocks.push({ type: 'text', text: part.content });
+            } else if (part.type === 'tool') {
+              const toolCall = toolCallsMap.get(part.toolCallId);
+              if (toolCall) {
+                errorContentBlocks.push({
+                  type: 'tool_use',
+                  id: part.toolCallId,
+                  name: toolCall.name,
+                  input: toolCall.input,
+                });
+
+                const toolResult = toolResultsMap.get(part.toolCallId);
+                if (toolResult !== undefined) {
+                  errorContentBlocks.push({
+                    type: 'tool_result',
+                    tool_use_id: part.toolCallId,
+                    content: toolResult,
+                  });
+                }
+              }
+            }
+          }
+
           const assistantMessage = await this.chatService.addAssistantMessage(
             conversationId,
-            [{ type: 'text', text: fullContent }]
+            errorContentBlocks.length > 0 ? errorContentBlocks : [{ type: 'text', text: '' }]
           );
           assistantMessageId = assistantMessage.id;
         } catch (saveError) {
@@ -391,7 +1151,7 @@ export class ChatStreamService {
       if (signal?.aborted) {
         logger.info('chat_stream_aborted', {
           conversationId,
-          partialContentLength: fullContent.length,
+          partialContentLength: errorTotalTextLength,
         });
         // Don't send error for user-initiated abort
         return conversationId

@@ -55,6 +55,8 @@ export function ChatView({
     conversationId,
     isStreaming,
     error,
+    toolInvocations, // Task 4.5: For real-time tool status display
+    streamingParts, // Ordered content for inline tool rendering
     sendMessage,
     cancelStream,
     clearChat,
@@ -269,9 +271,18 @@ export function ChatView({
           </div>
         ) : (
           <>
-            {messages.map((message) => (
-              <ChatMessage key={message.id} message={message} />
-            ))}
+            {messages.map((message, index) => {
+              // Only pass streaming props to the last assistant message (the one being streamed)
+              const isLastAssistant = message.role === 'assistant' && index === messages.length - 1;
+              return (
+                <ChatMessage
+                  key={message.id}
+                  message={message}
+                  toolInvocations={isLastAssistant ? toolInvocations : undefined}
+                  streamingParts={isLastAssistant ? streamingParts : undefined}
+                />
+              );
+            })}
             <div ref={messagesEndRef} />
           </>
         )}

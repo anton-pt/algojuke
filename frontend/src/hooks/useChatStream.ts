@@ -1,14 +1,16 @@
 /**
  * Chat Stream Hook
  *
- * Feature: 010-discover-chat
+ * Feature: 010-discover-chat, 011-agent-tools
  *
  * Handles streaming chat responses via SSE (Server-Sent Events).
  * Uses fetch with ReadableStream for progressive response handling.
+ * Tracks tool invocations for display in ChatMessage.
  */
 
 import { useState, useCallback, useRef } from 'react';
 import type { ChatMessage } from '../graphql/chat';
+import type { ToolInvocationProps } from '../components/chat/ToolInvocation';
 
 // -----------------------------------------------------------------------------
 // SSE Event Types (from contracts/chat-sse.md)
@@ -40,7 +42,47 @@ interface ErrorEvent {
   retryable: boolean;
 }
 
-type SSEEvent = MessageStartEvent | TextDeltaEvent | MessageEndEvent | ErrorEvent;
+/**
+ * Tool call start event - sent when tool execution begins
+ */
+interface ToolCallStartEvent {
+  type: 'tool_call_start';
+  toolCallId: string;
+  toolName: string;
+  input: unknown;
+}
+
+/**
+ * Tool call end event - sent when tool completes successfully
+ */
+interface ToolCallEndEvent {
+  type: 'tool_call_end';
+  toolCallId: string;
+  summary: string;
+  resultCount: number;
+  durationMs: number;
+  output?: unknown;
+}
+
+/**
+ * Tool call error event - sent when tool execution fails
+ */
+interface ToolCallErrorEvent {
+  type: 'tool_call_error';
+  toolCallId: string;
+  error: string;
+  retryable: boolean;
+  wasRetried: boolean;
+}
+
+type SSEEvent =
+  | MessageStartEvent
+  | TextDeltaEvent
+  | MessageEndEvent
+  | ErrorEvent
+  | ToolCallStartEvent
+  | ToolCallEndEvent
+  | ToolCallErrorEvent;
 
 // -----------------------------------------------------------------------------
 // Hook Types
@@ -52,6 +94,20 @@ export interface StreamError {
   retryable: boolean;
 }
 
+/**
+ * Tool invocation state for real-time updates
+ * Maps toolCallId to current invocation state
+ */
+export type ToolInvocationsMap = Map<string, ToolInvocationProps>;
+
+/**
+ * Streaming content part for inline rendering
+ * Tracks the order of text and tool invocations as they arrive
+ */
+export type StreamingContentPart =
+  | { type: 'text'; content: string }
+  | { type: 'tool'; toolId: string };
+
 export interface UseChatStreamReturn {
   /** All messages in the current conversation */
   messages: ChatMessage[];
@@ -61,6 +117,10 @@ export interface UseChatStreamReturn {
   isStreaming: boolean;
   /** Error from streaming (null if no error) */
   error: StreamError | null;
+  /** Active tool invocations by toolCallId (Task 4.4) */
+  toolInvocations: ToolInvocationsMap;
+  /** Ordered content parts for inline tool rendering during streaming */
+  streamingParts: StreamingContentPart[];
   /** Send a message and stream the response */
   sendMessage: (message: string) => Promise<void>;
   /** Cancel the current stream */
@@ -144,6 +204,10 @@ export function useChatStream(): UseChatStreamReturn {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<StreamError | null>(null);
+  // Task 4.4: Track tool invocations for real-time display
+  const [toolInvocations, setToolInvocations] = useState<ToolInvocationsMap>(new Map());
+  // Track ordered content parts for inline tool rendering
+  const [streamingParts, setStreamingParts] = useState<StreamingContentPart[]>([]);
 
   // Abort controller for cancellation
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -206,6 +270,10 @@ export function useChatStream(): UseChatStreamReturn {
               setConversationId(event.conversationId);
             }
 
+            // Clear tool invocations and streaming parts from previous message
+            setToolInvocations(new Map());
+            setStreamingParts([]);
+
             // Add empty assistant message
             setMessages((prev) => [
               ...prev,
@@ -224,10 +292,28 @@ export function useChatStream(): UseChatStreamReturn {
                   : msg
               )
             );
+
+            // Track content parts for inline rendering
+            setStreamingParts((prev) => {
+              const newParts = [...prev];
+              const lastPart = newParts[newParts.length - 1];
+              if (lastPart && lastPart.type === 'text') {
+                // Append to existing text part
+                newParts[newParts.length - 1] = {
+                  type: 'text',
+                  content: lastPart.content + event.content,
+                };
+              } else {
+                // Start new text part
+                newParts.push({ type: 'text', content: event.content });
+              }
+              return newParts;
+            });
             break;
 
           case 'message_end':
-            // Stream complete - content is already in state
+            // Stream complete - keep tool invocations for display
+            // They'll be cleared on next message_start
             break;
 
           case 'error':
@@ -235,6 +321,58 @@ export function useChatStream(): UseChatStreamReturn {
               code: event.code,
               message: event.message,
               retryable: event.retryable,
+            });
+            break;
+
+          // Task 4.4: Handle tool invocation events
+          case 'tool_call_start':
+            setToolInvocations((prev) => {
+              const next = new Map(prev);
+              next.set(event.toolCallId, {
+                toolCallId: event.toolCallId,
+                toolName: event.toolName,
+                input: event.input,
+                status: 'executing',
+              });
+              return next;
+            });
+            // Add tool part for inline rendering
+            setStreamingParts((prev) => [
+              ...prev,
+              { type: 'tool', toolId: event.toolCallId },
+            ]);
+            break;
+
+          case 'tool_call_end':
+            setToolInvocations((prev) => {
+              const next = new Map(prev);
+              const existing = next.get(event.toolCallId);
+              next.set(event.toolCallId, {
+                toolCallId: event.toolCallId,
+                toolName: existing?.toolName || 'unknown',
+                input: existing?.input,
+                status: 'completed',
+                summary: event.summary,
+                resultCount: event.resultCount,
+                durationMs: event.durationMs,
+                output: event.output,
+              });
+              return next;
+            });
+            break;
+
+          case 'tool_call_error':
+            setToolInvocations((prev) => {
+              const next = new Map(prev);
+              const existing = next.get(event.toolCallId);
+              next.set(event.toolCallId, {
+                toolCallId: event.toolCallId,
+                toolName: existing?.toolName || 'unknown',
+                input: existing?.input,
+                status: 'failed',
+                error: event.error,
+              });
+              return next;
             });
             break;
         }
@@ -271,6 +409,8 @@ export function useChatStream(): UseChatStreamReturn {
     setMessages([]);
     setConversationId(null);
     setError(null);
+    setToolInvocations(new Map()); // Task 4.4
+    setStreamingParts([]); // Clear inline content parts
   }, [cancelStream]);
 
   return {
@@ -278,6 +418,8 @@ export function useChatStream(): UseChatStreamReturn {
     conversationId,
     isStreaming,
     error,
+    toolInvocations, // Task 4.4
+    streamingParts, // Ordered content for inline tool rendering
     sendMessage,
     cancelStream,
     clearChat,

@@ -28,9 +28,13 @@ import { logger } from './utils/logger.js';
 import { initializeDatabase, AppDataSource } from './config/database.js';
 import { LibraryAlbum } from './entities/LibraryAlbum.js';
 import { LibraryTrack } from './entities/LibraryTrack.js';
+import { initializeOpenTelemetry } from './utils/otel.js';
 
 // Load environment variables
 config();
+
+// Initialize OpenTelemetry for AI SDK observability (must be before any AI SDK calls)
+initializeOpenTelemetry();
 
 // Get current directory for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -154,8 +158,16 @@ async function startServer() {
     app.use(cors());
     app.use(express.json());
 
-    // Mount chat REST routes (for SSE streaming)
-    app.use('/api/chat', createChatRoutes(AppDataSource));
+    // Mount chat REST routes (for SSE streaming) with tool support
+    app.use('/api/chat', createChatRoutes({
+      dataSource: AppDataSource,
+      discoveryService,
+      trackMetadataService,
+      tidalService,
+      qdrantClient,
+      libraryTrackRepository: trackRepository,
+      libraryAlbumRepository: albumRepository,
+    }));
 
     // Mount GraphQL endpoint
     app.use(
