@@ -355,6 +355,170 @@ export class DiscoveryService {
   }
 
   /**
+   * Perform optimized semantic search for agent tools
+   *
+   * Feature: 013-agent-tool-optimization
+   *
+   * Like search() but uses hybridSearchOptimized() to return only
+   * selected fields (excludes interpretation/lyrics). This reduces
+   * token usage for agent semantic search.
+   *
+   * @param input - Search input with query and limit
+   * @returns Optimized search results or error
+   */
+  async searchOptimized(input: { query: string; limit?: number }): Promise<{
+    results: import('../clients/qdrantClient.js').OptimizedSearchResult[];
+    query: string;
+    expandedQueries: string[];
+    totalResults: number;
+  } | DiscoverySearchError> {
+    const startTime = Date.now();
+    const limit = Math.min(input.limit ?? DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE);
+
+    // Validate query
+    const validationResult = DiscoveryQuerySchema.safeParse({ text: input.query });
+    if (!validationResult.success) {
+      logger.debug("discovery_optimized_empty_query", { query: input.query });
+      return this.createError(
+        DiscoveryErrorCode.EMPTY_QUERY,
+        "Please enter a search term",
+        false
+      );
+    }
+
+    const query = validationResult.data.text;
+
+    // Create Langfuse trace for observability
+    const trace = createDiscoveryTrace(query);
+
+    try {
+      // Create timeout promise
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("Search operation timed out"));
+        }, SEARCH_TIMEOUT_MS);
+      });
+
+      // Execute optimized search with timeout
+      const searchPromise = this.executeSearchOptimized(query, limit, trace);
+      const result = await Promise.race([searchPromise, timeoutPromise]);
+
+      const duration = Date.now() - startTime;
+      logger.info("discovery_optimized_search_complete", {
+        query,
+        limit,
+        resultCount: result.results.length,
+        expandedQueryCount: result.expandedQueries.length,
+        durationMs: duration,
+      });
+
+      // Flush trace data to Langfuse
+      flushLangfuse().catch(() => {});
+
+      return result;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      logger.error("discovery_optimized_search_error", {
+        query,
+        limit,
+        durationMs: duration,
+        error: error instanceof Error ? error.message : String(error),
+      });
+
+      // Flush trace data even on error
+      flushLangfuse().catch(() => {});
+
+      return this.handleError(error);
+    }
+  }
+
+  /**
+   * Execute the optimized search pipeline
+   *
+   * Uses hybridSearchOptimized for reduced payload size.
+   */
+  private async executeSearchOptimized(
+    query: string,
+    limit: number,
+    trace: DiscoveryTrace | null = null
+  ): Promise<{
+    results: import('../clients/qdrantClient.js').OptimizedSearchResult[];
+    query: string;
+    expandedQueries: string[];
+    totalResults: number;
+  }> {
+    // Step 1: Query expansion (same as regular search)
+    const generationSpan = createGenerationSpan(trace, {
+      name: "query-expansion",
+      model: QUERY_EXPANSION_MODEL,
+      prompt: query,
+      metadata: { step: "query_expansion", optimized: true },
+    });
+
+    const expansionResult = await this.anthropicClient.expandQuery(query);
+    const expandedQueryTexts = expansionResult.queries;
+
+    generationSpan.end({
+      completion: JSON.stringify(expandedQueryTexts),
+      inputTokens: expansionResult.inputTokens,
+      outputTokens: expansionResult.outputTokens,
+    });
+
+    logger.debug("discovery_optimized_queries_expanded", {
+      original: query,
+      expanded: expandedQueryTexts,
+      inputTokens: expansionResult.inputTokens,
+      outputTokens: expansionResult.outputTokens,
+    });
+
+    // Step 2: Generate embeddings and sparse vectors (same as regular search)
+    const embeddingSpan = createEmbeddingSpan(trace, {
+      name: "generate-embeddings",
+      model: TEI_MODEL_NAME,
+      inputCount: expandedQueryTexts.length,
+      metadata: { step: "embedding_generation", optimized: true },
+    });
+
+    const embeddingStartTime = Date.now();
+    const expandedQueries = await this.prepareQueries(expandedQueryTexts);
+    const embeddingDuration = Date.now() - embeddingStartTime;
+
+    embeddingSpan.end({
+      dimensions: expandedQueries[0]?.denseVector.length ?? 0,
+      durationMs: embeddingDuration,
+    });
+
+    // Step 3: Execute OPTIMIZED hybrid search (different from regular search)
+    const searchSpan = createSearchSpan(trace, {
+      name: "hybrid-search-optimized",
+      collection: "tracks",
+      operation: "hybrid_search_optimized",
+      queryCount: expandedQueries.length,
+      metadata: { step: "vector_search", limit, optimized: true },
+    });
+
+    const searchStartTime = Date.now();
+    const results = await this.qdrantClient.hybridSearchOptimized(expandedQueries, {
+      limit,
+      offset: 0,
+      prefetchLimit: Math.min(limit + 50, MAX_TOTAL_RESULTS + 50),
+    });
+    const searchDuration = Date.now() - searchStartTime;
+
+    searchSpan.end({
+      resultCount: results.length,
+      durationMs: searchDuration,
+    });
+
+    return {
+      results,
+      query,
+      expandedQueries: expandedQueryTexts,
+      totalResults: results.length,
+    };
+  }
+
+  /**
    * Health check for discovery service
    *
    * Checks all three dependencies: Anthropic (LLM), TEI (embeddings), and Qdrant (search)

@@ -21,11 +21,11 @@ describe('SemanticSearchInputSchema', () => {
     expect(result.success).toBe(true);
   });
 
-  it('applies default limit of 20', () => {
+  it('applies default limit of 50', () => {
     const result = SemanticSearchInputSchema.safeParse({ query: 'test' });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.limit).toBe(20);
+      expect(result.data.limit).toBe(50); // feature 013: increased for better scanning
     }
   });
 

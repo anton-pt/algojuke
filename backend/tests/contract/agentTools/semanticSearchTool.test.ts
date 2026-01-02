@@ -19,7 +19,7 @@ describe('SemanticSearchInputSchema', () => {
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.query).toBe('melancholic songs about lost love');
-        expect(result.data.limit).toBe(20); // default
+        expect(result.data.limit).toBe(50); // default (feature 013)
       }
     });
 
@@ -48,13 +48,13 @@ describe('SemanticSearchInputSchema', () => {
   });
 
   describe('limit validation', () => {
-    it('uses default limit of 20 when not provided', () => {
+    it('uses default limit of 50 when not provided', () => {
       const result = SemanticSearchInputSchema.safeParse({
         query: 'test query',
       });
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.limit).toBe(20);
+        expect(result.data.limit).toBe(50); // feature 013: increased for better scanning
       }
     });
 

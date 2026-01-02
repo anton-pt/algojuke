@@ -169,8 +169,8 @@ export interface ExpandedQuery {
 /** Default page size for discovery search */
 export const DEFAULT_PAGE_SIZE = 20;
 
-/** Maximum page size for discovery search */
-export const MAX_PAGE_SIZE = 20;
+/** Maximum page size for discovery search (increased for agent scanning in feature 013) */
+export const MAX_PAGE_SIZE = 50;
 
 /** Maximum total results across all pages */
 export const MAX_TOTAL_RESULTS = 100;

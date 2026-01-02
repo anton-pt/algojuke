@@ -2,10 +2,14 @@
  * Batch Metadata Tool
  *
  * Feature: 011-agent-tools
+ * Updated: 013-agent-tool-optimization
  *
  * Retrieves full metadata for multiple tracks by ISRC.
- * Efficiently fetches lyrics, interpretation, and audio features
- * for up to 100 tracks in a single operation.
+ * Efficiently fetches lyrics, interpretation, short_description, and
+ * audio features for up to 100 tracks in a single operation.
+ *
+ * Unlike semanticSearch (which returns only shortDescription),
+ * this tool returns FULL metadata for on-demand deep inspection.
  */
 
 import { Repository } from 'typeorm';
@@ -191,6 +195,12 @@ export async function executeBatchMetadata(
         };
       }
 
+      // T014: Extract short_description from payload (feature 013)
+      const shortDescription =
+        'short_description' in payload && payload.short_description
+          ? String(payload.short_description)
+          : undefined;
+
       return {
         isrc,
         title: payload.title,
@@ -203,6 +213,7 @@ export async function executeBatchMetadata(
         score: 1.0, // Direct lookup, not a search result
         lyrics: payload.lyrics ?? undefined,
         interpretation: payload.interpretation ?? undefined,
+        shortDescription, // T014: Include short_description in full results
         audioFeatures,
       };
     });
@@ -224,6 +235,7 @@ export async function executeBatchMetadata(
       foundCount: foundIsrcs.length,
       notFoundCount: notFoundIsrcs.length,
       durationMs,
+      isrcsRequested: normalizedIsrcs,
     });
 
     return {

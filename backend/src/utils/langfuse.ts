@@ -129,7 +129,7 @@ export function createGenerationSpan(
 export interface SearchSpanOptions {
   name: string;
   collection: string;
-  operation: "search" | "hybrid_search";
+  operation: "search" | "hybrid_search" | "hybrid_search_optimized";
   queryCount?: number;
   metadata?: Record<string, unknown>;
 }

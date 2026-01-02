@@ -12,7 +12,7 @@ Searches the vector index for tracks matching a natural language query. Uses hyb
 
 **Input**: `SemanticSearchInput`
 - `query` (string, required): Natural language description of desired music
-- `limit` (number, optional): Max results (default: 20, max: 50)
+- `limit` (number, optional): Max results (default: 50, max: 50)
 
 **Output**: `SemanticSearchOutput`
 - `tracks[]`: Matching tracks with full metadata, relevance scores, and library status
