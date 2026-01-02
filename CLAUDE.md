@@ -28,6 +28,8 @@ Auto-generated from all feature plans. Last updated: 2025-12-27
 - Qdrant vector database (extending track document schema) (012-track-short-description)
 - TypeScript 5.3.3 / Node.js 20.x + @qdrant/js-client-rest (Qdrant client), Vercel AI SDK (agent), Zod (validation) (013-agent-tool-optimization)
 - Qdrant vector database (already contains `short_description` field from feature 012) (013-agent-tool-optimization)
+- TypeScript 5.3.3 / Node.js 20.x (backend) + Vercel AI SDK (`ai`, `@ai-sdk/anthropic`), Zod 3.x (014-tidal-search-refinement)
+- N/A (no storage changes) (014-tidal-search-refinement)
 
 ## Project Structure
 
@@ -220,9 +222,9 @@ Access at http://localhost:3000 when Langfuse is running.
 | `CHAT_MAX_TOKENS` | No | `4096` | Maximum tokens for chat responses |
 
 ## Recent Changes
+- 014-tidal-search-refinement: Added TypeScript 5.3.3 / Node.js 20.x (backend) + Vercel AI SDK (`ai`, `@ai-sdk/anthropic`), Zod 3.x
 - 013-agent-tool-optimization: Added TypeScript 5.3.3 / Node.js 20.x + @qdrant/js-client-rest (Qdrant client), Vercel AI SDK (agent), Zod (validation)
 - 012-track-short-description: Added TypeScript 5.3.3 / Node.js 20.x + Inngest 3.22.12, Vercel AI SDK (`ai`, `@ai-sdk/anthropic`), Zod 3.x, Langfuse 3.0.0, @qdrant/js-client-rest 1.16.2
-- 011-agent-tools: Added TypeScript 5.3.3 / Node.js 20.x (backend), TypeScript 5.3.3 / React 18.2.0 (frontend)
 
 
 <!-- MANUAL ADDITIONS START -->
