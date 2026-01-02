@@ -6,9 +6,10 @@
  * 1. fetch-audio-features: Retrieve audio features from ReccoBeats API
  * 2. fetch-lyrics: Retrieve lyrics from Musixmatch API
  * 3. generate-interpretation: Generate thematic interpretation via Claude Sonnet 4.5
- * 4. embed-interpretation: Generate 1024-dim embedding via TEI
- * 5. store-document: Upsert complete document to Qdrant
- * 6. emit-completion: Send track/ingestion.completed event
+ * 4. generate-short-description: Generate single-sentence summary via Claude Haiku 4.5
+ * 5. embed-interpretation: Generate 1024-dim embedding via TEI
+ * 6. store-document: Upsert complete document to Qdrant
+ * 7. emit-completion: Send track/ingestion.completed event
  */
 
 import { inngest } from "../client.js";
@@ -22,6 +23,11 @@ import {
   EMBEDDING_DIMENSIONS,
 } from "../../clients/tei.js";
 import { buildInterpretationPrompt } from "../../prompts/lyricsInterpretation.js";
+import {
+  buildShortDescriptionPrompt,
+  buildInstrumentalShortDescriptionPrompt,
+  buildMetadataOnlyShortDescriptionPrompt,
+} from "../../prompts/shortDescription.js";
 import {
   createIngestionTrace,
   createHTTPSpan,
@@ -190,7 +196,55 @@ export const trackIngestion = inngest.createFunction(
       }
     });
 
-    // Step 4: Generate embedding (zero vector if no interpretation)
+    // Step 4: Generate short description via Haiku (graceful failure)
+    const shortDescription = await step.run("generate-short-description", async () => {
+      const generationSpan = createGenerationSpan(trace, {
+        name: "llm-short-description",
+        model: "claude-haiku-4-5-20251001",
+        prompt: "", // Will be set below
+        metadata: { isrc, title, artist, hasInterpretation: !!interpretation?.text },
+      });
+
+      try {
+        const client = createAnthropicClient();
+        let prompt: string;
+
+        if (interpretation?.text) {
+          // Has interpretation - use it for the short description
+          prompt = buildShortDescriptionPrompt(title, artist, interpretation.text);
+        } else if (audioFeatures) {
+          // Instrumental track with audio features
+          prompt = buildInstrumentalShortDescriptionPrompt(
+            title,
+            artist,
+            album,
+            audioFeatures
+          );
+        } else {
+          // Fallback to metadata only
+          prompt = buildMetadataOnlyShortDescriptionPrompt(title, artist, album);
+        }
+
+        const result = await client.generateShortDescription(prompt);
+        generationSpan.end({
+          completion: result.text,
+          inputTokens: result.inputTokens,
+          outputTokens: result.outputTokens,
+        });
+        return result.text;
+      } catch (error) {
+        // Graceful failure - log and return null, don't block pipeline
+        generationSpan.end({
+          completion: "",
+          inputTokens: 0,
+          outputTokens: 0,
+        });
+        console.error(`Short description generation failed for ${isrc}:`, error);
+        return null;
+      }
+    });
+
+    // Step 5: Generate embedding (zero vector if no interpretation)
     const embedding = await step.run("embed-interpretation", async () => {
       if (!interpretation || !interpretation.text) {
         // No interpretation available - use zero vector
@@ -227,7 +281,7 @@ export const trackIngestion = inngest.createFunction(
       }
     });
 
-    // Step 5: Store document in Qdrant
+    // Step 6: Store document in Qdrant
     await step.run("store-document", async () => {
       const stepStart = Date.now();
       const searchSpan = createSearchSpan(trace, {
@@ -250,6 +304,7 @@ export const trackIngestion = inngest.createFunction(
           artworkUrl: artworkUrl ?? null,
           lyrics: lyrics?.lyrics_body ?? null,
           interpretation: interpretation?.text ?? null,
+          short_description: shortDescription ?? null,
         };
 
         // Add audio features if available
@@ -296,7 +351,7 @@ export const trackIngestion = inngest.createFunction(
       }
     });
 
-    // Step 6: Emit completion event
+    // Step 7: Emit completion event
     const completionResult = await step.run("emit-completion", async () => {
       const completedAt = Date.now();
       const durationMs = completedAt - startTime;
@@ -305,6 +360,7 @@ export const trackIngestion = inngest.createFunction(
         hasLyrics: !!lyrics?.lyrics_body,
         hasAudioFeatures: !!audioFeatures,
         hasInterpretation: !!interpretation?.text,
+        hasShortDescription: !!shortDescription,
         embeddingDimensions: EMBEDDING_DIMENSIONS,
       };
 

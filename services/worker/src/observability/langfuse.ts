@@ -66,6 +66,25 @@ export function createIngestionTrace(isrc: string, runId: string) {
 }
 
 /**
+ * Create a trace for short description backfill
+ */
+export function createBackfillTrace(runId: string) {
+  const client = getLangfuseClient();
+  if (!client) {
+    return null;
+  }
+
+  return client.trace({
+    id: `backfill-${runId}`,
+    name: "short-description-backfill",
+    metadata: {
+      runId,
+    },
+    tags: ["backfill", "short-description"],
+  });
+}
+
+/**
  * HTTP span options
  */
 export interface HTTPSpanOptions {
@@ -177,7 +196,7 @@ export function createGenerationSpan(
 export interface SearchSpanOptions {
   name: string;
   collection: string;
-  operation: "upsert" | "search" | "delete";
+  operation: "upsert" | "search" | "delete" | "scroll";
   metadata?: Record<string, unknown>;
 }
 

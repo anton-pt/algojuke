@@ -24,6 +24,8 @@ Auto-generated from all feature plans. Last updated: 2025-12-27
 - Qdrant vector database (hybrid search with dense vectors + BM25), no new persistent storage needed (009-semantic-discovery-search)
 - PostgreSQL (via TypeORM, same database as library management) (010-discover-chat)
 - PostgreSQL (via TypeORM - conversations, messages with tool content blocks), Qdrant (vector index) (011-agent-tools)
+- TypeScript 5.3.3 / Node.js 20.x + Inngest 3.22.12, Vercel AI SDK (`ai`, `@ai-sdk/anthropic`), Zod 3.x, Langfuse 3.0.0, @qdrant/js-client-rest 1.16.2 (012-track-short-description)
+- Qdrant vector database (extending track document schema) (012-track-short-description)
 
 ## Project Structure
 
@@ -216,9 +218,9 @@ Access at http://localhost:3000 when Langfuse is running.
 | `CHAT_MAX_TOKENS` | No | `4096` | Maximum tokens for chat responses |
 
 ## Recent Changes
+- 012-track-short-description: Added TypeScript 5.3.3 / Node.js 20.x + Inngest 3.22.12, Vercel AI SDK (`ai`, `@ai-sdk/anthropic`), Zod 3.x, Langfuse 3.0.0, @qdrant/js-client-rest 1.16.2
 - 011-agent-tools: Added TypeScript 5.3.3 / Node.js 20.x (backend), TypeScript 5.3.3 / React 18.2.0 (frontend)
 - 010-discover-chat: Added TypeScript 5.3.3 / Node.js 20.x (backend), TypeScript 5.3.3 / React 18.2.0 (frontend)
-- 009-semantic-discovery-search: Added TypeScript 5.3.3 / Node.js 20.x (backend), TypeScript 5.3.3 / React 18.2.0 (frontend) + Apollo Server 4.x + Apollo Client 3.x (GraphQL), @qdrant/js-client-rest (Qdrant), Vercel AI SDK (`ai`, `@ai-sdk/anthropic`), axios (HTTP), Zod 3.x (validation), Vitest (testing)
 
 
 <!-- MANUAL ADDITIONS START -->
