@@ -227,7 +227,7 @@ export class ChatStreamService {
    */
   private createTools(context: ToolContext) {
     const semanticSearchTool = tool({
-      description: 'Search indexed tracks in user\'s library by mood, theme, or lyrics description. Returns tracks with full metadata including lyrics interpretation and audio features.',
+      description: 'Search the user\'s indexed library by lyrical themes and interpreted meaning. IMPORTANT: This tool matches based on LYRICS INTERPRETATION, not musical style or audio features. A query like "ambient music" will find tracks with ambient themes in lyrics, NOT necessarily ambient-sounding music. For style/genre recommendations, use your music knowledge with tidalSearch instead. Results include shortDescription for each track.',
       inputSchema: SemanticSearchInputSchema,
       execute: async (input, options) => {
         const typedInput = input as SemanticSearchInput;
@@ -321,7 +321,7 @@ export class ChatStreamService {
     });
 
     const tidalSearchTool = tool({
-      description: 'Search the Tidal music catalogue for tracks, albums, or artists. Returns results with library status (whether already in user\'s library) and index status (whether fully analyzed).',
+      description: 'Search the Tidal music catalogue by artist name, album name, or track title. IMPORTANT: This tool only supports text-based keyword search - it does NOT understand mood, theme, or semantic queries. For mood-based requests, use semanticSearch first, then use this tool with specific artist/album names you know match the mood. Returns results with library and index status flags.',
       inputSchema: TidalSearchInputSchema,
       execute: async (input, options) => {
         const typedInput = input as TidalSearchInput;
