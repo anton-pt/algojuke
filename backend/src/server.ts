@@ -24,6 +24,8 @@ import { DiscoveryService } from './services/discoveryService.js';
 import { ChatService } from './services/chatService.js';
 import { createIsrcDataLoader } from './loaders/isrcDataLoader.js';
 import { createChatRoutes } from './routes/chatRoutes.js';
+import { createAuthRoutes } from './routes/auth.js';
+import { clerkMiddleware } from './middleware/clerkAuth.js';
 import { logger } from './utils/logger.js';
 import { initializeDatabase, AppDataSource } from './config/database.js';
 import { LibraryAlbum } from './entities/LibraryAlbum.js';
@@ -157,6 +159,12 @@ async function startServer() {
     // Apply middleware
     app.use(cors());
     app.use(express.json());
+
+    // Apply Clerk authentication middleware (populates req.auth)
+    app.use(clerkMiddleware());
+
+    // Mount auth routes (for Clerk + Tidal token management)
+    app.use('/api/auth', createAuthRoutes());
 
     // Mount chat REST routes (for SSE streaming) with tool support
     app.use('/api/chat', createChatRoutes({

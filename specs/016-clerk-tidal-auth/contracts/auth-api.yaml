@@ -1,0 +1,235 @@
+openapi: 3.1.0
+info:
+  title: AlgoJuke Auth API
+  version: 1.0.0
+  description: Authentication and Tidal connection endpoints for AlgoJuke
+
+servers:
+  - url: http://localhost:4000
+    description: Local development
+
+paths:
+  /api/auth/status:
+    get:
+      summary: Get current user auth status
+      description: Returns the current user's authentication state, approval status, and Tidal connection status
+      operationId: getAuthStatus
+      tags:
+        - Auth
+      security:
+        - clerkAuth: []
+      responses:
+        '200':
+          description: Auth status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthStatus'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/tidal/tokens:
+    post:
+      summary: Store Tidal OAuth tokens
+      description: Stores Tidal access and refresh tokens in Clerk private metadata
+      operationId: storeTidalTokens
+      tags:
+        - Tidal
+      security:
+        - clerkAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TidalTokensInput'
+      responses:
+        '200':
+          description: Tokens stored successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TidalTokensResponse'
+        '400':
+          description: Invalid token data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: User not on allowlist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      summary: Get Tidal token status
+      description: Returns whether Tidal tokens exist and their expiration status (does not return actual tokens)
+      operationId: getTidalTokenStatus
+      tags:
+        - Tidal
+      security:
+        - clerkAuth: []
+      responses:
+        '200':
+          description: Token status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TidalTokenStatus'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/tidal/refresh:
+    post:
+      summary: Refresh Tidal access token
+      description: Refreshes the Tidal access token using the stored refresh token
+      operationId: refreshTidalToken
+      tags:
+        - Tidal
+      security:
+        - clerkAuth: []
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TidalTokenStatus'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: User not on allowlist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: No Tidal connection or refresh failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    clerkAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Clerk session JWT
+
+  schemas:
+    AuthStatus:
+      type: object
+      required:
+        - isAuthenticated
+        - isApproved
+        - hasTidalConnection
+      properties:
+        isAuthenticated:
+          type: boolean
+          description: Whether user is signed in via Clerk
+        isApproved:
+          type: boolean
+          description: Whether user's email is on the allowlist
+        hasTidalConnection:
+          type: boolean
+          description: Whether user has connected their Tidal account
+        email:
+          type: string
+          format: email
+          description: User's primary email address
+        userId:
+          type: string
+          description: Clerk user ID
+
+    TidalTokensInput:
+      type: object
+      required:
+        - accessToken
+        - refreshToken
+        - expiresAt
+        - scopes
+      properties:
+        accessToken:
+          type: string
+          minLength: 1
+          description: Tidal OAuth access token
+        refreshToken:
+          type: string
+          minLength: 1
+          description: Tidal OAuth refresh token
+        expiresAt:
+          type: integer
+          description: Token expiration timestamp (Unix ms)
+        scopes:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          description: Granted OAuth scopes
+
+    TidalTokensResponse:
+      type: object
+      required:
+        - success
+        - connectedAt
+      properties:
+        success:
+          type: boolean
+        connectedAt:
+          type: integer
+          description: Connection timestamp (Unix ms)
+
+    TidalTokenStatus:
+      type: object
+      required:
+        - hasTokens
+      properties:
+        hasTokens:
+          type: boolean
+          description: Whether Tidal tokens exist
+        expiresAt:
+          type: integer
+          description: Token expiration timestamp (Unix ms)
+        isExpired:
+          type: boolean
+          description: Whether the access token has expired
+        scopes:
+          type: array
+          items:
+            type: string
+          description: Granted OAuth scopes
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Human-readable error message
