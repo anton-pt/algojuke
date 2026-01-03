@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { UserButton } from '@clerk/clerk-react';
 import './AppHeader.css';
 
 export function AppHeader() {
@@ -8,7 +9,7 @@ export function AppHeader() {
         <h1 className="app-title">AlgoJuke</h1>
         <nav className="app-nav">
           <NavLink
-            to="/"
+            to="/search"
             className={({ isActive }) => isActive ? 'app-nav-link active' : 'app-nav-link'}
           >
             Search
@@ -26,6 +27,9 @@ export function AppHeader() {
             Library
           </NavLink>
         </nav>
+        <div className="app-header-user">
+          <UserButton afterSignOutUrl="/" />
+        </div>
       </div>
     </header>
   );

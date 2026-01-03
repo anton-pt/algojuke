@@ -1,15 +1,17 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import basicSsl from '@vitejs/plugin-basic-ssl';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), basicSsl()],
   build: {
     target: ['chrome91', 'firefox89', 'safari14', 'edge91'],
     outDir: 'dist',
     sourcemap: true,
   },
   server: {
+    // HTTPS provided by basicSsl plugin (required for Tidal OAuth secure context)
     port: 5173,
     proxy: {
       '/graphql': {
