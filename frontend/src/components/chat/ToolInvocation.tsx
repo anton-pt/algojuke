@@ -9,6 +9,7 @@
 
 import { useState } from 'react';
 import './ToolInvocation.css';
+import { PlaylistCard, type PlaylistTrack } from './PlaylistCard';
 
 // -----------------------------------------------------------------------------
 // Types
@@ -60,6 +61,12 @@ function ToolIcon({ toolName }: { toolName: string }) {
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5zm0-5.5c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z" />
           </svg>
         );
+      case 'suggestPlaylist':
+        return (
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z" />
+          </svg>
+        );
       default:
         return (
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -75,11 +82,12 @@ function ToolIcon({ toolName }: { toolName: string }) {
 /**
  * Status badge component
  */
-function StatusBadge({ status }: { status: 'executing' | 'completed' | 'failed' }) {
+function StatusBadge({ status, toolName }: { status: 'executing' | 'completed' | 'failed'; toolName?: string }) {
   const getLabel = () => {
     switch (status) {
       case 'executing':
-        return 'Searching...';
+        // T038: Show "Building playlist..." for suggestPlaylist tool
+        return toolName === 'suggestPlaylist' ? 'Building playlist...' : 'Searching...';
       case 'completed':
         return 'Done';
       case 'failed':
@@ -124,6 +132,8 @@ function formatToolName(toolName: string): string {
       return 'Batch Metadata';
     case 'albumTracks':
       return 'Album Tracks';
+    case 'suggestPlaylist':
+      return 'Playlist';
     default:
       return toolName;
   }
@@ -135,16 +145,28 @@ function formatToolName(toolName: string): string {
 
 interface ToolResultsRendererProps {
   output: unknown;
+  toolName?: string;
 }
 
-function ToolResultsRenderer({ output }: ToolResultsRendererProps) {
+function ToolResultsRenderer({ output, toolName }: ToolResultsRendererProps) {
   if (!output || typeof output !== 'object') {
     return <div className="tool-invocation__results-empty">No results available</div>;
   }
 
   const data = output as Record<string, unknown>;
 
-  // Render tracks list if present
+  // Special handling for suggestPlaylist - render PlaylistCard
+  if (toolName === 'suggestPlaylist' && 'title' in data && 'tracks' in data && Array.isArray(data.tracks)) {
+    const playlistTracks = data.tracks as PlaylistTrack[];
+    return (
+      <PlaylistCard
+        title={String(data.title)}
+        tracks={playlistTracks}
+      />
+    );
+  }
+
+  // Render tracks list if present (for other tools)
   if ('tracks' in data && Array.isArray(data.tracks)) {
     return (
       <div className="tool-invocation__results-list">
@@ -210,7 +232,12 @@ export function ToolInvocation({
 }: ToolInvocationProps) {
   const [expanded, setExpanded] = useState(false);
 
-  const canExpand = status === 'completed' && output && resultCount && resultCount > 0;
+  // Playlists auto-expand and don't need manual expand/collapse
+  const isPlaylist = toolName === 'suggestPlaylist';
+  const canExpand = !isPlaylist && status === 'completed' && output && resultCount && resultCount > 0;
+  const showResults = isPlaylist
+    ? status === 'completed' && output
+    : expanded && output;
 
   const handleToggle = () => {
     if (canExpand) {
@@ -220,7 +247,7 @@ export function ToolInvocation({
 
   return (
     <div
-      className={`tool-invocation tool-invocation--${status}`}
+      className={`tool-invocation tool-invocation--${status} ${isPlaylist ? 'tool-invocation--playlist' : ''}`}
       data-tool-call-id={toolCallId}
     >
       <div
@@ -237,7 +264,7 @@ export function ToolInvocation({
       >
         <ToolIcon toolName={toolName} />
         <span className="tool-invocation__name">{formatToolName(toolName)}</span>
-        <StatusBadge status={status} />
+        <StatusBadge status={status} toolName={toolName} />
         {summary && <span className="tool-invocation__summary">{summary}</span>}
         {durationMs !== undefined && status !== 'executing' && (
           <span className="tool-invocation__duration">{(durationMs / 1000).toFixed(1)}s</span>
@@ -251,9 +278,9 @@ export function ToolInvocation({
         </div>
       ) : null}
 
-      {expanded && output ? (
-        <div className="tool-invocation__results">
-          <ToolResultsRenderer output={output} />
+      {showResults ? (
+        <div className={`tool-invocation__results ${isPlaylist ? 'tool-invocation__results--playlist' : ''}`}>
+          <ToolResultsRenderer output={output} toolName={toolName} />
         </div>
       ) : null}
     </div>

@@ -857,6 +857,302 @@ export class TidalService {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Public batch methods for playlist enrichment (Feature 015)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Public wrapper for batch fetching tracks by ISRCs
+   *
+   * Feature: 015-playlist-suggestion
+   *
+   * Fetches track details and album IDs for enrichment.
+   * Chunks requests into batches of 20 ISRCs (Tidal API limit).
+   *
+   * @param isrcs - Array of ISRCs to look up
+   * @param countryCode - Country code for regional content (default: 'US')
+   * @returns Map of ISRC to track data (tidalId, title, artist, albumId, duration)
+   */
+  async batchFetchTracksByIsrc(
+    isrcs: string[],
+    countryCode: string = 'US'
+  ): Promise<Map<string, {
+    tidalId: string;
+    title: string;
+    artist: string;
+    albumId: string | null;
+    duration: number | null;
+  }>> {
+    if (isrcs.length === 0) {
+      return new Map();
+    }
+
+    const token = await this.tokenService.getValidToken();
+    const BATCH_SIZE = 20; // Tidal API limit
+    const result = new Map<string, {
+      tidalId: string;
+      title: string;
+      artist: string;
+      albumId: string | null;
+      duration: number | null;
+    }>();
+
+    // Chunk ISRCs into batches
+    for (let i = 0; i < isrcs.length; i += BATCH_SIZE) {
+      const chunk = isrcs.slice(i, i + BATCH_SIZE);
+      const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
+      const totalBatches = Math.ceil(isrcs.length / BATCH_SIZE);
+
+      try {
+        const chunkResult = await this.fetchTrackBatchByIsrc(chunk, countryCode, token, batchNumber, totalBatches);
+        chunkResult.forEach((value, key) => result.set(key, value));
+      } catch (error) {
+        logger.warn('batch_tracks_by_isrc_chunk_failed', {
+          batchNumber,
+          totalBatches,
+          chunkSize: chunk.length,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        // Continue with next chunk on failure (graceful degradation)
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Fetch a single batch of tracks by ISRC (max 20)
+   */
+  private async fetchTrackBatchByIsrc(
+    isrcs: string[],
+    countryCode: string,
+    token: string,
+    batchNumber: number,
+    totalBatches: number
+  ): Promise<Map<string, {
+    tidalId: string;
+    title: string;
+    artist: string;
+    albumId: string | null;
+    duration: number | null;
+  }>> {
+    return this.rateLimiter.executeWithRetry(async () => {
+      const queryParams = new URLSearchParams({
+        countryCode,
+        include: 'albums,artists',
+        'filter[isrc]': isrcs.join(','),
+      });
+      const url = `${this.apiBaseUrl}/v2/tracks?${queryParams.toString()}`;
+
+      logger.info('suggest_playlist_tracks_batch', {
+        batchNumber,
+        totalBatches,
+        batchSize: isrcs.length,
+      });
+
+      const response = await axios.get<TidalTrackBatchResponse>(url, {
+        headers: {
+          'accept': 'application/vnd.api+json',
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/vnd.api+json',
+        },
+        timeout: 10000,
+      });
+
+      // Build artist lookup from included resources
+      const artistMap = new Map<string, string>();
+      if (response.data.included) {
+        response.data.included
+          .filter((r): r is JsonApiResource<TidalArtistAttributes> => r.type === 'artists')
+          .forEach(artist => {
+            if (artist.attributes?.name) {
+              artistMap.set(artist.id, artist.attributes.name);
+            }
+          });
+      }
+
+      // Map ISRC to track data
+      const trackMap = new Map<string, {
+        tidalId: string;
+        title: string;
+        artist: string;
+        albumId: string | null;
+        duration: number | null;
+      }>();
+
+      response.data.data.forEach(track => {
+        const isrc = track.attributes?.isrc?.toUpperCase();
+        if (!isrc) return;
+
+        // Get album ID from relationship
+        let albumId: string | null = null;
+        const albumRelationship = track.relationships?.albums?.data;
+        if (Array.isArray(albumRelationship) && albumRelationship.length > 0) {
+          albumId = albumRelationship[0].id;
+        }
+
+        // Get artist name from relationship
+        let artistName = 'Unknown Artist';
+        const artistRelationship = track.relationships?.artists?.data;
+        if (Array.isArray(artistRelationship) && artistRelationship.length > 0) {
+          artistName = artistMap.get(artistRelationship[0].id) || 'Unknown Artist';
+        }
+
+        // Parse duration
+        let duration: number | null = null;
+        if (track.attributes?.duration) {
+          duration = this.parseDuration(track.attributes.duration);
+        }
+
+        trackMap.set(isrc, {
+          tidalId: track.id,
+          title: track.attributes?.title || 'Unknown Track',
+          artist: artistName,
+          albumId,
+          duration,
+        });
+      });
+
+      logger.info('suggest_playlist_tracks_batch_complete', {
+        batchNumber,
+        totalBatches,
+        requested: isrcs.length,
+        found: trackMap.size,
+      });
+
+      return trackMap;
+    });
+  }
+
+  /**
+   * Public wrapper for batch fetching albums by IDs with 80x80 artwork
+   *
+   * Feature: 015-playlist-suggestion
+   *
+   * Fetches album details including title and 80x80 cover art.
+   * Chunks requests into batches of 20 albums (Tidal API limit).
+   *
+   * @param albumIds - Array of Tidal album IDs to look up
+   * @param countryCode - Country code for regional content (default: 'US')
+   * @returns Map of album ID to album data (title, artworkUrl)
+   */
+  async batchFetchAlbumsById(
+    albumIds: string[],
+    countryCode: string = 'US'
+  ): Promise<Map<string, {
+    title: string;
+    artworkUrl: string | null;
+  }>> {
+    if (albumIds.length === 0) {
+      return new Map();
+    }
+
+    const token = await this.tokenService.getValidToken();
+    const BATCH_SIZE = 20; // Tidal API limit
+    const result = new Map<string, { title: string; artworkUrl: string | null }>();
+
+    // Chunk album IDs into batches
+    for (let i = 0; i < albumIds.length; i += BATCH_SIZE) {
+      const chunk = albumIds.slice(i, i + BATCH_SIZE);
+      const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
+      const totalBatches = Math.ceil(albumIds.length / BATCH_SIZE);
+
+      try {
+        const chunkResult = await this.fetchAlbumBatchForPlaylist(chunk, countryCode, token, batchNumber, totalBatches);
+        chunkResult.forEach((value, key) => result.set(key, value));
+      } catch (error) {
+        logger.warn('batch_albums_by_id_chunk_failed', {
+          batchNumber,
+          totalBatches,
+          chunkSize: chunk.length,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        // Continue with next chunk on failure (graceful degradation)
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Fetch a single batch of albums for playlist enrichment (max 20)
+   * Prefers 80x80 artwork for compact playlist display.
+   */
+  private async fetchAlbumBatchForPlaylist(
+    albumIds: string[],
+    countryCode: string,
+    token: string,
+    batchNumber: number,
+    totalBatches: number
+  ): Promise<Map<string, { title: string; artworkUrl: string | null }>> {
+    return this.rateLimiter.executeWithRetry(async () => {
+      const queryParams = new URLSearchParams({
+        countryCode,
+        include: 'coverArt',
+        'filter[id]': albumIds.join(','),
+      });
+      const url = `${this.apiBaseUrl}/v2/albums?${queryParams.toString()}`;
+
+      logger.info('suggest_playlist_albums_batch', {
+        batchNumber,
+        totalBatches,
+        batchSize: albumIds.length,
+      });
+
+      const response = await axios.get<TidalAlbumBatchResponse>(url, {
+        headers: {
+          'accept': 'application/vnd.api+json',
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/vnd.api+json',
+        },
+        timeout: 10000,
+      });
+
+      // Build artwork lookup from included resources (prefer 80x80)
+      const artworkMap = new Map<string, string>();
+      if (response.data.included) {
+        response.data.included
+          .filter((r): r is JsonApiResource<TidalArtworkAttributes> => r.type === 'artworks')
+          .forEach(artwork => {
+            const files = artwork.attributes?.files;
+            if (files && files.length > 0) {
+              // Prefer 80x80 for compact playlist display
+              const image80 = files.find(f => f.meta.width === 80);
+              const image160 = files.find(f => f.meta.width === 160);
+              const url = image80?.href || image160?.href || files[0].href;
+              artworkMap.set(artwork.id, url);
+            }
+          });
+      }
+
+      // Map album ID to album data
+      const albumMap = new Map<string, { title: string; artworkUrl: string | null }>();
+
+      response.data.data.forEach(album => {
+        // Get cover art URL from relationship
+        let artworkUrl: string | null = null;
+        const coverArtData = album.relationships?.coverArt?.data;
+        if (Array.isArray(coverArtData) && coverArtData.length > 0) {
+          artworkUrl = artworkMap.get(coverArtData[0].id) || null;
+        }
+
+        albumMap.set(album.id, {
+          title: album.attributes?.title || 'Unknown Album',
+          artworkUrl,
+        });
+      });
+
+      logger.info('suggest_playlist_albums_batch_complete', {
+        batchNumber,
+        totalBatches,
+        requested: albumIds.length,
+        found: albumMap.size,
+      });
+
+      return albumMap;
+    });
+  }
+
   /**
    * Fetch track metadata by ID from Tidal API
    *

@@ -30,6 +30,8 @@ Auto-generated from all feature plans. Last updated: 2025-12-27
 - Qdrant vector database (already contains `short_description` field from feature 012) (013-agent-tool-optimization)
 - TypeScript 5.3.3 / Node.js 20.x (backend) + Vercel AI SDK (`ai`, `@ai-sdk/anthropic`), Zod 3.x (014-tidal-search-refinement)
 - N/A (no storage changes) (014-tidal-search-refinement)
+- TypeScript 5.3.3 / Node.js 20.x (backend), TypeScript 5.3.3 / React 18.2.0 (frontend) + Vercel AI SDK (`ai`, `@ai-sdk/anthropic`), Zod 3.x, axios 1.6+, Apollo Server 4.x, Apollo Client 3.x (015-playlist-suggestion)
+- PostgreSQL (via TypeORM - Message.content JSONB field for tool blocks), existing rate limiter for Tidal API (015-playlist-suggestion)
 
 ## Project Structure
 
@@ -222,9 +224,9 @@ Access at http://localhost:3000 when Langfuse is running.
 | `CHAT_MAX_TOKENS` | No | `4096` | Maximum tokens for chat responses |
 
 ## Recent Changes
+- 015-playlist-suggestion: Added TypeScript 5.3.3 / Node.js 20.x (backend), TypeScript 5.3.3 / React 18.2.0 (frontend) + Vercel AI SDK (`ai`, `@ai-sdk/anthropic`), Zod 3.x, axios 1.6+, Apollo Server 4.x, Apollo Client 3.x
 - 014-tidal-search-refinement: Added TypeScript 5.3.3 / Node.js 20.x (backend) + Vercel AI SDK (`ai`, `@ai-sdk/anthropic`), Zod 3.x
 - 013-agent-tool-optimization: Added TypeScript 5.3.3 / Node.js 20.x + @qdrant/js-client-rest (Qdrant client), Vercel AI SDK (agent), Zod (validation)
-- 012-track-short-description: Added TypeScript 5.3.3 / Node.js 20.x + Inngest 3.22.12, Vercel AI SDK (`ai`, `@ai-sdk/anthropic`), Zod 3.x, Langfuse 3.0.0, @qdrant/js-client-rest 1.16.2
 
 
 <!-- MANUAL ADDITIONS START -->
@@ -241,6 +243,7 @@ The Discover Chat agent has access to the following tools for music discovery:
 | `tidalSearch` | Search Tidal catalogue | "What albums does Radiohead have?" |
 | `albumTracks` | Get tracks from a Tidal album | After finding an album, see its tracks |
 | `batchMetadata` | Get full metadata for ISRCs | Enrich search results with lyrics/features |
+| `suggestPlaylist` | Present curated playlist with artwork | Display finalized track selection visually |
 
 ### Agent Architecture
 
@@ -253,6 +256,7 @@ backend/src/
 │       ├── tidalSearchTool.ts         # Tidal API search tool
 │       ├── albumTracksTool.ts         # Album track listing tool
 │       ├── batchMetadataTool.ts       # Batch ISRC metadata lookup
+│       ├── suggestPlaylistTool.ts     # Playlist display with Tidal enrichment
 │       ├── retry.ts                   # Retry wrapper with exponential backoff
 │       └── tracing.ts                 # Langfuse tracing for tool calls
 ├── schemas/
@@ -271,10 +275,11 @@ npm test -- tests/contract/agentTools/
 # Run specific tool tests
 npm test -- tests/contract/agentTools/tidalSearchTool.test.ts
 npm test -- tests/contract/agentTools/batchMetadataTool.test.ts
+npm test -- tests/contract/agentTools/suggestPlaylistTool.test.ts
 ```
 
 ### Frontend Integration
 
-Tool invocations are streamed via SSE and displayed inline in chat messages using the `ToolInvocation` component with expand/collapse functionality.
+Tool invocations are streamed via SSE and displayed inline in chat messages using the `ToolInvocation` component with expand/collapse functionality. The `suggestPlaylist` tool renders a visual `PlaylistCard` component with album artwork, track info, and expandable reasoning.
 
 <!-- MANUAL ADDITIONS END -->

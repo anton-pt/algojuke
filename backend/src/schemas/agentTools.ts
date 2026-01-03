@@ -123,13 +123,87 @@ export const AlbumTracksInputSchema = z.object({
 export type AlbumTracksInput = z.infer<typeof AlbumTracksInputSchema>;
 
 /**
+ * Playlist Input Track Schema
+ *
+ * Feature: 015-playlist-suggestion
+ *
+ * Individual track in the playlist input from the agent.
+ */
+export const PlaylistInputTrackSchema = z.object({
+  /**
+   * International Standard Recording Code.
+   * Used to look up track in Tidal catalogue.
+   */
+  isrc: z
+    .string()
+    .regex(ISRC_PATTERN, 'Invalid ISRC format (must be 12 alphanumeric characters)'),
+
+  /**
+   * Track title (fallback if Tidal lookup fails).
+   */
+  title: z
+    .string()
+    .min(1, 'Track title cannot be empty')
+    .max(500, 'Track title too long (max 500 characters)'),
+
+  /**
+   * Artist name (fallback if Tidal lookup fails).
+   */
+  artist: z
+    .string()
+    .min(1, 'Artist name cannot be empty')
+    .max(500, 'Artist name too long (max 500 characters)'),
+
+  /**
+   * One sentence explaining why this track was selected.
+   * Displayed when user expands the track in the playlist UI.
+   */
+  reasoning: z
+    .string()
+    .min(1, 'Reasoning cannot be empty')
+    .max(1000, 'Reasoning too long (max 1000 characters)'),
+});
+
+export type PlaylistInputTrack = z.infer<typeof PlaylistInputTrackSchema>;
+
+/**
+ * Suggest Playlist Tool Input Schema
+ *
+ * Feature: 015-playlist-suggestion
+ *
+ * For presenting a curated playlist to the user with visual album artwork.
+ */
+export const SuggestPlaylistInputSchema = z.object({
+  /**
+   * Descriptive title for the playlist.
+   * Examples: "Upbeat Morning Mix", "Melancholic Evening Vibes"
+   */
+  title: z
+    .string()
+    .min(1, 'Playlist title cannot be empty')
+    .max(200, 'Playlist title too long (max 200 characters)'),
+
+  /**
+   * Array of tracks to include in the playlist.
+   * Minimum 1, maximum 50 tracks.
+   */
+  tracks: z
+    .array(PlaylistInputTrackSchema)
+    .min(1, 'Playlist must have at least 1 track')
+    .max(50, 'Playlist cannot exceed 50 tracks'),
+});
+
+export type SuggestPlaylistInput = z.infer<typeof SuggestPlaylistInputSchema>;
+
+/**
  * Union type for all tool inputs
  */
 export type ToolInput =
   | SemanticSearchInput
   | TidalSearchInput
   | BatchMetadataInput
-  | AlbumTracksInput;
+  | AlbumTracksInput
+  | SuggestPlaylistInput;
 
 /**
  * Tool name enum for type safety
@@ -139,6 +213,7 @@ export const ToolName = z.enum([
   'tidalSearch',
   'batchMetadata',
   'albumTracks',
+  'suggestPlaylist',
 ]);
 
 export type ToolNameType = z.infer<typeof ToolName>;
