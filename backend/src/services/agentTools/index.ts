@@ -10,6 +10,7 @@ export { executeSemanticSearch, type SemanticSearchContext } from './semanticSea
 export { executeTidalSearch, type TidalSearchContext } from './tidalSearchTool.js';
 export { executeAlbumTracks, type AlbumTracksContext } from './albumTracksTool.js';
 export { executeBatchMetadata, type BatchMetadataContext } from './batchMetadataTool.js';
+export { executeSuggestPlaylist, enrichPlaylistTracks, type SuggestPlaylistContext } from './suggestPlaylistTool.js';
 export { executeWithRetry, isRetryableError, getUserFriendlyMessage } from './retry.js';
 export { getLibraryIsrcs, getLibraryAlbumIds } from './libraryStatus.js';
 export {

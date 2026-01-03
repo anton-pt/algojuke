@@ -11,6 +11,8 @@ import type {
   TidalSearchInput,
   BatchMetadataInput,
   AlbumTracksInput,
+  SuggestPlaylistInput,
+  PlaylistInputTrack,
   ToolNameType,
 } from '../schemas/agentTools.js';
 
@@ -170,6 +172,64 @@ export interface AlbumTracksOutput extends BaseToolOutput {
   tracks: TrackResult[];
 }
 
+// -----------------------------------------------------------------------------
+// Playlist Suggestion Types (Feature 015)
+// -----------------------------------------------------------------------------
+
+/**
+ * Enriched track in the playlist output.
+ *
+ * Feature: 015-playlist-suggestion
+ */
+export interface EnrichedPlaylistTrack {
+  /** ISRC from input */
+  isrc: string;
+
+  /** Track title - from Tidal if enriched, from input otherwise */
+  title: string;
+
+  /** Artist name - from Tidal if enriched, from input otherwise */
+  artist: string;
+
+  /** Album name from Tidal. Null if not enriched. */
+  album: string | null;
+
+  /** Album artwork URL (80x80px). Null if not available. */
+  artworkUrl: string | null;
+
+  /** Track duration in seconds. Null if not available. */
+  duration: number | null;
+
+  /** Agent's reasoning for including this track (from input). */
+  reasoning: string;
+
+  /** Whether this track was successfully enriched from Tidal. */
+  enriched: boolean;
+
+  /** Tidal track ID if available. Null if not enriched. */
+  tidalId: string | null;
+}
+
+/**
+ * Suggest Playlist Tool Output.
+ *
+ * Feature: 015-playlist-suggestion
+ */
+export interface SuggestPlaylistOutput extends BaseToolOutput {
+  /** Playlist title (from input). */
+  title: string;
+
+  /** Enriched tracks with Tidal metadata. */
+  tracks: EnrichedPlaylistTrack[];
+
+  /** Statistics for observability. */
+  stats: {
+    totalTracks: number;
+    enrichedTracks: number;
+    failedTracks: number;
+  };
+}
+
 /**
  * Union of all tool outputs
  */
@@ -178,7 +238,8 @@ export type ToolOutput =
   | OptimizedSemanticSearchOutput
   | TidalSearchOutput
   | BatchMetadataOutput
-  | AlbumTracksOutput;
+  | AlbumTracksOutput
+  | SuggestPlaylistOutput;
 
 // -----------------------------------------------------------------------------
 // SSE Event Types
@@ -191,7 +252,7 @@ export interface ToolCallStartEvent {
   type: 'tool_call_start';
   toolCallId: string; // Unique ID for this invocation
   toolName: ToolNameType;
-  input: SemanticSearchInput | TidalSearchInput | BatchMetadataInput | AlbumTracksInput;
+  input: SemanticSearchInput | TidalSearchInput | BatchMetadataInput | AlbumTracksInput | SuggestPlaylistInput;
 }
 
 /**
@@ -268,5 +329,7 @@ export type {
   TidalSearchInput,
   BatchMetadataInput,
   AlbumTracksInput,
+  SuggestPlaylistInput,
+  PlaylistInputTrack,
   ToolNameType,
 };

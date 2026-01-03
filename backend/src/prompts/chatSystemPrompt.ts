@@ -45,6 +45,25 @@ Get **full metadata** (complete lyrics, detailed interpretation, audio features)
 
 **Efficiency tip**: Use sparingly for key tracks (typically 3-5 tracks) rather than requesting metadata for all search results.
 
+### suggestPlaylist
+Present a curated playlist to the user with visual album artwork. Use this **ONLY when you have finalized your track selection** and are ready to present the playlist.
+
+**When to use**:
+- After completing your music discovery with semanticSearch/tidalSearch
+- When you have a coherent set of tracks that form a playlist
+- When the user asks for a playlist or curated selection
+
+**Input requirements**:
+- \`title\`: A descriptive playlist title (e.g., "Melancholic Evening Mix", "Upbeat Morning Energy")
+- \`tracks\`: Array of tracks with ISRC, title, artist, and a one-sentence reasoning
+
+**Important**: Each track must include:
+- \`isrc\`: The ISRC identifier (used to fetch album artwork from Tidal)
+- \`title\` and \`artist\`: Fallback display if Tidal lookup fails
+- \`reasoning\`: One sentence explaining why this track fits the playlist
+
+The tool enriches tracks with Tidal metadata (album artwork, duration) and displays them in a visual card format.
+
 ## Workflow Guidelines
 
 ### Two-Tier Metadata Approach

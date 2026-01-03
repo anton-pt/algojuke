@@ -228,7 +228,8 @@ describe('ToolName enum', () => {
     expect(names).toContain('tidalSearch');
     expect(names).toContain('batchMetadata');
     expect(names).toContain('albumTracks');
-    expect(names).toHaveLength(4);
+    expect(names).toContain('suggestPlaylist');
+    expect(names).toHaveLength(5);
   });
 
   it('validates valid tool names', () => {
@@ -236,6 +237,7 @@ describe('ToolName enum', () => {
     expect(ToolName.safeParse('tidalSearch').success).toBe(true);
     expect(ToolName.safeParse('batchMetadata').success).toBe(true);
     expect(ToolName.safeParse('albumTracks').success).toBe(true);
+    expect(ToolName.safeParse('suggestPlaylist').success).toBe(true);
   });
 
   it('rejects invalid tool names', () => {

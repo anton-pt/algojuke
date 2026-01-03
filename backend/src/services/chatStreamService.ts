@@ -31,10 +31,12 @@ import {
   TidalSearchInputSchema,
   AlbumTracksInputSchema,
   BatchMetadataInputSchema,
+  SuggestPlaylistInputSchema,
   type SemanticSearchInput,
   type TidalSearchInput,
   type AlbumTracksInput,
   type BatchMetadataInput,
+  type SuggestPlaylistInput,
 } from '../schemas/agentTools.js';
 import type {
   SemanticSearchOutput,
@@ -42,12 +44,14 @@ import type {
   TidalSearchOutput,
   AlbumTracksOutput,
   BatchMetadataOutput,
+  SuggestPlaylistOutput,
   ToolError,
 } from '../types/agentTools.js';
 import { executeSemanticSearch, type SemanticSearchContext } from './agentTools/semanticSearchTool.js';
 import { executeTidalSearch, type TidalSearchContext } from './agentTools/tidalSearchTool.js';
 import { executeAlbumTracks, type AlbumTracksContext } from './agentTools/albumTracksTool.js';
 import { executeBatchMetadata, type BatchMetadataContext } from './agentTools/batchMetadataTool.js';
+import { executeSuggestPlaylist, type SuggestPlaylistContext } from './agentTools/suggestPlaylistTool.js';
 import { executeWithRetry } from './agentTools/retry.js';
 import { createToolSpan } from './agentTools/tracing.js';
 
@@ -596,11 +600,102 @@ export class ChatStreamService {
       },
     });
 
+    const suggestPlaylistTool = tool({
+      description: 'Present a curated playlist to the user with visual album artwork. Use this ONLY when you have finalized your track selection and are ready to present the playlist. The tool enriches each track with Tidal metadata (album artwork, duration). Provide a descriptive title and include a one-sentence reasoning for each track explaining why it fits the playlist.',
+      inputSchema: SuggestPlaylistInputSchema,
+      execute: async (input, options) => {
+        const typedInput = input as SuggestPlaylistInput;
+        const toolCallId = options.toolCallId;
+
+        // Track tool call for persistence (Task 4.2)
+        context.toolCallsMap.set(toolCallId, { name: 'suggestPlaylist', input });
+
+        context.onEvent({
+          type: 'tool_call_start',
+          toolCallId,
+          toolName: 'suggestPlaylist',
+          input,
+        });
+
+        const span = createToolSpan(context.trace, {
+          toolName: 'suggestPlaylist',
+          toolCallId,
+          input,
+        });
+
+        const startTime = Date.now();
+
+        try {
+          const playlistContext: SuggestPlaylistContext = {
+            tidalService: context.tidalService,
+          };
+
+          // Note: suggestPlaylist does its own retry logic internally
+          const result = await executeSuggestPlaylist(typedInput, playlistContext);
+
+          const durationMs = Date.now() - startTime;
+          const resultCount = result.tracks.length;
+
+          span.endSuccess({
+            summary: result.summary,
+            resultCount,
+            durationMs,
+            metadata: {
+              enrichedTracks: result.stats.enrichedTracks,
+              failedTracks: result.stats.failedTracks,
+            },
+          });
+
+          // Track tool result for persistence (Task 4.2)
+          context.toolResultsMap.set(toolCallId, result);
+
+          // Emit tool_call_end with full output for PlaylistCard rendering
+          context.onEvent({
+            type: 'tool_call_end',
+            toolCallId,
+            summary: result.summary,
+            resultCount,
+            durationMs,
+            output: result,
+          });
+
+          return result;
+        } catch (error) {
+          const durationMs = Date.now() - startTime;
+          const toolError = error as ToolError;
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          const retryable = 'retryable' in toolError ? toolError.retryable : true;
+          const wasRetried = 'wasRetried' in toolError ? toolError.wasRetried : false;
+
+          span.endError({
+            error: errorMessage,
+            retryable,
+            wasRetried,
+            durationMs,
+          });
+
+          // Track error result for persistence (Task 4.2)
+          context.toolResultsMap.set(toolCallId, { error: errorMessage, retryable });
+
+          context.onEvent({
+            type: 'tool_call_error',
+            toolCallId,
+            error: errorMessage,
+            retryable,
+            wasRetried,
+          });
+
+          throw error;
+        }
+      },
+    });
+
     return {
       semanticSearch: semanticSearchTool,
       tidalSearch: tidalSearchTool,
       albumTracks: albumTracksTool,
       batchMetadata: batchMetadataTool,
+      suggestPlaylist: suggestPlaylistTool,
     };
   }
 

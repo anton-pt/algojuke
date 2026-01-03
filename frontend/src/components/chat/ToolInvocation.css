@@ -158,6 +158,15 @@
   overflow-y: auto;
 }
 
+/* Playlist results - let PlaylistCard handle its own scrolling */
+.tool-invocation__results--playlist {
+  max-height: none;
+  overflow-y: visible;
+  padding: 0;
+  background: transparent;
+  border-top: none;
+}
+
 .tool-invocation__results-empty {
   color: var(--color-text-tertiary, #999);
   font-style: italic;
