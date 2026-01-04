@@ -9,11 +9,12 @@ import { ChatService, ConversationWithComputed } from '../services/chatService.j
 import { Message, ContentBlock } from '../entities/Message.js';
 import { logger } from '../utils/logger.js';
 import { isTextBlock, isToolUseBlock, isToolResultBlock } from '../schemas/chat.js';
+import { requireAuth, type GraphQLContext } from '../middleware/authGuard.js';
 
 /**
  * GraphQL context with chat service
  */
-interface ChatContext {
+interface ChatContext extends GraphQLContext {
   chatService: ChatService;
 }
 
@@ -187,8 +188,9 @@ export const chatResolvers = {
       __: unknown,
       context: ChatContext
     ): Promise<ConversationsList | ChatError> => {
+      requireAuth(context, 'conversations');
       try {
-        const conversations = await context.chatService.getConversations();
+        const conversations = await context.chatService.getConversations(context.userId);
 
         return {
           __typename: 'ConversationsList',
@@ -216,8 +218,9 @@ export const chatResolvers = {
       { id }: { id: string },
       context: ChatContext
     ): Promise<ConversationWithMessages | ChatError> => {
+      requireAuth(context, 'conversation');
       try {
-        const result = await context.chatService.getConversation(id);
+        const result = await context.chatService.getConversation(id, context.userId);
 
         if (!result) {
           return createError(
@@ -256,9 +259,10 @@ export const chatResolvers = {
       { id }: { id: string },
       context: ChatContext
     ): Promise<DeleteSuccess | ChatError> => {
+      requireAuth(context, 'deleteConversation');
       try {
-        // Check if conversation exists first
-        const exists = await context.chatService.conversationExists(id);
+        // Check if conversation exists and belongs to user
+        const exists = await context.chatService.conversationExists(id, context.userId);
         if (!exists) {
           return createError(
             'Conversation not found',
@@ -267,7 +271,7 @@ export const chatResolvers = {
           );
         }
 
-        const deleted = await context.chatService.deleteConversation(id);
+        const deleted = await context.chatService.deleteConversation(id, context.userId);
 
         if (!deleted) {
           return createError(
@@ -306,8 +310,9 @@ export const chatResolvers = {
       __: unknown,
       context: ChatContext
     ): Promise<ConversationWithMessages | ChatError> => {
+      requireAuth(context, 'createConversation');
       try {
-        const conversation = await context.chatService.createConversation();
+        const conversation = await context.chatService.createConversation(context.userId);
 
         logger.info('chat_conversation_created', { conversationId: conversation.id });
 

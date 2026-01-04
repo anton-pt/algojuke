@@ -2,9 +2,14 @@ import { GraphQLError } from 'graphql';
 import { LibraryService } from '../services/libraryService.js';
 import { LibraryError, DuplicateItemError, TidalApiError, ErrorType } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
+import { requireAuth, type GraphQLContext } from '../middleware/authGuard.js';
 
-// Mock user ID for MVP (single-user system)
-const CURRENT_USER_ID = '00000000-0000-0000-0000-000000000001';
+/**
+ * Context type for library resolvers
+ */
+interface LibraryContext extends GraphQLContext {
+  libraryService: LibraryService;
+}
 
 /**
  * GraphQL resolvers for library management
@@ -15,12 +20,13 @@ export const libraryResolvers = {
      * Get all albums in the user's library, sorted alphabetically
      */
     getLibraryAlbums: async (
-      _parent: any,
-      _args: any,
-      context: { libraryService: LibraryService }
+      _parent: unknown,
+      _args: unknown,
+      context: LibraryContext
     ) => {
+      requireAuth(context, 'getLibraryAlbums');
       try {
-        return await context.libraryService.getLibraryAlbums(CURRENT_USER_ID);
+        return await context.libraryService.getLibraryAlbums(context.userId);
       } catch (error) {
         logger.error('get_library_albums_resolver_error', { error: String(error) });
         throw new GraphQLError('Failed to fetch library albums', {
@@ -33,12 +39,13 @@ export const libraryResolvers = {
      * Get all tracks in the user's library, sorted alphabetically
      */
     getLibraryTracks: async (
-      _parent: any,
-      _args: any,
-      context: { libraryService: LibraryService }
+      _parent: unknown,
+      _args: unknown,
+      context: LibraryContext
     ) => {
+      requireAuth(context, 'getLibraryTracks');
       try {
-        return await context.libraryService.getLibraryTracks(CURRENT_USER_ID);
+        return await context.libraryService.getLibraryTracks(context.userId);
       } catch (error) {
         logger.error('get_library_tracks_resolver_error', { error: String(error) });
         throw new GraphQLError('Failed to fetch library tracks', {
@@ -51,12 +58,13 @@ export const libraryResolvers = {
      * Get a specific album from the library by ID
      */
     getLibraryAlbum: async (
-      _parent: any,
+      _parent: unknown,
       args: { id: string },
-      context: { libraryService: LibraryService }
+      context: LibraryContext
     ) => {
+      requireAuth(context, 'getLibraryAlbum');
       try {
-        return await context.libraryService.getLibraryAlbum(args.id, CURRENT_USER_ID);
+        return await context.libraryService.getLibraryAlbum(args.id, context.userId);
       } catch (error) {
         logger.error('get_library_album_resolver_error', { id: args.id, error: String(error) });
         throw new GraphQLError('Failed to fetch library album', {
@@ -69,12 +77,13 @@ export const libraryResolvers = {
      * Get a specific track from the library by ID
      */
     getLibraryTrack: async (
-      _parent: any,
+      _parent: unknown,
       args: { id: string },
-      context: { libraryService: LibraryService }
+      context: LibraryContext
     ) => {
+      requireAuth(context, 'getLibraryTrack');
       try {
-        return await context.libraryService.getLibraryTrack(args.id, CURRENT_USER_ID);
+        return await context.libraryService.getLibraryTrack(args.id, context.userId);
       } catch (error) {
         logger.error('get_library_track_resolver_error', { id: args.id, error: String(error) });
         throw new GraphQLError('Failed to fetch library track', {
@@ -90,14 +99,15 @@ export const libraryResolvers = {
      * Returns union type: LibraryAlbum | DuplicateLibraryItemError | TidalApiUnavailableError
      */
     addAlbumToLibrary: async (
-      _parent: any,
+      _parent: unknown,
       args: { input: { tidalAlbumId: string } },
-      context: { libraryService: LibraryService }
+      context: LibraryContext
     ) => {
+      requireAuth(context, 'addAlbumToLibrary');
       const { tidalAlbumId } = args.input;
 
       try {
-        const album = await context.libraryService.addAlbumToLibrary(tidalAlbumId, CURRENT_USER_ID);
+        const album = await context.libraryService.addAlbumToLibrary(tidalAlbumId, context.userId);
         return {
           __typename: 'LibraryAlbum',
           ...album,
@@ -138,14 +148,15 @@ export const libraryResolvers = {
      * Returns union type: LibraryTrack | DuplicateLibraryItemError | TidalApiUnavailableError
      */
     addTrackToLibrary: async (
-      _parent: any,
+      _parent: unknown,
       args: { input: { tidalTrackId: string } },
-      context: { libraryService: LibraryService }
+      context: LibraryContext
     ) => {
+      requireAuth(context, 'addTrackToLibrary');
       const { tidalTrackId } = args.input;
 
       try {
-        const track = await context.libraryService.addTrackToLibrary(tidalTrackId, CURRENT_USER_ID);
+        const track = await context.libraryService.addTrackToLibrary(tidalTrackId, context.userId);
         return {
           __typename: 'LibraryTrack',
           ...track,
@@ -186,12 +197,13 @@ export const libraryResolvers = {
      * Returns true if successful, throws error if album not found
      */
     removeAlbumFromLibrary: async (
-      _parent: any,
+      _parent: unknown,
       args: { id: string },
-      context: { libraryService: LibraryService }
+      context: LibraryContext
     ) => {
+      requireAuth(context, 'removeAlbumFromLibrary');
       try {
-        return await context.libraryService.removeAlbumFromLibrary(args.id, CURRENT_USER_ID);
+        return await context.libraryService.removeAlbumFromLibrary(args.id, context.userId);
       } catch (error) {
         if (error instanceof LibraryError && error.type === ErrorType.NOT_FOUND) {
           throw new GraphQLError('Album not found in library', {
@@ -215,12 +227,13 @@ export const libraryResolvers = {
      * Returns true if successful, throws error if track not found
      */
     removeTrackFromLibrary: async (
-      _parent: any,
+      _parent: unknown,
       args: { id: string },
-      context: { libraryService: LibraryService }
+      context: LibraryContext
     ) => {
+      requireAuth(context, 'removeTrackFromLibrary');
       try {
-        return await context.libraryService.removeTrackFromLibrary(args.id, CURRENT_USER_ID);
+        return await context.libraryService.removeTrackFromLibrary(args.id, context.userId);
       } catch (error) {
         if (error instanceof LibraryError && error.type === ErrorType.NOT_FOUND) {
           throw new GraphQLError('Track not found in library', {

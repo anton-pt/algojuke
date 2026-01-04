@@ -14,6 +14,28 @@ import { MemoryRouter } from 'react-router-dom';
 import { ChatPage } from '../ChatPage';
 import { GET_CONVERSATIONS } from '../../../graphql/chat';
 
+// Mock Clerk hooks
+vi.mock('@clerk/clerk-react', () => ({
+  useAuth: () => ({
+    getToken: vi.fn().mockResolvedValue('test-token'),
+    isSignedIn: true,
+    userId: 'user_testUser123',
+  }),
+  useClerk: () => ({
+    signOut: vi.fn(),
+  }),
+}));
+
+// Mock Tidal auth SDK
+vi.mock('@tidal-music/auth', () => ({
+  init: vi.fn().mockResolvedValue(undefined),
+  initializeLogin: vi.fn(),
+  finalizeLogin: vi.fn(),
+  credentialsProvider: {
+    getCredentials: vi.fn().mockResolvedValue({ token: 'tidal-token' }),
+  },
+}));
+
 // Mock the useChatStream hook
 vi.mock('../../../hooks/useChatStream', () => ({
   useChatStream: vi.fn(() => ({

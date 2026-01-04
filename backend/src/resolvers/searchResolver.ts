@@ -1,10 +1,11 @@
 import { validateQuery, validateLimit, validateOffset, validateCountryCode } from '../utils/validation.js';
 import { logger } from '../utils/logger.js';
+import { requireAuth, type GraphQLContext } from '../middleware/authGuard.js';
 import type { SearchArgs, SearchResults } from '../types/graphql.js';
 import type { TidalService } from '../services/tidalService.js';
 import type { CacheService } from '../services/cacheService.js';
 
-export interface ResolverContext {
+export interface ResolverContext extends GraphQLContext {
   tidalService: TidalService;
   cache: CacheService;
 }
@@ -19,6 +20,7 @@ export const searchResolver = {
       args: SearchArgs,
       context: ResolverContext
     ): Promise<SearchResults> => {
+      requireAuth(context, 'search');
       // Validate inputs
       const query = validateQuery(args.query);
       const limit = validateLimit(args.limit);

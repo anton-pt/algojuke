@@ -30,11 +30,8 @@ export interface AlbumTracksContext {
   qdrantClient: BackendQdrantClient;
   libraryTrackRepository: Repository<LibraryTrack>;
   libraryAlbumRepository: Repository<LibraryAlbum>;
-  userId: string;
+  userId: string; // Required - authenticated user ID
 }
-
-// Mock user ID for MVP (single-user system)
-const CURRENT_USER_ID = '00000000-0000-0000-0000-000000000001';
 
 // -----------------------------------------------------------------------------
 // Tool Implementation
@@ -53,7 +50,7 @@ export async function executeAlbumTracks(
   context: AlbumTracksContext
 ): Promise<AlbumTracksOutput> {
   const startTime = Date.now();
-  const userId = context.userId || CURRENT_USER_ID;
+  const { userId } = context;
 
   logger.info('album_tracks_tool_start', {
     albumId: input.albumId,

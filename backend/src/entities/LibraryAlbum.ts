@@ -18,14 +18,14 @@ export interface TrackInfo {
 }
 
 @Entity('library_albums')
-@Index(['tidalAlbumId'], { unique: true })
+@Index(['tidalAlbumId', 'userId'], { unique: true })  // Composite unique - per-user
 @Index(['userId'])
 @Index(['artistName', 'title'])
 export class LibraryAlbum {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ name: 'tidal_album_id', type: 'varchar', length: 255, unique: true })
+  @Column({ name: 'tidal_album_id', type: 'varchar', length: 255 })  // Removed unique: true
   tidalAlbumId!: string;
 
   @Column({ type: 'varchar', length: 255 })
@@ -54,7 +54,7 @@ export class LibraryAlbum {
     popularity?: number;
   } = {};
 
-  @Column({ name: 'user_id', type: 'uuid' })
+  @Column({ name: 'user_id', type: 'varchar', length: 255 })
   userId!: string;
 
   @CreateDateColumn({ name: 'created_at' })

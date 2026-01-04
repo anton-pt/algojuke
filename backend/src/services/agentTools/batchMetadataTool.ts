@@ -33,11 +33,8 @@ export interface BatchMetadataContext {
   qdrantClient: BackendQdrantClient;
   libraryTrackRepository: Repository<LibraryTrack>;
   libraryAlbumRepository: Repository<LibraryAlbum>;
-  userId: string;
+  userId: string; // Required - authenticated user ID
 }
-
-// Mock user ID for MVP (single-user system)
-const CURRENT_USER_ID = '00000000-0000-0000-0000-000000000001';
 
 /**
  * ISRC format pattern: 12 alphanumeric characters (ISO 3901)
@@ -68,7 +65,7 @@ export async function executeBatchMetadata(
   context: BatchMetadataContext
 ): Promise<BatchMetadataOutput> {
   const startTime = Date.now();
-  const userId = context.userId || CURRENT_USER_ID;
+  const { userId } = context;
 
   logger.info('batch_metadata_tool_start', {
     isrcCount: input.isrcs.length,

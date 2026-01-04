@@ -45,7 +45,8 @@ describe('Chat Entities Contract', () => {
 
       expect(columnMetadata).toBeDefined();
       expect(columnMetadata!.options.name).toBe('user_id');
-      expect(columnMetadata!.options.type).toBe('uuid');
+      // userId is varchar to support Clerk user IDs (e.g., "user_37kEhnuC2FIotkGnoA4EQjMOsQn")
+      expect(columnMetadata!.options.type).toBe('varchar');
     });
 
     it('should have createdAt with column name "created_at"', () => {

@@ -37,11 +37,12 @@ const mockMessages = [
 
 describe('Chat Mutations Integration Tests', () => {
   describe('T020-IT: deleteConversation cascades messages', () => {
-    it('deletes conversation and returns true when found', async () => {
+    it('deletes conversation and returns true when found and user owns it', async () => {
       let deleteWasCalled = false;
 
-      // Mock repository with delete method
+      // Mock repository with findOne and delete methods (ownership verification)
       const mockConversationRepo = {
+        findOne: vi.fn().mockResolvedValue(mockConversation),
         delete: vi.fn().mockImplementation(async () => {
           deleteWasCalled = true;
           return { affected: 1 };
@@ -56,8 +57,8 @@ describe('Chat Mutations Integration Tests', () => {
       const { ChatService } = await import('../../src/services/chatService.js');
       const chatService = new ChatService(mockDataSource as unknown as DataSource);
 
-      // Delete the conversation
-      const result = await chatService.deleteConversation(mockConversation.id);
+      // Delete the conversation (include userId for ownership verification)
+      const result = await chatService.deleteConversation(mockConversation.id, mockConversation.userId);
 
       // Verify conversation was deleted
       expect(result).toBe(true);
@@ -69,6 +70,7 @@ describe('Chat Mutations Integration Tests', () => {
 
     it('returns false when conversation not found', async () => {
       const mockConversationRepo = {
+        findOne: vi.fn().mockResolvedValue(null),
         delete: vi.fn().mockResolvedValue({ affected: 0 }),
       };
 
@@ -79,7 +81,7 @@ describe('Chat Mutations Integration Tests', () => {
       const { ChatService } = await import('../../src/services/chatService.js');
       const chatService = new ChatService(mockDataSource as unknown as DataSource);
 
-      const result = await chatService.deleteConversation('nonexistent-id');
+      const result = await chatService.deleteConversation('nonexistent-id', 'user-123');
 
       expect(result).toBe(false);
     });
@@ -89,6 +91,7 @@ describe('Chat Mutations Integration Tests', () => {
       // with onDelete: 'CASCADE' on the Message -> Conversation relationship.
       // This test verifies the service calls delete on the conversation.
       const mockConversationRepo = {
+        findOne: vi.fn().mockResolvedValue(mockConversation),
         delete: vi.fn().mockResolvedValue({ affected: 1 }),
       };
 
@@ -99,7 +102,7 @@ describe('Chat Mutations Integration Tests', () => {
       const { ChatService } = await import('../../src/services/chatService.js');
       const chatService = new ChatService(mockDataSource as unknown as DataSource);
 
-      await chatService.deleteConversation(mockConversation.id);
+      await chatService.deleteConversation(mockConversation.id, mockConversation.userId);
 
       // Verify only conversation delete is called (cascade handles messages)
       expect(mockConversationRepo.delete).toHaveBeenCalledTimes(1);
