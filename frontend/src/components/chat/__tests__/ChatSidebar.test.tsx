@@ -11,6 +11,18 @@ import { MockedProvider } from '@apollo/client/testing';
 import { ChatSidebar } from '../ChatSidebar';
 import { GET_CONVERSATIONS } from '../../../graphql/chat';
 
+// Mock Clerk hooks (may be used by child components)
+vi.mock('@clerk/clerk-react', () => ({
+  useAuth: () => ({
+    getToken: vi.fn().mockResolvedValue('test-token'),
+    isSignedIn: true,
+    userId: 'user_testUser123',
+  }),
+  useClerk: () => ({
+    signOut: vi.fn(),
+  }),
+}));
+
 // Mock conversations data
 const mockConversations = [
   {

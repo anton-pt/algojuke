@@ -17,11 +17,12 @@ import {
   type DiscoverySearchInput,
   type DiscoverySearchResult,
 } from "../types/discovery.js";
+import { requireAuth, type GraphQLContext } from "../middleware/authGuard.js";
 
 /**
  * Context type for discovery resolvers
  */
-interface DiscoveryContext {
+interface DiscoveryContext extends GraphQLContext {
   discoveryService: DiscoveryService;
 }
 
@@ -48,6 +49,7 @@ export const discoveryResolvers = {
       args: DiscoverTracksArgs,
       context: DiscoveryContext
     ): Promise<DiscoverySearchResult> => {
+      requireAuth(context, 'discoverTracks');
       const { input } = args;
 
       try {
@@ -93,6 +95,7 @@ export const discoveryResolvers = {
       _args: unknown,
       context: DiscoveryContext
     ): Promise<number> => {
+      requireAuth(context, 'discoveryIndexedCount');
       return context.discoveryService.getIndexedCount();
     },
   },

@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { ApolloProvider } from '@apollo/client';
 import { Toaster } from 'sonner';
-import { apolloClient } from './graphql/client';
+import { ApolloProviderWithAuth } from './graphql/ApolloProviderWithAuth';
 import { UndoDeleteProvider } from './contexts/UndoDeleteContext';
 import { AppHeader } from './components/AppHeader';
 import { SearchPage } from './pages/SearchPage';
@@ -18,7 +17,7 @@ import './App.css';
 export function App() {
   return (
     <ErrorBoundary>
-      <ApolloProvider client={apolloClient}>
+      <ApolloProviderWithAuth>
         <UndoDeleteProvider>
           <BrowserRouter>
             <Toaster position="bottom-right" richColors />
@@ -69,7 +68,7 @@ export function App() {
             </Routes>
           </BrowserRouter>
         </UndoDeleteProvider>
-      </ApolloProvider>
+      </ApolloProviderWithAuth>
     </ErrorBoundary>
   );
 }

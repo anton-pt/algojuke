@@ -210,13 +210,13 @@ describe('DiscoveryService Integration', () => {
       );
     });
 
-    it('should cap pageSize at maximum 20', async () => {
-      await service.search({ query: 'test', page: 0, pageSize: 50 });
+    it('should cap pageSize at maximum 50 (MAX_PAGE_SIZE)', async () => {
+      await service.search({ query: 'test', page: 0, pageSize: 100 });
 
       expect(mockQdrantClient.hybridSearch).toHaveBeenCalledWith(
         expect.any(Array),
         expect.objectContaining({
-          limit: 20,
+          limit: 50,
         })
       );
     });

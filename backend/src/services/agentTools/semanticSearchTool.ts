@@ -60,11 +60,8 @@ export interface SemanticSearchContext {
   trackMetadataService: TrackMetadataService;
   libraryTrackRepository: Repository<LibraryTrack>;
   libraryAlbumRepository: Repository<LibraryAlbum>;
-  userId: string;
+  userId: string; // Required - authenticated user ID
 }
-
-// Mock user ID for MVP (single-user system)
-const CURRENT_USER_ID = '00000000-0000-0000-0000-000000000001';
 
 // -----------------------------------------------------------------------------
 // Helper Functions
@@ -224,7 +221,7 @@ export async function executeSemanticSearch(
   context: SemanticSearchContext
 ): Promise<OptimizedSemanticSearchOutput> {
   const startTime = Date.now();
-  const userId = context.userId || CURRENT_USER_ID;
+  const { userId } = context;
 
   logger.info('semantic_search_tool_start', {
     query: input.query.slice(0, 100),

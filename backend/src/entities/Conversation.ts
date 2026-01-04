@@ -21,7 +21,7 @@ export class Conversation {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ name: 'user_id', type: 'uuid' })
+  @Column({ name: 'user_id', type: 'varchar', length: 255 })
   userId!: string;
 
   @CreateDateColumn({ name: 'created_at' })

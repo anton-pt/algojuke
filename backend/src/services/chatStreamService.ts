@@ -78,11 +78,6 @@ const MAX_TOKENS = parseInt(process.env.CHAT_MAX_TOKENS || '4096', 10);
  */
 const MAX_STEPS = 20;
 
-/**
- * Mock user ID for MVP (single-user system)
- */
-const CURRENT_USER_ID = '00000000-0000-0000-0000-000000000001';
-
 // System prompt imported from prompts/chatSystemPrompt.ts
 
 /**
@@ -718,6 +713,7 @@ export class ChatStreamService {
    *
    * @param message User message text
    * @param conversationId Optional existing conversation ID
+   * @param userId Authenticated user ID (required)
    * @param onEvent Callback for SSE events
    * @param signal AbortSignal for cancellation
    * @returns Stream result with IDs and token usage
@@ -725,6 +721,7 @@ export class ChatStreamService {
   async streamResponse(
     message: string,
     conversationId: string | undefined,
+    userId: string,
     onEvent: (event: SSEEvent) => void,
     signal?: AbortSignal
   ): Promise<StreamResult | null> {
@@ -747,7 +744,7 @@ export class ChatStreamService {
     try {
       // Create or get conversation
       if (conversationId) {
-        const exists = await this.chatService.conversationExists(conversationId);
+        const exists = await this.chatService.conversationExists(conversationId, userId);
         if (!exists) {
           onEvent({
             type: 'error',
@@ -762,11 +759,20 @@ export class ChatStreamService {
         existingMessages = await this.chatService.getConversationMessages(conversationId);
 
         // Add user message
-        await this.chatService.addUserMessage(conversationId, message);
+        const userMessage = await this.chatService.addUserMessage(conversationId, userId, message);
+        if (!userMessage) {
+          onEvent({
+            type: 'error',
+            code: 'NOT_FOUND',
+            message: 'Conversation not found',
+            retryable: false,
+          });
+          return null;
+        }
         conversation = { id: conversationId };
       } else {
         // Create new conversation with user message
-        const result = await this.chatService.createConversationWithMessage(message);
+        const result = await this.chatService.createConversationWithMessage(message, userId);
         conversation = result.conversation;
         conversationId = conversation.id;
       }
@@ -824,7 +830,7 @@ export class ChatStreamService {
             qdrantClient: this.qdrantClient!,
             libraryTrackRepository: this.libraryTrackRepository!,
             libraryAlbumRepository: this.libraryAlbumRepository!,
-            userId: CURRENT_USER_ID,
+            userId,
             onEvent,
             trace: trace ?? null,
             // Task 4.2: Pass tracking maps for persistence
@@ -1018,9 +1024,20 @@ export class ChatStreamService {
 
             const assistantMessage = await this.chatService.addAssistantMessage(
               conversationId,
+              userId,
               contentBlocks.length > 0 ? contentBlocks : [{ type: 'text', text: '' }]
             );
-            assistantMessageId = assistantMessage.id;
+            if (assistantMessage) {
+              assistantMessageId = assistantMessage.id;
+            } else {
+              // Ownership check failed or conversation deleted - log but don't emit error
+              // since we're already handling an abort
+              logger.warn('chat_partial_save_ownership_failed', {
+                conversationId,
+                userId,
+                reason: 'addAssistantMessage returned null during abort handling',
+              });
+            }
 
             // Flush Langfuse (OpenTelemetry handles generation spans automatically)
             await flushLangfuse();
@@ -1109,9 +1126,26 @@ export class ChatStreamService {
       // Save assistant message
       const assistantMessage = await this.chatService.addAssistantMessage(
         conversationId!,
+        userId,
         contentBlocks.length > 0 ? contentBlocks : [{ type: 'text', text: '' }]
       );
-      assistantMessageId = assistantMessage.id;
+      if (assistantMessage) {
+        assistantMessageId = assistantMessage.id;
+      } else {
+        // This should not happen since we verified ownership earlier,
+        // but log it if it does (conversation may have been deleted mid-stream)
+        logger.error('chat_assistant_message_save_failed', {
+          conversationId,
+          userId,
+          reason: 'addAssistantMessage returned null - conversation may not exist or ownership mismatch',
+        });
+        onEvent({
+          type: 'error',
+          code: 'SAVE_FAILED',
+          message: 'Failed to save assistant response',
+          retryable: false,
+        });
+      }
 
       // Note: Per-step LLM generation tracking is handled by OpenTelemetry via experimental_telemetry
       // Logging timing metadata for observability (SC-001)
@@ -1185,9 +1219,20 @@ export class ChatStreamService {
 
           const assistantMessage = await this.chatService.addAssistantMessage(
             conversationId,
+            userId,
             errorContentBlocks.length > 0 ? errorContentBlocks : [{ type: 'text', text: '' }]
           );
-          assistantMessageId = assistantMessage.id;
+          if (assistantMessage) {
+            assistantMessageId = assistantMessage.id;
+          } else {
+            // Ownership check failed or conversation deleted - log but don't emit error
+            // since we're already handling an error
+            logger.warn('chat_partial_save_ownership_failed', {
+              conversationId,
+              userId,
+              reason: 'addAssistantMessage returned null during error handling',
+            });
+          }
         } catch (saveError) {
           logger.error('chat_save_partial_failed', {
             conversationId,

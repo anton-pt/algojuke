@@ -111,7 +111,8 @@ describe('Search Integration Tests', () => {
     const tokenService = new TidalTokenService();
     const tidalService = new TidalService(tokenService);
 
-    context = { cache, tidalService };
+    // Include userId for authentication (FR-006)
+    context = { cache, tidalService, userId: 'test-user-id' };
 
     // Mock token fetch
     mockedAxios.post.mockResolvedValue({
@@ -293,7 +294,7 @@ describe('Search Integration Tests', () => {
       const shortCache = new CacheService(1);
       const tokenService = new TidalTokenService();
       const tidalService = new TidalService(tokenService);
-      const shortContext = { cache: shortCache, tidalService };
+      const shortContext = { cache: shortCache, tidalService, userId: 'test-user-id' };
 
       const mockSearchResponse = createMockV2SearchResponse();
       mockedAxios.get.mockResolvedValue({ data: mockSearchResponse });

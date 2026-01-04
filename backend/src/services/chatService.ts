@@ -9,11 +9,7 @@ import { Repository, DataSource } from 'typeorm';
 import { Conversation } from '../entities/Conversation.js';
 import { Message, ContentBlock } from '../entities/Message.js';
 import { isTextBlock } from '../schemas/chat.js';
-
-/**
- * Default user ID for single-user mode
- */
-export const DEFAULT_USER_ID = '00000000-0000-0000-0000-000000000001';
+import { logAccessViolation } from '../utils/securityLogger.js';
 
 /**
  * Maximum conversations to return per SC-004
@@ -51,7 +47,7 @@ export class ChatService {
   /**
    * Get all conversations for a user, sorted by most recent
    */
-  async getConversations(userId: string = DEFAULT_USER_ID): Promise<ConversationWithComputed[]> {
+  async getConversations(userId: string): Promise<ConversationWithComputed[]> {
     const conversations = await this.conversationRepo.find({
       where: { userId },
       order: { updatedAt: 'DESC' },
@@ -64,8 +60,9 @@ export class ChatService {
 
   /**
    * Get a single conversation with all messages
+   * Verifies user ownership before returning
    */
-  async getConversation(id: string): Promise<{ conversation: ConversationWithComputed; messages: Message[] } | null> {
+  async getConversation(id: string, userId: string): Promise<{ conversation: ConversationWithComputed; messages: Message[] } | null> {
     const conversation = await this.conversationRepo.findOne({
       where: { id },
       relations: ['messages'],
@@ -73,6 +70,15 @@ export class ChatService {
 
     if (!conversation) {
       return null;
+    }
+
+    // Verify user ownership (T034, FR-027)
+    if (conversation.userId !== userId) {
+      logAccessViolation(userId, {
+        type: 'conversation',
+        id,
+      });
+      return null; // Return null as if not found to avoid information leakage
     }
 
     // Sort messages by created_at ascending
@@ -89,7 +95,7 @@ export class ChatService {
   /**
    * Create a new empty conversation
    */
-  async createConversation(userId: string = DEFAULT_USER_ID): Promise<ConversationWithComputed> {
+  async createConversation(userId: string): Promise<ConversationWithComputed> {
     const conversation = this.conversationRepo.create({
       userId,
       messages: [],
@@ -101,28 +107,67 @@ export class ChatService {
 
   /**
    * Delete a conversation and all its messages (cascade)
+   * Verifies user ownership before deleting
    */
-  async deleteConversation(id: string): Promise<boolean> {
+  async deleteConversation(id: string, userId: string): Promise<boolean> {
+    // Verify ownership before deleting (T037, FR-027)
+    const conversation = await this.conversationRepo.findOne({ where: { id } });
+
+    if (!conversation) {
+      return false;
+    }
+
+    if (conversation.userId !== userId) {
+      logAccessViolation(userId, {
+        type: 'conversation',
+        id,
+      });
+      return false; // Return false as if not found to avoid information leakage
+    }
+
     const result = await this.conversationRepo.delete({ id });
     return (result.affected ?? 0) > 0;
   }
 
   /**
-   * Check if a conversation exists
+   * Check if a conversation exists and belongs to the user
    */
-  async conversationExists(id: string): Promise<boolean> {
-    const count = await this.conversationRepo.count({ where: { id } });
+  async conversationExists(id: string, userId: string): Promise<boolean> {
+    const count = await this.conversationRepo.count({ where: { id, userId } });
     return count > 0;
   }
 
   /**
    * Create a message within a conversation (with transaction)
+   * Verifies conversation ownership before creating message
+   *
+   * @param conversationId - The conversation to add the message to
+   * @param userId - The authenticated user ID (must own the conversation)
+   * @param role - Message role ('user' or 'assistant')
+   * @param content - Message content blocks
+   * @returns The created message, or null if conversation doesn't exist or user doesn't own it
    */
   async createMessage(
     conversationId: string,
+    userId: string,
     role: 'user' | 'assistant',
     content: ContentBlock[]
-  ): Promise<Message> {
+  ): Promise<Message | null> {
+    // Verify conversation ownership (T038, FR-027)
+    const conversation = await this.conversationRepo.findOne({ where: { id: conversationId } });
+
+    if (!conversation) {
+      return null;
+    }
+
+    if (conversation.userId !== userId) {
+      logAccessViolation(userId, {
+        type: 'conversation',
+        id: conversationId,
+      });
+      return null;
+    }
+
     return this.dataSource.transaction(async (manager) => {
       const message = manager.create(Message, {
         conversationId,
@@ -145,7 +190,7 @@ export class ChatService {
    */
   async createConversationWithMessage(
     message: string,
-    userId: string = DEFAULT_USER_ID
+    userId: string
   ): Promise<{ conversation: Conversation; userMessage: Message }> {
     return this.dataSource.transaction(async (manager) => {
       const conversation = manager.create(Conversation, {
@@ -166,16 +211,18 @@ export class ChatService {
 
   /**
    * Add user message to existing conversation
+   * Verifies conversation ownership before adding
    */
-  async addUserMessage(conversationId: string, message: string): Promise<Message> {
-    return this.createMessage(conversationId, 'user', [{ type: 'text', text: message }]);
+  async addUserMessage(conversationId: string, userId: string, message: string): Promise<Message | null> {
+    return this.createMessage(conversationId, userId, 'user', [{ type: 'text', text: message }]);
   }
 
   /**
    * Add assistant message to conversation
+   * Verifies conversation ownership before adding
    */
-  async addAssistantMessage(conversationId: string, content: ContentBlock[]): Promise<Message> {
-    return this.createMessage(conversationId, 'assistant', content);
+  async addAssistantMessage(conversationId: string, userId: string, content: ContentBlock[]): Promise<Message | null> {
+    return this.createMessage(conversationId, userId, 'assistant', content);
   }
 
   /**

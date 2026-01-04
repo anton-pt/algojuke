@@ -9,14 +9,14 @@ import {
 } from 'typeorm';
 
 @Entity('library_tracks')
-@Index(['tidalTrackId'], { unique: true })
+@Index(['tidalTrackId', 'userId'], { unique: true })  // Composite unique - per-user
 @Index(['userId'])
 @Index(['artistName', 'title'])
 export class LibraryTrack {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ name: 'tidal_track_id', type: 'varchar', length: 255, unique: true })
+  @Column({ name: 'tidal_track_id', type: 'varchar', length: 255 })  // Removed unique: true
   tidalTrackId!: string;
 
   @Column({ type: 'varchar', length: 255 })
@@ -42,7 +42,7 @@ export class LibraryTrack {
     genres?: string[];
   } = {};
 
-  @Column({ name: 'user_id', type: 'uuid' })
+  @Column({ name: 'user_id', type: 'varchar', length: 255 })
   userId!: string;
 
   @CreateDateColumn({ name: 'created_at' })

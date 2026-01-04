@@ -18,6 +18,7 @@ import { TidalService } from '../services/tidalService.js';
 import { BackendQdrantClient } from '../clients/qdrantClient.js';
 import { LibraryTrack } from '../entities/LibraryTrack.js';
 import { LibraryAlbum } from '../entities/LibraryAlbum.js';
+import { requireAuth, getAuth } from '../middleware/clerkAuth.js';
 
 /**
  * Options for chat routes with tool support
@@ -51,8 +52,23 @@ export function createChatRoutes(options: ChatRoutesOptions): Router {
    * POST /api/chat/stream
    *
    * Stream an AI response for a chat message via SSE.
+   * Requires authentication (FR-006, US3)
    */
-  router.post('/stream', async (req: Request, res: Response) => {
+  router.post('/stream', requireAuth, async (req: Request, res: Response) => {
+    // Get authenticated user ID
+    const auth = getAuth(req);
+    const userId = auth?.userId;
+
+    if (!userId) {
+      // This shouldn't happen after requireAuth, but TypeScript needs it
+      return res.status(401).json({
+        error: {
+          code: 'UNAUTHENTICATED',
+          message: 'Authentication required',
+        },
+      });
+    }
+
     // Validate request body
     const validation = ChatStreamRequestSchema.safeParse(req.body);
     if (!validation.success) {
@@ -113,6 +129,7 @@ export function createChatRoutes(options: ChatRoutesOptions): Router {
       await streamService.streamResponse(
         message,
         conversationId,
+        userId,
         sendEvent,
         abortController.signal
       );
