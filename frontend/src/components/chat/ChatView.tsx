@@ -11,6 +11,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { useQuery } from '@apollo/client';
 import { useChatStream } from '../../hooks/useChatStream';
 import { useStreaming } from '../../contexts/StreamingContext';
+import { useTidalAuth } from '../../hooks/useTidalAuth';
 import {
   GET_CONVERSATION,
   GetConversationData,
@@ -48,6 +49,14 @@ export function ChatView({
 
   // Streaming context for navigation blocking
   const streaming = useStreaming();
+
+  // T019: Tidal auth for playlist export
+  const { isConnected: hasTidalConnection, checkConnection } = useTidalAuth();
+
+  // Check Tidal connection on mount
+  useEffect(() => {
+    checkConnection();
+  }, [checkConnection]);
 
   // Chat streaming hook
   const {
@@ -280,6 +289,7 @@ export function ChatView({
                   message={message}
                   toolInvocations={isLastAssistant ? toolInvocations : undefined}
                   streamingParts={isLastAssistant ? streamingParts : undefined}
+                  hasTidalConnection={hasTidalConnection}
                 />
               );
             })}

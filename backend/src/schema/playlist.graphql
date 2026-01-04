@@ -1,0 +1,146 @@
+# GraphQL Schema: Playlist Export
+# Feature: 017-tidal-playlist-export
+# Date: 2026-01-04
+
+"""
+Track data for playlist export request
+"""
+input TrackForExportInput {
+  """ISRC code (12 alphanumeric characters)"""
+  isrc: String!
+
+  """Track title"""
+  title: String!
+
+  """Artist name"""
+  artist: String!
+}
+
+"""
+Input for exporting a playlist to Tidal
+"""
+input ExportPlaylistToTidalInput {
+  """Playlist name (1-150 characters)"""
+  name: String!
+
+  """Tracks to include in the playlist (1-50 tracks)"""
+  tracks: [TrackForExportInput!]!
+}
+
+"""
+Track that was skipped because it couldn't be found on Tidal
+"""
+type SkippedTrack {
+  """ISRC code"""
+  isrc: String!
+
+  """Track title"""
+  title: String!
+
+  """Artist name"""
+  artist: String!
+}
+
+"""
+Successful playlist export result
+"""
+type ExportPlaylistSuccess {
+  """Tidal playlist UUID"""
+  playlistId: String!
+
+  """Playlist name as saved on Tidal"""
+  playlistName: String!
+
+  """Number of tracks successfully added"""
+  tracksAdded: Int!
+
+  """Number of tracks that couldn't be found on Tidal"""
+  tracksSkipped: Int!
+
+  """Details of skipped tracks (if any)"""
+  skippedTracks: [SkippedTrack!]
+}
+
+"""
+Error when user has no Tidal connection
+"""
+type NoTidalConnectionError {
+  """Error message"""
+  message: String!
+
+  """Error code for client handling"""
+  code: String!
+}
+
+"""
+Error when Tidal token refresh failed
+"""
+type TokenRefreshFailedError {
+  """Error message"""
+  message: String!
+
+  """Error code for client handling"""
+  code: String!
+}
+
+"""
+Error when no tracks could be found on Tidal
+"""
+type NoTracksAvailableError {
+  """Error message"""
+  message: String!
+
+  """Error code for client handling"""
+  code: String!
+}
+
+"""
+Error when playlist creation failed
+"""
+type PlaylistCreationFailedError {
+  """Error message"""
+  message: String!
+
+  """Error code for client handling"""
+  code: String!
+
+  """Whether the operation can be retried"""
+  retryable: Boolean!
+
+  """Seconds to wait before retrying (for rate limits)"""
+  retryAfter: Int
+}
+
+"""
+Validation error for playlist export
+"""
+type PlaylistValidationError {
+  """Error message"""
+  message: String!
+
+  """Error code for client handling"""
+  code: String!
+
+  """Validation error details"""
+  details: [String!]
+}
+
+"""
+Result of exporting a playlist to Tidal
+"""
+union ExportPlaylistToTidalResult =
+    ExportPlaylistSuccess
+  | NoTidalConnectionError
+  | TokenRefreshFailedError
+  | NoTracksAvailableError
+  | PlaylistCreationFailedError
+  | PlaylistValidationError
+
+type Mutation {
+  """
+  Export an AI-generated playlist to the user's Tidal account.
+  Creates an unlisted playlist with the specified name and tracks.
+  Returns success with track counts, or appropriate error type.
+  """
+  exportPlaylistToTidal(input: ExportPlaylistToTidalInput!): ExportPlaylistToTidalResult!
+}

@@ -5,8 +5,11 @@
  */
 
 import { clerkClient } from '@clerk/express';
+import axios from 'axios';
 import { TidalTokens, TidalTokensSchema, TidalTokensInput } from '../schemas/auth.js';
 import { logger } from '../utils/logger.js';
+
+const TIDAL_TOKEN_URL = 'https://auth.tidal.com/v1/oauth2/token';
 
 /**
  * Get Tidal tokens for a user from Clerk private metadata
@@ -112,6 +115,101 @@ export async function isTokenExpired(userId: string): Promise<boolean | null> {
     return null;
   }
   return Date.now() > tokens.expiresAt;
+}
+
+/**
+ * Attempt to refresh Tidal tokens server-side using the refresh token
+ *
+ * This function calls Tidal's OAuth token endpoint with the stored refresh token.
+ * If successful, it updates the tokens in Clerk metadata and returns the new access token.
+ *
+ * @param userId - Clerk user ID
+ * @returns The refreshed access token, or null if refresh failed
+ */
+export async function attemptTokenRefresh(userId: string): Promise<string | null> {
+  const startTime = Date.now();
+
+  try {
+    const existingTokens = await getTidalTokens(userId);
+    if (!existingTokens) {
+      logger.warn('token_refresh_no_tokens', { userId });
+      return null;
+    }
+
+    const clientId = process.env.TIDAL_CLIENT_ID;
+    const clientSecret = process.env.TIDAL_CLIENT_SECRET;
+
+    if (!clientId || !clientSecret) {
+      logger.error('token_refresh_missing_credentials', { userId });
+      return null;
+    }
+
+    // Call Tidal's token endpoint with refresh_token grant
+    const response = await axios.post(
+      TIDAL_TOKEN_URL,
+      new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: existingTokens.refreshToken,
+        client_id: clientId,
+        client_secret: clientSecret,
+      }).toString(),
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        timeout: 10000,
+      }
+    );
+
+    const { access_token, refresh_token, expires_in } = response.data;
+
+    // Calculate new expiration (expires_in is in seconds)
+    const expiresAt = Date.now() + (expires_in * 1000);
+
+    // Update tokens in Clerk metadata
+    const updatedTokens: TidalTokens = {
+      accessToken: access_token,
+      refreshToken: refresh_token || existingTokens.refreshToken, // Some OAuth flows don't return new refresh token
+      expiresAt,
+      scopes: existingTokens.scopes,
+      connectedAt: existingTokens.connectedAt,
+    };
+
+    await clerkClient.users.updateUserMetadata(userId, {
+      privateMetadata: {
+        tidal: updatedTokens,
+      },
+    });
+
+    const duration = Date.now() - startTime;
+    logger.info('token_refresh_success', {
+      userId,
+      duration,
+      expiresAt,
+      previousExpiresAt: existingTokens.expiresAt,
+    });
+
+    return access_token;
+  } catch (error) {
+    const duration = Date.now() - startTime;
+
+    if (axios.isAxiosError(error)) {
+      logger.error('token_refresh_api_failed', {
+        userId,
+        duration,
+        status: error.response?.status,
+        error: error.response?.data || error.message,
+      });
+    } else {
+      logger.error('token_refresh_failed', {
+        userId,
+        duration,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+
+    return null;
+  }
 }
 
 /**

@@ -1287,4 +1287,198 @@ export class TidalService {
       throw new ApiUnavailableError('Failed to fetch track from Tidal');
     }
   }
+
+  // ---------------------------------------------------------------------------
+  // Playlist Export Methods (Feature 017)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Create a new private playlist in the user's Tidal account
+   *
+   * Feature: 017-tidal-playlist-export
+   *
+   * @param name - Playlist name (max 150 chars)
+   * @param accessToken - User's Tidal OAuth access token
+   * @param countryCode - User's country code (default: 'US')
+   * @returns Tidal playlist UUID
+   */
+  async createPlaylist(
+    name: string,
+    accessToken: string,
+    countryCode: string = 'US'
+  ): Promise<string> {
+    const url = `${this.apiBaseUrl}/v2/playlists`;
+
+    // Truncate name to Tidal's 150 character limit
+    const truncatedName = name.slice(0, 150);
+
+    const payload = {
+      data: {
+        type: 'playlists',
+        attributes: {
+          name: truncatedName,
+          accessType: 'UNLISTED', // Private playlist
+        },
+      },
+    };
+
+    logger.info('playlist_create_start', {
+      nameLength: truncatedName.length,
+      countryCode,
+    });
+
+    try {
+      const response = await this.rateLimiter.executeWithRetry(async () => {
+        return await axios.post(url, payload, {
+          headers: {
+            'accept': 'application/vnd.api+json',
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/vnd.api+json',
+          },
+          params: { countryCode },
+          timeout: 10000,
+        });
+      });
+
+      const playlistId = response.data?.data?.id;
+      if (!playlistId) {
+        throw new Error('No playlist ID returned from Tidal API');
+      }
+
+      logger.info('playlist_create_success', {
+        playlistId,
+        name: truncatedName,
+      });
+
+      return playlistId;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+          logger.error('playlist_create_timeout', { error: String(error) });
+          throw new TimeoutError('Request to Tidal API timed out');
+        }
+        if (error.response?.status === 429) {
+          logger.error('playlist_create_rate_limit', {});
+          throw new RateLimitError();
+        }
+        if (error.response?.status === 401) {
+          logger.error('playlist_create_unauthorized', {});
+          throw new Error('Tidal authorization failed - token may be expired');
+        }
+        if (error.response?.status && error.response.status >= 500) {
+          logger.error('playlist_create_api_error', {
+            status: error.response.status,
+          });
+          throw new ApiUnavailableError('Tidal API is temporarily unavailable');
+        }
+      }
+
+      logger.error('playlist_create_failed', { error: String(error) });
+      throw new ApiUnavailableError('Failed to create playlist');
+    }
+  }
+
+  /**
+   * Add tracks to a playlist by Tidal track IDs
+   *
+   * Feature: 017-tidal-playlist-export
+   *
+   * Chunks into batches of 20 (Tidal API limit per request).
+   *
+   * @param playlistId - Tidal playlist UUID
+   * @param trackIds - Array of Tidal track IDs (will be chunked if > 20)
+   * @param accessToken - User's Tidal OAuth access token
+   * @param countryCode - User's country code (default: 'US')
+   */
+  async addTracksToPlaylist(
+    playlistId: string,
+    trackIds: string[],
+    accessToken: string,
+    countryCode: string = 'US'
+  ): Promise<void> {
+    if (trackIds.length === 0) {
+      logger.warn('playlist_add_tracks_empty', { playlistId });
+      return;
+    }
+
+    const BATCH_SIZE = 20; // Tidal API limit
+    const batches: string[][] = [];
+
+    // Split track IDs into chunks of 20
+    for (let i = 0; i < trackIds.length; i += BATCH_SIZE) {
+      batches.push(trackIds.slice(i, i + BATCH_SIZE));
+    }
+
+    logger.info('playlist_add_tracks_start', {
+      playlistId,
+      totalTracks: trackIds.length,
+      batchCount: batches.length,
+    });
+
+    const now = new Date().toISOString();
+
+    for (let i = 0; i < batches.length; i++) {
+      const batch = batches[i];
+      const batchNumber = i + 1;
+
+      const payload = {
+        data: batch.map(trackId => ({
+          type: 'tracks',
+          id: trackId,
+          meta: {
+            addedAt: now,
+          },
+        })),
+      };
+
+      const url = `${this.apiBaseUrl}/v2/playlists/${playlistId}/relationships/items`;
+
+      try {
+        await this.rateLimiter.executeWithRetry(async () => {
+          return await axios.post(url, payload, {
+            headers: {
+              'accept': 'application/vnd.api+json',
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/vnd.api+json',
+            },
+            params: { countryCode },
+            timeout: 10000,
+          });
+        });
+
+        logger.info('playlist_add_tracks_batch_success', {
+          playlistId,
+          batchNumber,
+          totalBatches: batches.length,
+          tracksInBatch: batch.length,
+        });
+      } catch (error) {
+        logger.error('playlist_add_tracks_batch_failed', {
+          playlistId,
+          batchNumber,
+          totalBatches: batches.length,
+          error: error instanceof Error ? error.message : String(error),
+        });
+
+        if (axios.isAxiosError(error)) {
+          if (error.response?.status === 429) {
+            throw new RateLimitError();
+          }
+          if (error.response?.status === 401) {
+            throw new Error('Tidal authorization failed - token may be expired');
+          }
+          if (error.response?.status && error.response.status >= 500) {
+            throw new ApiUnavailableError('Tidal API is temporarily unavailable');
+          }
+        }
+
+        throw new ApiUnavailableError('Failed to add tracks to playlist');
+      }
+    }
+
+    logger.info('playlist_add_tracks_complete', {
+      playlistId,
+      totalTracksAdded: trackIds.length,
+    });
+  }
 }

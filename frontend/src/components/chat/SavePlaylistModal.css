@@ -1,0 +1,331 @@
+/**
+ * SavePlaylistModal Styles
+ *
+ * Feature: 017-tidal-playlist-export
+ */
+
+.save-playlist-modal__overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.save-playlist-modal {
+  background: var(--color-surface, #1a1a1a);
+  border-radius: 12px;
+  padding: 24px;
+  width: 100%;
+  max-width: 400px;
+  margin: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.save-playlist-modal__title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text, #ffffff);
+  margin: 0 0 8px 0;
+}
+
+.save-playlist-modal__track-count {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #888);
+  margin: 0 0 20px 0;
+}
+
+.save-playlist-modal__form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.save-playlist-modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.save-playlist-modal__label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text, #ffffff);
+}
+
+.save-playlist-modal__input {
+  background: var(--color-background, #0a0a0a);
+  border: 1px solid var(--color-border, #333);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 1rem;
+  color: var(--color-text, #ffffff);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.save-playlist-modal__input:focus {
+  outline: none;
+  border-color: var(--color-primary, #00bfff);
+  box-shadow: 0 0 0 3px rgba(0, 191, 255, 0.2);
+}
+
+.save-playlist-modal__input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.save-playlist-modal__input--error {
+  border-color: var(--color-error, #ff4444);
+}
+
+.save-playlist-modal__input::placeholder {
+  color: var(--color-text-secondary, #666);
+}
+
+.save-playlist-modal__input-meta {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.save-playlist-modal__char-count {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #666);
+}
+
+.save-playlist-modal__char-count--warning {
+  color: var(--color-warning, #ffaa00);
+}
+
+.save-playlist-modal__error {
+  font-size: 0.75rem;
+  color: var(--color-error, #ff4444);
+}
+
+.save-playlist-modal__api-error {
+  background: rgba(255, 68, 68, 0.1);
+  border: 1px solid rgba(255, 68, 68, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.save-playlist-modal__error-message {
+  font-size: 0.875rem;
+  color: var(--color-error, #ff4444);
+}
+
+.save-playlist-modal__retry-button {
+  background: transparent;
+  border: 1px solid var(--color-error, #ff4444);
+  color: var(--color-error, #ff4444);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: background 0.2s;
+}
+
+.save-playlist-modal__retry-button:hover:not(:disabled) {
+  background: rgba(255, 68, 68, 0.1);
+}
+
+.save-playlist-modal__reconnect-hint {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #888);
+}
+
+.save-playlist-modal__actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.save-playlist-modal__cancel-button {
+  background: transparent;
+  border: 1px solid var(--color-border, #333);
+  color: var(--color-text, #ffffff);
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.save-playlist-modal__cancel-button:hover:not(:disabled) {
+  background: var(--color-surface-hover, #252525);
+  border-color: var(--color-border-hover, #444);
+}
+
+.save-playlist-modal__cancel-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.save-playlist-modal__save-button {
+  background: var(--color-primary, #00bfff);
+  border: none;
+  color: #000;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.2s, opacity 0.2s;
+}
+
+.save-playlist-modal__save-button:hover:not(:disabled) {
+  background: var(--color-primary-hover, #00d4ff);
+}
+
+.save-playlist-modal__save-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.save-playlist-modal__spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Success state */
+.save-playlist-modal__success {
+  background: rgba(76, 175, 80, 0.1);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: successPulse 0.4s ease-out;
+}
+
+@keyframes successPulse {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.save-playlist-modal__success-icon {
+  width: 20px;
+  height: 20px;
+  color: var(--color-success, #4caf50);
+  flex-shrink: 0;
+}
+
+.save-playlist-modal__success-message {
+  font-size: 0.875rem;
+  color: var(--color-success, #4caf50);
+}
+
+.save-playlist-modal__skipped-info {
+  color: var(--color-text-secondary, #888);
+}
+
+/* Warning when trying to cancel during save (FR-097) */
+.save-playlist-modal__warning {
+  background: rgba(255, 170, 0, 0.1);
+  border: 1px solid rgba(255, 170, 0, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: warningPulse 0.3s ease-out;
+}
+
+@keyframes warningPulse {
+  0% {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.save-playlist-modal__warning-message {
+  font-size: 0.875rem;
+  color: var(--color-warning, #ffaa00);
+}
+
+.save-playlist-modal__warning-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.save-playlist-modal__warning-stay {
+  background: var(--color-warning, #ffaa00);
+  border: none;
+  color: #000;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.save-playlist-modal__warning-stay:hover {
+  background: #ffbb33;
+}
+
+.save-playlist-modal__warning-cancel {
+  background: transparent;
+  border: 1px solid var(--color-border, #333);
+  color: var(--color-text-secondary, #888);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.save-playlist-modal__warning-cancel:hover {
+  background: var(--color-surface-hover, #252525);
+  border-color: var(--color-border-hover, #444);
+}

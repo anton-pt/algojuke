@@ -1,13 +1,15 @@
 /**
  * PlaylistCard Component
  *
- * Feature: 015-playlist-suggestion
+ * Feature: 015-playlist-suggestion, 017-tidal-playlist-export
  *
  * Displays a visual playlist with album artwork, track titles, and artist names.
  * Shows placeholder artwork for unenriched tracks.
+ * Includes "Save to Tidal" button for playlist export.
  */
 
 import { useState } from 'react';
+import type { TrackForExport } from '../../types/playlist';
 import './PlaylistCard.css';
 
 // -----------------------------------------------------------------------------
@@ -29,12 +31,19 @@ export interface PlaylistTrack {
   tidalId: string | null;
 }
 
+// Re-export TrackForExport for consumers
+export type { TrackForExport } from '../../types/playlist';
+
 /**
  * PlaylistCard component props
  */
 export interface PlaylistCardProps {
   title: string;
   tracks: PlaylistTrack[];
+  /** Whether user has a Tidal connection */
+  hasTidalConnection?: boolean;
+  /** Callback when save button is clicked */
+  onSaveClick?: (title: string, tracks: TrackForExport[]) => void;
 }
 
 // -----------------------------------------------------------------------------
@@ -141,6 +150,25 @@ function TrackRow({ track, index, isExpanded, onToggle, trackKey }: TrackRowProp
 }
 
 // -----------------------------------------------------------------------------
+// Tidal Icon Component
+// -----------------------------------------------------------------------------
+
+function TidalIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path d="M12.012 3.992L8.008 7.996l4.004 4.004 4.004-4.004-4.004-4.004zm0 8.008L8.008 16l4.004 4.008L16.016 16l-4.004-4zm-8.008-4L.002 8l4.008 4.008L8.008 8 4.004 3.992zm16.024 0L16.016 8l4.012 4.008L24 8l-4.008-4.008z" />
+    </svg>
+  );
+}
+
+// -----------------------------------------------------------------------------
 // Main Component
 // -----------------------------------------------------------------------------
 
@@ -148,7 +176,12 @@ function TrackRow({ track, index, isExpanded, onToggle, trackKey }: TrackRowProp
  * Playlist card showing visual playlist with tracks
  * Supports accordion expand/collapse for track reasoning
  */
-export function PlaylistCard({ title, tracks }: PlaylistCardProps) {
+export function PlaylistCard({
+  title,
+  tracks,
+  hasTidalConnection = false,
+  onSaveClick,
+}: PlaylistCardProps) {
   // T031: Track which ISRC is expanded (null = none expanded)
   const [expandedTrackIsrc, setExpandedTrackIsrc] = useState<string | null>(null);
 
@@ -160,11 +193,38 @@ export function PlaylistCard({ title, tracks }: PlaylistCardProps) {
     setExpandedTrackIsrc((current) => (current === isrc ? null : isrc));
   };
 
+  // T015-T016: Handle save button click
+  const handleSaveClick = () => {
+    if (onSaveClick) {
+      const tracksForExport: TrackForExport[] = tracks.map((t) => ({
+        isrc: t.isrc,
+        title: t.title,
+        artist: t.artist,
+      }));
+      onSaveClick(title, tracksForExport);
+    }
+  };
+
+  // T017-T018: Disabled button with tooltip
+  const isDisabled = !hasTidalConnection;
+  const tooltipText = isDisabled ? 'Connect your Tidal account to save playlists' : undefined;
+
   return (
     <div className="playlist-card">
       <div className="playlist-card__header">
-        <h3 className="playlist-card__title">{title}</h3>
-        <span className="playlist-card__track-count">{trackLabel}</span>
+        <div className="playlist-card__header-text">
+          <h3 className="playlist-card__title">{title}</h3>
+          <span className="playlist-card__track-count">{trackLabel}</span>
+        </div>
+        <button
+          className={`playlist-card__save-button ${isDisabled ? 'playlist-card__save-button--disabled' : ''}`}
+          onClick={handleSaveClick}
+          disabled={isDisabled}
+          title={tooltipText}
+        >
+          <TidalIcon className="playlist-card__save-icon" />
+          <span>Save to Tidal</span>
+        </button>
       </div>
       <div className="playlist-card__tracks">
         {tracks.map((track, index) => {
