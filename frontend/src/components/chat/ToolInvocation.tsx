@@ -1,15 +1,18 @@
 /**
  * Tool Invocation Component
  *
- * Feature: 011-agent-tools
+ * Feature: 011-agent-tools, 017-tidal-playlist-export
  *
  * Displays a tool invocation within a chat message.
  * Shows status, summary, and expandable results.
+ * For playlist tools, integrates save-to-Tidal functionality.
  */
 
-import { useState } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import './ToolInvocation.css';
-import { PlaylistCard, type PlaylistTrack } from './PlaylistCard';
+import { PlaylistCard, type PlaylistTrack, type TrackForExport } from './PlaylistCard';
+import { SavePlaylistModal } from './SavePlaylistModal';
+import { usePlaylistExport } from '../../hooks/usePlaylistExport';
 
 // -----------------------------------------------------------------------------
 // Types
@@ -25,6 +28,8 @@ export interface ToolInvocationProps {
   output?: unknown;
   error?: string;
   durationMs?: number;
+  /** Whether user has a Tidal connection (T019) */
+  hasTidalConnection?: boolean;
 }
 
 // -----------------------------------------------------------------------------
@@ -146,9 +151,18 @@ function formatToolName(toolName: string): string {
 interface ToolResultsRendererProps {
   output: unknown;
   toolName?: string;
+  /** Whether user has a Tidal connection (T019) */
+  hasTidalConnection?: boolean;
+  /** Callback when save button is clicked (T019) */
+  onSavePlaylistClick?: (title: string, tracks: TrackForExport[]) => void;
 }
 
-function ToolResultsRenderer({ output, toolName }: ToolResultsRendererProps) {
+function ToolResultsRenderer({
+  output,
+  toolName,
+  hasTidalConnection,
+  onSavePlaylistClick,
+}: ToolResultsRendererProps) {
   if (!output || typeof output !== 'object') {
     return <div className="tool-invocation__results-empty">No results available</div>;
   }
@@ -162,6 +176,8 @@ function ToolResultsRenderer({ output, toolName }: ToolResultsRendererProps) {
       <PlaylistCard
         title={String(data.title)}
         tracks={playlistTracks}
+        hasTidalConnection={hasTidalConnection}
+        onSaveClick={onSavePlaylistClick}
       />
     );
   }
@@ -229,8 +245,37 @@ export function ToolInvocation({
   output,
   error,
   durationMs,
+  hasTidalConnection,
 }: ToolInvocationProps) {
   const [expanded, setExpanded] = useState(false);
+
+  // T019-T020: Modal state for playlist save
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedPlaylist, setSelectedPlaylist] = useState<{
+    title: string;
+    tracks: TrackForExport[];
+  } | null>(null);
+
+  // T020: Playlist export hook
+  const {
+    exportPlaylist,
+    isLoading: isExporting,
+    error: exportError,
+    result: exportResult,
+    reset: resetExport,
+  } = usePlaylistExport();
+
+  // Ref to store timeout ID for cleanup (prevents memory leak)
+  const successTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Playlists auto-expand and don't need manual expand/collapse
   const isPlaylist = toolName === 'suggestPlaylist';
@@ -244,6 +289,36 @@ export function ToolInvocation({
       setExpanded(!expanded);
     }
   };
+
+  // T019: Handle save button click from PlaylistCard - open modal
+  const handleSaveClick = useCallback((title: string, tracks: TrackForExport[]) => {
+    setSelectedPlaylist({ title, tracks });
+    setIsModalOpen(true);
+    resetExport();
+  }, [resetExport]);
+
+  // T020: Handle save confirmation from modal
+  const handleSave = useCallback(async (name: string) => {
+    if (!selectedPlaylist) return;
+
+    const result = await exportPlaylist(name, selectedPlaylist.tracks);
+    if (result) {
+      // Success - close modal after a brief delay to show success state
+      // Store timeout ID in ref for cleanup on unmount
+      successTimeoutRef.current = setTimeout(() => {
+        setIsModalOpen(false);
+        setSelectedPlaylist(null);
+        successTimeoutRef.current = null;
+      }, 1500);
+    }
+  }, [selectedPlaylist, exportPlaylist]);
+
+  // T019: Handle modal cancel
+  const handleCancel = useCallback(() => {
+    setIsModalOpen(false);
+    setSelectedPlaylist(null);
+    resetExport();
+  }, [resetExport]);
 
   return (
     <div
@@ -280,9 +355,29 @@ export function ToolInvocation({
 
       {showResults ? (
         <div className={`tool-invocation__results ${isPlaylist ? 'tool-invocation__results--playlist' : ''}`}>
-          <ToolResultsRenderer output={output} toolName={toolName} />
+          <ToolResultsRenderer
+            output={output}
+            toolName={toolName}
+            hasTidalConnection={hasTidalConnection}
+            onSavePlaylistClick={handleSaveClick}
+          />
         </div>
       ) : null}
+
+      {/* T019-T020: Save to Tidal Modal */}
+      {selectedPlaylist && (
+        <SavePlaylistModal
+          isOpen={isModalOpen}
+          defaultName={selectedPlaylist.title}
+          tracks={selectedPlaylist.tracks}
+          onSave={handleSave}
+          onCancel={handleCancel}
+          isLoading={isExporting}
+          error={exportError?.message ?? null}
+          errorCode={exportError?.code}
+          successResult={exportResult}
+        />
+      )}
     </div>
   );
 }

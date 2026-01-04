@@ -21,6 +21,8 @@ interface ChatMessageProps {
   toolInvocations?: ToolInvocationsMap;
   /** Ordered content parts for inline tool rendering during streaming */
   streamingParts?: StreamingContentPart[];
+  /** Whether user has a Tidal connection (T019) */
+  hasTidalConnection?: boolean;
 }
 
 /**
@@ -128,7 +130,8 @@ function buildToolInvocationMap(content: ContentBlock[]): Map<string, ToolInvoca
  */
 function renderPersistedContentInline(
   content: ContentBlock[],
-  toolInvocationMap: Map<string, ToolInvocationProps>
+  toolInvocationMap: Map<string, ToolInvocationProps>,
+  hasTidalConnection?: boolean
 ): React.ReactNode[] {
   const elements: React.ReactNode[] = [];
 
@@ -146,7 +149,7 @@ function renderPersistedContentInline(
       if (invocation) {
         elements.push(
           <div key={block.toolId} className="chat-message__tools">
-            <ToolInvocation {...invocation} />
+            <ToolInvocation {...invocation} hasTidalConnection={hasTidalConnection} />
           </div>
         );
       }
@@ -178,7 +181,7 @@ function buildSummary(toolName: string, count: number): string {
   return `Found ${count} ${itemType}${count !== 1 ? 's' : ''}`;
 }
 
-export function ChatMessage({ message, toolInvocations, streamingParts }: ChatMessageProps) {
+export function ChatMessage({ message, toolInvocations, streamingParts, hasTidalConnection }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const textContent = extractTextContent(message.content);
 
@@ -228,7 +231,7 @@ export function ChatMessage({ message, toolInvocations, streamingParts }: ChatMe
                 if (invocation) {
                   return (
                     <div key={part.toolId} className="chat-message__tools">
-                      <ToolInvocation {...invocation} />
+                      <ToolInvocation {...invocation} hasTidalConnection={hasTidalConnection} />
                     </div>
                   );
                 }
@@ -239,7 +242,7 @@ export function ChatMessage({ message, toolInvocations, streamingParts }: ChatMe
         ) : usePersistedInline ? (
           // Persisted assistant message with tools: render content blocks inline in order
           <div className="chat-message__inline-content">
-            {renderPersistedContentInline(message.content, persistedToolMap)}
+            {renderPersistedContentInline(message.content, persistedToolMap, hasTidalConnection)}
           </div>
         ) : (
           // Simple assistant message: just text

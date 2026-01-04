@@ -19,13 +19,15 @@ import { libraryResolvers } from './resolvers/library.js';
 import { trackMetadataResolvers } from './resolvers/trackMetadata.js';
 import { discoveryResolvers } from './resolvers/discoveryResolver.js';
 import { chatResolvers } from './resolvers/chatResolver.js';
+import { playlistResolvers } from './resolvers/playlistResolver.js';
 import { TrackMetadataService } from './services/trackMetadataService.js';
 import { DiscoveryService } from './services/discoveryService.js';
 import { ChatService } from './services/chatService.js';
 import { createIsrcDataLoader } from './loaders/isrcDataLoader.js';
 import { createChatRoutes } from './routes/chatRoutes.js';
 import { createAuthRoutes } from './routes/auth.js';
-import { clerkMiddleware } from './middleware/clerkAuth.js';
+// Note: Playlist export uses GraphQL mutation (exportPlaylistToTidal) instead of REST
+import { clerkMiddleware, getAuth } from './middleware/clerkAuth.js';
 import { logger } from './utils/logger.js';
 import { initializeDatabase, AppDataSource } from './config/database.js';
 import { LibraryAlbum } from './entities/LibraryAlbum.js';
@@ -68,14 +70,19 @@ const chatSchema = readFileSync(
   'utf-8'
 );
 
-const typeDefs = [searchSchema, librarySchema, trackMetadataSchema, discoverySchema, chatSchema];
+const playlistSchema = readFileSync(
+  join(__dirname, 'schema', 'playlist.graphql'),
+  'utf-8'
+);
+
+const typeDefs = [searchSchema, librarySchema, trackMetadataSchema, discoverySchema, chatSchema, playlistSchema];
 
 // Initialize services (these will be created fresh after DB initialization)
 const cache = new CacheService(parseInt(process.env.SEARCH_CACHE_TTL || '3600'));
 const tokenService = new TidalTokenService();
 const tidalService = new TidalService(tokenService);
 
-// Merge resolvers from search, library, track metadata, discovery, and chat
+// Merge resolvers from search, library, track metadata, discovery, chat, and playlist
 const mergedResolvers = {
   Query: {
     ...searchResolver.Query,
@@ -87,6 +94,7 @@ const mergedResolvers = {
   Mutation: {
     ...libraryResolvers.Mutation,
     ...chatResolvers.Mutation,
+    ...playlistResolvers.Mutation,
   },
   AddAlbumToLibraryResult: libraryResolvers.AddAlbumToLibraryResult,
   AddTrackToLibraryResult: libraryResolvers.AddTrackToLibraryResult,
@@ -101,6 +109,8 @@ const mergedResolvers = {
   ConversationsResult: chatResolvers.ConversationsResult,
   ConversationResult: chatResolvers.ConversationResult,
   DeleteConversationResult: chatResolvers.DeleteConversationResult,
+  // Playlist union type
+  ExportPlaylistToTidalResult: playlistResolvers.ExportPlaylistToTidalResult,
 };
 
 // Start server
@@ -181,19 +191,26 @@ async function startServer() {
     app.use(
       '/graphql',
       expressMiddleware(server, {
-        context: async () => ({
-          tidalService,
-          cache,
-          libraryService,
-          trackMetadataService,
-          discoveryService,
-          chatService,
-          // Create a new DataLoader per request for proper batching and caching
-          isrcDataLoader: createIsrcDataLoader(trackMetadataService),
-          dataSources: {
-            db: AppDataSource,
-          },
-        }),
+        context: async ({ req }) => {
+          // Extract userId from Clerk authentication
+          const auth = getAuth(req);
+          const userId = auth?.userId;
+
+          return {
+            tidalService,
+            cache,
+            libraryService,
+            trackMetadataService,
+            discoveryService,
+            chatService,
+            userId,
+            // Create a new DataLoader per request for proper batching and caching
+            isrcDataLoader: createIsrcDataLoader(trackMetadataService),
+            dataSources: {
+              db: AppDataSource,
+            },
+          };
+        },
       })
     );
 

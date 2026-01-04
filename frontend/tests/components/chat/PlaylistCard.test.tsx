@@ -1,13 +1,13 @@
 /**
  * PlaylistCard Component Tests
  *
- * Feature: 015-playlist-suggestion
+ * Feature: 015-playlist-suggestion, 017-tidal-playlist-export
  *
- * Tests for visual playlist card display.
+ * Tests for visual playlist card display and save to Tidal functionality.
  * Written FIRST per Constitution Principle I (Test-First Development).
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { PlaylistCard, type PlaylistCardProps } from '../../../src/components/chat/PlaylistCard';
 
@@ -292,6 +292,88 @@ describe('PlaylistCard', () => {
       const reasoningPanel = document.getElementById(controlsId!);
       expect(reasoningPanel).toBeInTheDocument();
       expect(reasoningPanel).toHaveTextContent(mockEnrichedTrack.reasoning);
+    });
+  });
+
+  // =========================================================================
+  // Feature 017: Save to Tidal Button Tests (T012)
+  // =========================================================================
+  describe('Save to Tidal button (T015-T020)', () => {
+    it('renders Save to Tidal button', () => {
+      render(<PlaylistCard {...defaultProps} hasTidalConnection={true} />);
+      expect(screen.getByRole('button', { name: /save.*tidal/i })).toBeInTheDocument();
+    });
+
+    it('calls onSaveClick when Save to Tidal button is clicked', () => {
+      const onSaveClick = vi.fn();
+      render(<PlaylistCard {...defaultProps} hasTidalConnection={true} onSaveClick={onSaveClick} />);
+
+      fireEvent.click(screen.getByRole('button', { name: /save.*tidal/i }));
+
+      expect(onSaveClick).toHaveBeenCalled();
+    });
+
+    it('passes playlist title and tracks to onSaveClick', () => {
+      const onSaveClick = vi.fn();
+      render(<PlaylistCard {...defaultProps} hasTidalConnection={true} onSaveClick={onSaveClick} />);
+
+      fireEvent.click(screen.getByRole('button', { name: /save.*tidal/i }));
+
+      expect(onSaveClick).toHaveBeenCalledWith(
+        defaultProps.title,
+        expect.arrayContaining([
+          expect.objectContaining({ isrc: mockEnrichedTrack.isrc }),
+        ])
+      );
+    });
+  });
+
+  describe('Disabled button when no Tidal connection (T017-T018)', () => {
+    it('disables Save to Tidal button when hasTidalConnection is false', () => {
+      render(<PlaylistCard {...defaultProps} hasTidalConnection={false} />);
+
+      const button = screen.getByRole('button', { name: /save.*tidal/i });
+      expect(button).toBeDisabled();
+    });
+
+    it('shows tooltip explaining why button is disabled', () => {
+      render(<PlaylistCard {...defaultProps} hasTidalConnection={false} />);
+
+      const button = screen.getByRole('button', { name: /save.*tidal/i });
+      // Button should have title or aria-describedby for tooltip
+      expect(button).toHaveAttribute('title', expect.stringMatching(/connect.*tidal/i));
+    });
+
+    it('enables Save to Tidal button when hasTidalConnection is true', () => {
+      render(<PlaylistCard {...defaultProps} hasTidalConnection={true} />);
+
+      const button = screen.getByRole('button', { name: /save.*tidal/i });
+      expect(button).not.toBeDisabled();
+    });
+
+    it('does not show tooltip when button is enabled', () => {
+      render(<PlaylistCard {...defaultProps} hasTidalConnection={true} />);
+
+      const button = screen.getByRole('button', { name: /save.*tidal/i });
+      expect(button).not.toHaveAttribute('title');
+    });
+  });
+
+  describe('Button visual states', () => {
+    it('shows Tidal icon on save button', () => {
+      render(<PlaylistCard {...defaultProps} hasTidalConnection={true} />);
+
+      const button = screen.getByRole('button', { name: /save.*tidal/i });
+      // Check for icon (could be SVG or img)
+      const icon = button.querySelector('svg, img');
+      expect(icon).toBeInTheDocument();
+    });
+
+    it('applies disabled styling when no connection', () => {
+      render(<PlaylistCard {...defaultProps} hasTidalConnection={false} />);
+
+      const button = screen.getByRole('button', { name: /save.*tidal/i });
+      expect(button).toHaveClass('playlist-card__save-button--disabled');
     });
   });
 });

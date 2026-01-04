@@ -33,6 +33,8 @@ Auto-generated from all feature plans. Last updated: 2025-12-27
 - TypeScript 5.3.3 / Node.js 20.x (backend), TypeScript 5.3.3 / React 18.2.0 (frontend) + Vercel AI SDK (`ai`, `@ai-sdk/anthropic`), Zod 3.x, axios 1.6+, Apollo Server 4.x, Apollo Client 3.x (015-playlist-suggestion)
 - PostgreSQL (via TypeORM - Message.content JSONB field for tool blocks), existing rate limiter for Tidal API (015-playlist-suggestion)
 - Clerk private metadata (Tidal tokens), existing PostgreSQL (no schema changes needed for auth) (016-clerk-tidal-auth)
+- TypeScript 5.3.3 / Node.js 20.x (backend), TypeScript 5.3.3 / React 18.2.0 (frontend) + axios 1.6+ (HTTP), Zod 3.x (validation), Clerk SDK (auth tokens), existing TidalService patterns (017-tidal-playlist-export)
+- Clerk private metadata (user Tidal tokens - existing from 016) (017-tidal-playlist-export)
 
 ## Project Structure
 
@@ -225,9 +227,9 @@ Access at http://localhost:3000 when Langfuse is running.
 | `CHAT_MAX_TOKENS` | No | `4096` | Maximum tokens for chat responses |
 
 ## Recent Changes
+- 017-tidal-playlist-export: Added TypeScript 5.3.3 / Node.js 20.x (backend), TypeScript 5.3.3 / React 18.2.0 (frontend) + axios 1.6+ (HTTP), Zod 3.x (validation), Clerk SDK (auth tokens), existing TidalService patterns
 - 016-clerk-tidal-auth: Added TypeScript 5.3.3 / Node.js 20.x (backend), TypeScript 5.3.3 / React 18.2.0 (frontend)
 - 015-playlist-suggestion: Added TypeScript 5.3.3 / Node.js 20.x (backend), TypeScript 5.3.3 / React 18.2.0 (frontend) + Vercel AI SDK (`ai`, `@ai-sdk/anthropic`), Zod 3.x, axios 1.6+, Apollo Server 4.x, Apollo Client 3.x
-- 014-tidal-search-refinement: Added TypeScript 5.3.3 / Node.js 20.x (backend) + Vercel AI SDK (`ai`, `@ai-sdk/anthropic`), Zod 3.x
 
 
 <!-- MANUAL ADDITIONS START -->

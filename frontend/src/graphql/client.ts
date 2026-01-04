@@ -1,11 +1,14 @@
 import { ApolloClient, InMemoryCache, HttpLink } from '@apollo/client';
 
-// Get GraphQL endpoint from environment or use default
-const graphqlEndpoint = import.meta.env.VITE_GRAPHQL_ENDPOINT || 'http://localhost:4000/graphql';
+// Use relative path to go through Vite proxy (which handles CORS and auth cookies)
+// In production, VITE_GRAPHQL_ENDPOINT should be set to the API server URL
+const graphqlEndpoint = import.meta.env.VITE_GRAPHQL_ENDPOINT || '/graphql';
 
 // Create HTTP link for GraphQL endpoint
 const httpLink = new HttpLink({
   uri: graphqlEndpoint,
+  // Include credentials (cookies) for authentication
+  credentials: 'include',
 });
 
 // Create Apollo Client instance
