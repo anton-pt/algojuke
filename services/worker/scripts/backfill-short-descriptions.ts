@@ -36,6 +36,7 @@ import {
 
 // Configuration
 const QDRANT_URL = process.env.QDRANT_URL ?? "http://localhost:6333";
+const QDRANT_API_KEY = process.env.QDRANT_API_KEY;
 const QDRANT_COLLECTION = process.env.QDRANT_COLLECTION ?? "tracks";
 const PROGRESS_FILE = ".backfill-progress.json";
 const DELAY_MS = 2000; // 2 seconds between tracks
@@ -190,7 +191,10 @@ async function main(): Promise<void> {
   console.log("");
 
   // Initialize clients
-  const qdrant = new QdrantClient({ url: QDRANT_URL });
+  const qdrant = new QdrantClient({
+    url: QDRANT_URL,
+    apiKey: QDRANT_API_KEY,
+  });
   const anthropic = createAnthropicClient();
 
   // Load or create progress

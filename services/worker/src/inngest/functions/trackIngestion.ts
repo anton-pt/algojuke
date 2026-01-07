@@ -63,6 +63,11 @@ const QDRANT_COLLECTION = process.env.QDRANT_COLLECTION ?? "tracks";
 const QDRANT_URL = process.env.QDRANT_URL ?? "http://localhost:6333";
 
 /**
+ * Qdrant API key (required for Qdrant Cloud)
+ */
+const QDRANT_API_KEY = process.env.QDRANT_API_KEY;
+
+/**
  * Hash ISRC to deterministic UUID
  */
 function hashIsrcToUuid(isrc: string): string {
@@ -335,7 +340,10 @@ export const trackIngestion = inngest.createFunction(
       });
 
       try {
-        const qdrant = new QdrantClient({ url: QDRANT_URL });
+        const qdrant = new QdrantClient({
+          url: QDRANT_URL,
+          apiKey: QDRANT_API_KEY,
+        });
         const pointId = hashIsrcToUuid(isrc);
 
         // Build payload with all available data
