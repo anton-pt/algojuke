@@ -81,10 +81,14 @@ jobs:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
           service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
 
+      - name: Update image in Cloud Run config
+        run: |
+          IMAGE="${{ env.GAR_LOCATION }}/${{ env.GCP_PROJECT_ID }}/algojuke-${{ matrix.service }}/${{ matrix.service }}:${{ github.sha }}"
+          sed -i "s|IMAGE_PLACEHOLDER|${IMAGE}|g" deploy/cloudrun/${{ matrix.service }}.yaml
+
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v2
         with:
           service: algojuke-${{ matrix.service }}
           region: ${{ secrets.GCP_REGION }}
-          image: ${{ env.GAR_LOCATION }}/${{ env.GCP_PROJECT_ID }}/algojuke-${{ matrix.service }}/${{ matrix.service }}:${{ github.sha }}
           metadata: deploy/cloudrun/${{ matrix.service }}.yaml
