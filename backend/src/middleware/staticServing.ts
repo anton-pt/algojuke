@@ -5,7 +5,7 @@
  * API routes must be registered BEFORE this middleware to ensure they take priority.
  */
 
-import express, { Express, Request, Response, NextFunction } from "express";
+import express, { Express, Request, Response } from "express";
 import { existsSync } from "fs";
 import { join } from "path";
 
