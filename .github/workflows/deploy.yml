@@ -4,17 +4,18 @@ on:
   push:
     branches: [main]
 
-env:
-  GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-  GCP_REGION: ${{ vars.GCP_REGION }}
-  GAR_LOCATION: ${{ vars.GCP_REGION }}-docker.pkg.dev
-
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: default
     permissions:
       contents: read
       id-token: write # Required for OIDC
+
+    env:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ secrets.GCP_REGION }}
+      GAR_LOCATION: ${{ secrets.GCP_REGION }}-docker.pkg.dev
 
     strategy:
       matrix:
@@ -32,8 +33,8 @@ jobs:
       - id: auth
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
-          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
 
       - uses: google-github-actions/setup-gcloud@v2
 
@@ -54,9 +55,15 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    environment: default
     permissions:
       contents: read
       id-token: write
+
+    env:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ secrets.GCP_REGION }}
+      GAR_LOCATION: ${{ secrets.GCP_REGION }}-docker.pkg.dev
 
     strategy:
       matrix:
@@ -68,13 +75,13 @@ jobs:
       - id: auth
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
-          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
 
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v2
         with:
           service: algojuke-${{ matrix.service }}
-          region: ${{ vars.GCP_REGION }}
+          region: ${{ secrets.GCP_REGION }}
           image: ${{ env.GAR_LOCATION }}/${{ env.GCP_PROJECT_ID }}/algojuke-${{ matrix.service }}/${{ matrix.service }}:${{ github.sha }}
           metadata: deploy/cloudrun/${{ matrix.service }}.yaml
