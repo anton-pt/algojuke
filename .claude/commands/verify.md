@@ -3,6 +3,7 @@
 ## Project Structure
 
 This repository has no root package.json. Services are located at:
+
 - `backend/`
 - `frontend/`
 - `services/worker/`
