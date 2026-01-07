@@ -8,11 +8,17 @@
  */
 
 /**
- * Default dimensions per provider
+ * Dimension constants
+ */
+export const LOCAL_DIMENSIONS = 1024;
+export const GEMINI_DIMENSIONS = 3072;
+
+/**
+ * Default dimensions per provider (internal)
  */
 const PROVIDER_DIMENSIONS = {
-  gemini: 3072,
-  local: 1024,
+  gemini: GEMINI_DIMENSIONS,
+  local: LOCAL_DIMENSIONS,
 } as const;
 
 /**
@@ -47,4 +53,16 @@ export function getEmbeddingDimensions(): number {
 export function getEmbeddingProvider(): "gemini" | "local" {
   const provider = process.env.EMBEDDING_PROVIDER || "local";
   return provider === "gemini" ? "gemini" : "local";
+}
+
+/**
+ * Create a zero vector of the appropriate dimensions
+ *
+ * Used when no lyrics are available for a track (instrumentals).
+ *
+ * @returns Zero vector with correct dimensions for current provider
+ */
+export function createZeroVector(): number[] {
+  const dimensions = getEmbeddingDimensions();
+  return new Array(dimensions).fill(0);
 }

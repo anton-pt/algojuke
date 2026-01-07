@@ -124,3 +124,48 @@ export function validateTrackDocument(data: unknown): TrackDocument {
 export function safeValidateTrackDocument(data: unknown) {
   return TrackDocumentSchema.safeParse(data);
 }
+
+/**
+ * Create a track document schema with current environment dimensions
+ *
+ * This is useful for testing where the schema needs to be re-created
+ * after changing environment variables.
+ *
+ * @returns Fresh Zod schema with current dimension configuration
+ */
+export function createTrackDocumentSchema() {
+  const dimensions = getEmbeddingDimensions();
+
+  return z.object({
+    isrc: z
+      .string()
+      .length(12)
+      .regex(/^[A-Z0-9]{12}$/i, {
+        message: "ISRC must be 12 alphanumeric characters (ISO 3901)",
+      }),
+    title: z.string().min(1, { message: "Title is required" }),
+    artist: z.string().min(1, { message: "Artist is required" }),
+    album: z.string().min(1, { message: "Album is required" }),
+    lyrics: z.string().nullable().optional(),
+    interpretation: z.string().nullable().optional(),
+    short_description: z.string().max(500).nullable().optional(),
+    interpretation_embedding: z
+      .array(z.number())
+      .length(dimensions)
+      .describe("Dense vector for semantic search"),
+    acousticness: z.number().min(0).max(1).nullable().optional(),
+    danceability: z.number().min(0).max(1).nullable().optional(),
+    energy: z.number().min(0).max(1).nullable().optional(),
+    instrumentalness: z.number().min(0).max(1).nullable().optional(),
+    key: z.number().int().min(-1).max(11).nullable().optional(),
+    liveness: z.number().min(0).max(1).nullable().optional(),
+    loudness: z.number().min(-60).max(0).nullable().optional(),
+    mode: z
+      .union([z.literal(0), z.literal(1)])
+      .nullable()
+      .optional(),
+    speechiness: z.number().min(0).max(1).nullable().optional(),
+    tempo: z.number().min(0).max(250).nullable().optional(),
+    valence: z.number().min(0).max(1).nullable().optional(),
+  });
+}

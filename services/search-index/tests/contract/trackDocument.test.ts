@@ -3,6 +3,9 @@
  *
  * Validates the Zod schema for track documents including
  * the new short_description field.
+ *
+ * Feature: 043-gemini-embeddings
+ * Updated to use configurable embedding dimensions.
  */
 
 import { describe, it, expect } from "vitest";
@@ -12,15 +15,17 @@ import {
   validateTrackDocument,
   safeValidateTrackDocument,
 } from "../../src/schema/trackDocument.js";
+import { getEmbeddingDimensions } from "../../src/config.js";
 
-// Helper to create valid base document
+// Helper to create valid base document with correct dimensions
 function createValidBaseDocument() {
+  const dimensions = getEmbeddingDimensions();
   return {
     isrc: "USRC12345678",
     title: "Test Track",
     artist: "Test Artist",
     album: "Test Album",
-    interpretation_embedding: Array(4096).fill(0),
+    interpretation_embedding: Array(dimensions).fill(0),
   };
 }
 
@@ -87,11 +92,12 @@ describe("TrackDocumentSchema", () => {
 
   describe("core required fields", () => {
     it("should require isrc", () => {
+      const dimensions = getEmbeddingDimensions();
       const doc = {
         title: "Test",
         artist: "Artist",
         album: "Album",
-        interpretation_embedding: Array(4096).fill(0),
+        interpretation_embedding: Array(dimensions).fill(0),
       };
 
       const result = TrackDocumentSchema.safeParse(doc);
@@ -130,10 +136,13 @@ describe("TrackDocumentSchema", () => {
       expect(result.success).toBe(false);
     });
 
-    it("should require interpretation_embedding with 4096 dimensions", () => {
+    it("should require interpretation_embedding with correct dimensions", () => {
+      const dimensions = getEmbeddingDimensions();
+      // Use wrong dimensions (half of expected)
+      const wrongDimensions = Math.floor(dimensions / 2);
       const doc = {
         ...createValidBaseDocument(),
-        interpretation_embedding: Array(1024).fill(0), // Wrong size
+        interpretation_embedding: Array(wrongDimensions).fill(0), // Wrong size
       };
       const result = TrackDocumentSchema.safeParse(doc);
       expect(result.success).toBe(false);

@@ -30,8 +30,6 @@ import {
   createEmbeddingClient,
   createZeroVector,
   validateEmbeddingDimensions,
-  getEmbeddingDimensions,
-  type EmbeddingClient,
 } from "../../clients/embedding.js";
 import { buildInterpretationPrompt } from "../../prompts/lyricsInterpretation.js";
 import {
@@ -406,7 +404,7 @@ export const trackIngestion = inngest.createFunction(
         hasAudioFeatures: !!audioFeatures,
         hasInterpretation: !!interpretation?.text,
         hasShortDescription: !!shortDescription,
-        embeddingDimensions: getEmbeddingDimensions(),
+        embeddingDimensions: embedding.length,
       };
 
       await inngest.send({
