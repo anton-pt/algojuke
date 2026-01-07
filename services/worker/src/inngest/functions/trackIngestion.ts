@@ -96,7 +96,7 @@ export const trackIngestion = inngest.createFunction(
     id: "track-ingestion",
     retries: 5,
     concurrency: {
-      limit: 10,
+      limit: 5,
     },
     throttle: {
       limit: 10,

@@ -36,7 +36,7 @@ export const demoTask = inngest.createFunction(
     name: "Demo Task - Infrastructure Validation",
     retries: 5,
     concurrency: {
-      limit: 10,
+      limit: 5,
     },
     throttle: {
       limit: 20,
