@@ -57,6 +57,10 @@ jobs:
             ${{ env.GAR_LOCATION }}/${{ env.GCP_PROJECT_ID }}/${{ matrix.service.image }}/${{ matrix.service.name }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            VITE_CLERK_PUBLISHABLE_KEY=${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
+            VITE_TIDAL_CLIENT_ID=${{ secrets.VITE_TIDAL_CLIENT_ID }}
+            VITE_TIDAL_REDIRECT_URI=${{ secrets.VITE_TIDAL_REDIRECT_URI }}
 
   deploy:
     needs: build

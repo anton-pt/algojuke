@@ -13,6 +13,16 @@ RUN npm ci
 # Stage 3: Frontend Builder
 FROM node:20-alpine AS frontend-builder
 WORKDIR /app
+
+# Build-time environment variables for Vite (embedded at build time)
+ARG VITE_CLERK_PUBLISHABLE_KEY
+ARG VITE_TIDAL_CLIENT_ID
+ARG VITE_TIDAL_REDIRECT_URI
+
+ENV VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY
+ENV VITE_TIDAL_CLIENT_ID=$VITE_TIDAL_CLIENT_ID
+ENV VITE_TIDAL_REDIRECT_URI=$VITE_TIDAL_REDIRECT_URI
+
 COPY --from=frontend-deps /app/node_modules ./node_modules
 COPY frontend/ ./
 RUN npm run build
