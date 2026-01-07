@@ -7,8 +7,9 @@ import {
   UpdateDateColumn,
   OneToMany,
   Index,
+  Relation,
 } from "typeorm";
-import { Message } from "./Message.js";
+import type { Message } from "./Message.js";
 
 /**
  * Conversation entity for chat sessions between user and AI assistant.
@@ -30,9 +31,9 @@ export class Conversation {
   @UpdateDateColumn({ name: "updated_at" })
   updatedAt!: Date;
 
-  @OneToMany(() => Message, (message) => message.conversation, {
+  @OneToMany("Message", "conversation", {
     cascade: true,
     onDelete: "CASCADE",
   })
-  messages!: Message[];
+  messages!: Relation<Message[]>;
 }

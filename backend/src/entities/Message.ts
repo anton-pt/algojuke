@@ -7,8 +7,9 @@ import {
   ManyToOne,
   JoinColumn,
   Index,
+  Relation,
 } from "typeorm";
-import { Conversation } from "./Conversation.js";
+import type { Conversation } from "./Conversation.js";
 
 /**
  * Content block types for message content.
@@ -42,9 +43,9 @@ export class Message {
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
 
-  @ManyToOne(() => Conversation, (conversation) => conversation.messages, {
+  @ManyToOne("Conversation", "messages", {
     onDelete: "CASCADE",
   })
   @JoinColumn({ name: "conversation_id" })
-  conversation!: Conversation;
+  conversation!: Relation<Conversation>;
 }
