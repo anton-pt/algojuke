@@ -1,21 +1,22 @@
 # Document Technical Decisions
 
 ## Input
+
 Optional implementation guidance: $ARGUMENTS
 Examples:
+
 - "Use React Query for data fetching"
 - "Implement with Redis caching and 5-minute TTL"
 - "Based on the pattern from feature #38"
 
 ## Steps
+
 1. Determine current feature from branch:
-   ```bash
-   BRANCH=$(git rev-parse --abbrev-ref HEAD)
-   ISSUE_NUM=$(echo "$BRANCH" | grep -oE '^[0-9]+')
-   ```
+   Run `git rev-parse --abbrev-ref HEAD` to get the branch name (e.g., "039-docker-cloud-run").
+   Extract the issue number from the branch name prefix (e.g., "039" -> 39).
 
 2. Read the spec.md for the current feature:
-   - specs/${ISSUE_NUM}-*/spec.md
+   - specs/${ISSUE_NUM}-\*/spec.md
 
 3. If implementation guidance provided ($ARGUMENTS):
    - Incorporate the user's technology/approach preferences as constraints
