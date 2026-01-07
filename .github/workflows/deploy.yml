@@ -21,10 +21,12 @@ jobs:
       matrix:
         service:
           - name: backend
-            path: backend
+            path: .
+            file: backend/Dockerfile
             image: algojuke-backend
           - name: worker
             path: services/worker
+            file: services/worker/Dockerfile
             image: algojuke-worker
 
     steps:
@@ -48,6 +50,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ${{ matrix.service.path }}
+          file: ${{ matrix.service.file }}
           push: true
           tags: |
             ${{ env.GAR_LOCATION }}/${{ env.GCP_PROJECT_ID }}/${{ matrix.service.image }}/${{ matrix.service.name }}:${{ github.sha }}

@@ -28,6 +28,10 @@ import { createChatRoutes } from "./routes/chatRoutes.js";
 import { createAuthRoutes } from "./routes/auth.js";
 // Note: Playlist export uses GraphQL mutation (exportPlaylistToTidal) instead of REST
 import { clerkMiddleware, getAuth } from "./middleware/clerkAuth.js";
+import {
+  applyStaticServing,
+  getDefaultPublicPath,
+} from "./middleware/staticServing.js";
 import { logger } from "./utils/logger.js";
 import { initializeDatabase, AppDataSource } from "./config/database.js";
 import { LibraryAlbum } from "./entities/LibraryAlbum.js";
@@ -232,6 +236,13 @@ async function startServer() {
         },
       }),
     );
+
+    // Serve frontend static files in production
+    // NOTE: This must be AFTER all API routes to ensure route priority
+    applyStaticServing(app, {
+      publicPath: getDefaultPublicPath(__dirname),
+      enabled: process.env.NODE_ENV === "production",
+    });
 
     // Start listening
     await new Promise<void>((resolve) => httpServer.listen({ port }, resolve));

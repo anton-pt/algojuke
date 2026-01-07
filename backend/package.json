@@ -45,11 +45,13 @@
     "@types/cors": "^2.8.17",
     "@types/node": "^20.11.5",
     "@types/pg": "^8.16.0",
+    "@types/supertest": "^6.0.3",
     "@typescript-eslint/eslint-plugin": "^6.19.0",
     "@typescript-eslint/parser": "^6.19.0",
     "@vitest/coverage-v8": "^1.2.0",
     "@vitest/ui": "^1.6.1",
     "eslint": "^8.56.0",
+    "supertest": "^7.2.2",
     "tsx": "^4.21.0",
     "typescript": "^5.3.3",
     "vitest": "^1.6.1"
