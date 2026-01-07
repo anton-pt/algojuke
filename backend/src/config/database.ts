@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import { DataSource, DataSourceOptions } from "typeorm";
+import { DataSource, DataSourceOptions, LogLevel } from "typeorm";
 import { config } from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -12,20 +12,14 @@ config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-export const dataSourceOptions: DataSourceOptions = {
-  type: "postgres",
-  host: process.env.POSTGRES_HOST || "localhost",
-  port: parseInt(process.env.POSTGRES_PORT || "5433", 10),
-  username: process.env.POSTGRES_USER || "algojuke_user",
-  password: process.env.POSTGRES_PASSWORD || "changeme",
-  database: process.env.POSTGRES_DB || "algojuke",
-
+// Common options shared between URL and individual configs
+const commonOptions = {
   // Connection pool settings
   poolSize: 10,
   extra: {
     max: 20, // Max pool clients
     min: 2, // Min pool clients
-    connectionTimeoutMillis: 2000,
+    connectionTimeoutMillis: 5000,
     idleTimeoutMillis: 30000,
   },
 
@@ -38,11 +32,37 @@ export const dataSourceOptions: DataSourceOptions = {
   migrationsRun: process.env.NODE_ENV === "production",
 
   // Logging configuration
-  logging: process.env.DB_LOGGING === "true" ? ["query", "error"] : ["error"],
+  logging: (process.env.DB_LOGGING === "true"
+    ? ["query", "error"]
+    : ["error"]) as LogLevel[],
 
   // Migration settings
   migrationsTableName: "migrations",
 };
+
+// Build DataSourceOptions from DATABASE_URL or individual env vars
+const buildDataSourceOptions = (): DataSourceOptions => {
+  if (process.env.DATABASE_URL) {
+    // Use DATABASE_URL (supports Cloud SQL Unix sockets via ?host= parameter)
+    return {
+      type: "postgres",
+      url: process.env.DATABASE_URL,
+      ...commonOptions,
+    };
+  }
+  // Fall back to individual env vars for local development
+  return {
+    type: "postgres",
+    host: process.env.POSTGRES_HOST || "localhost",
+    port: parseInt(process.env.POSTGRES_PORT || "5433", 10),
+    username: process.env.POSTGRES_USER || "algojuke_user",
+    password: process.env.POSTGRES_PASSWORD || "changeme",
+    database: process.env.POSTGRES_DB || "algojuke",
+    ...commonOptions,
+  };
+};
+
+export const dataSourceOptions: DataSourceOptions = buildDataSourceOptions();
 
 // Create DataSource instance
 export const AppDataSource = new DataSource(dataSourceOptions);
@@ -69,12 +89,13 @@ export async function initializeDatabase(
       return;
     } catch (error) {
       attempt++;
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      console.error(`Database connection error: ${errorMessage}`);
 
       if (attempt >= maxRetries) {
         console.error("Failed to connect to database after maximum retries");
-        throw new Error(
-          `Database connection failed: ${error instanceof Error ? error.message : "Unknown error"}`,
-        );
+        throw new Error(`Database connection failed: ${errorMessage}`);
       }
 
       console.warn(
