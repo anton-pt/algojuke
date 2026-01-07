@@ -288,3 +288,65 @@ npm test -- tests/contract/agentTools/suggestPlaylistTool.test.ts
 Tool invocations are streamed via SSE and displayed inline in chat messages using the `ToolInvocation` component with expand/collapse functionality. The `suggestPlaylist` tool renders a visual `PlaylistCard` component with album artwork, track info, and expandable reasoning.
 
 <!-- MANUAL ADDITIONS END -->
+
+## Development Workflow
+
+### Slash Commands
+
+| Command | Description |
+|---------|-------------|
+| `/spec <description>` | Create a feature specification and GitHub issue |
+| `/research [guidance]` | Document technical decisions (optional: implementation guidance) |
+| `/implement` | Implement the feature on the current branch |
+| `/develop` | Parallel implementation + testing via subagents (single tab) |
+| `/test` | Write tests for recent spec commits |
+| `/verify` | Run type-check and all tests |
+| `/commit-pr` | Create PR with verification |
+| `/review` | Code simplification pass |
+
+### Feature Workflow
+
+```bash
+# 1. Create spec and GitHub issue
+/spec Add dark mode toggle to user preferences
+# Creates issue #42, specs/42-dark-mode-toggle/spec.md, branch 42-dark-mode-toggle
+
+# 2. Research and document decisions
+/research Use CSS custom properties for theming
+
+# 3. Implement with parallel testing (recommended)
+/develop
+# Or manually: /implement in Tab 1, /test in Tab 2
+
+# 4. Create PR
+/commit-pr
+```
+
+### Commit Convention
+
+```
+spec: #42 - description    # Implementation commits (links to GitHub issue)
+test: #42 - description    # Test commits
+fix: #42 - description     # Bug fixes
+refactor: description      # Refactoring (no spec needed)
+```
+
+### Spec Directory Structure
+
+```
+specs/
+├── 20-tidal-search/
+│   ├── spec.md            # Feature specification (user stories, requirements)
+│   └── research.md        # Technical decisions with rationale
+├── 21-library-management/
+│   ├── spec.md
+│   └── research.md
+...
+```
+
+### Hooks
+
+Configured in `.claude/settings.json`:
+- **Notification hooks**: macOS notifications for idle/permission prompts
+- **Stop hook**: Notification when response completes
+- **PostToolUse hook**: Auto-format with Prettier on Write/Edit
