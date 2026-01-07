@@ -90,8 +90,11 @@ export class BackendQdrantClient {
   private client: QdrantClient;
   private collection: string;
 
-  constructor(url: string, collection: string) {
-    this.client = new QdrantClient({ url });
+  constructor(url: string, collection: string, apiKey?: string) {
+    this.client = new QdrantClient({
+      url,
+      ...(apiKey && { apiKey }),
+    });
     this.collection = collection;
   }
 
@@ -506,15 +509,18 @@ export class BackendQdrantClient {
  *
  * @param url - Qdrant server URL (default from config)
  * @param collection - Qdrant collection name (default from config)
+ * @param apiKey - Qdrant API key (default from QDRANT_API_KEY env var)
  * @returns BackendQdrantClient instance
  */
 export function createBackendQdrantClient(
   url?: string,
   collection?: string,
+  apiKey?: string,
 ): BackendQdrantClient {
   const config = getIngestionConfig();
   return new BackendQdrantClient(
     url ?? config.qdrant.url,
     collection ?? config.qdrant.collection,
+    apiKey ?? process.env.QDRANT_API_KEY,
   );
 }

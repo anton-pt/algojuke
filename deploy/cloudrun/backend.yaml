@@ -7,7 +7,8 @@ spec:
     metadata:
       annotations:
         autoscaling.knative.dev/minScale: "0"
-        autoscaling.knative.dev/maxScale: "10"
+        autoscaling.knative.dev/maxScale: "1"
+        run.googleapis.com/cloudsql-instances: algojuke-prod:europe-west4:algojuke-prod
     spec:
       containerConcurrency: 80
       timeoutSeconds: 300
@@ -75,4 +76,9 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: qdrant-url
+                  key: latest
+            - name: QDRANT_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: qdrant-api-key
                   key: latest
