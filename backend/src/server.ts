@@ -233,6 +233,27 @@ async function startServer() {
       }),
     );
 
+    // Serve frontend static files in production
+    if (process.env.NODE_ENV === "production") {
+      const publicPath = join(__dirname, "../public");
+
+      // Serve static assets with long cache (Vite adds content hashes)
+      app.use(
+        express.static(publicPath, {
+          maxAge: "1y",
+          index: false, // Don't auto-serve index.html for directory requests
+        }),
+      );
+
+      // SPA fallback - all unmatched GET requests serve index.html
+      app.get("*", (_req, res) => {
+        res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        res.sendFile(join(publicPath, "index.html"));
+      });
+
+      console.log("📁 Serving frontend from /public");
+    }
+
     // Start listening
     await new Promise<void>((resolve) => httpServer.listen({ port }, resolve));
 
