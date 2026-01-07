@@ -63,8 +63,11 @@ async function createCollection(collectionName: string): Promise<void> {
 
   await qdrantClient.createCollection(collectionName, config);
 
+  // Get dimensions from config for accurate logging
+  const vectorConfig = config.vectors as Record<string, { size: number }>;
+  const dims = vectorConfig?.interpretation_embedding?.size ?? "unknown";
   console.log(
-    `[initIndex] INFO: Created collection '${collectionName}' with 1024-dim dense + sparse vectors`,
+    `[initIndex] INFO: Created collection '${collectionName}' with ${dims}-dim dense + sparse vectors`,
   );
 }
 
