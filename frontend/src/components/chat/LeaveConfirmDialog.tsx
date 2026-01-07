@@ -7,8 +7,8 @@
  * Provides stay/leave options.
  */
 
-import { useEffect, useRef } from 'react';
-import './LeaveConfirmDialog.css';
+import { useEffect, useRef } from "react";
+import "./LeaveConfirmDialog.css";
 
 interface LeaveConfirmDialogProps {
   /** Whether the dialog is visible */
@@ -19,7 +19,11 @@ interface LeaveConfirmDialogProps {
   onLeave: () => void;
 }
 
-export function LeaveConfirmDialog({ isOpen, onStay, onLeave }: LeaveConfirmDialogProps) {
+export function LeaveConfirmDialog({
+  isOpen,
+  onStay,
+  onLeave,
+}: LeaveConfirmDialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const stayButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -32,13 +36,13 @@ export function LeaveConfirmDialog({ isOpen, onStay, onLeave }: LeaveConfirmDial
 
     // Handle escape key
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         onStay();
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onStay]);
 
   // Trap focus within dialog
@@ -47,13 +51,13 @@ export function LeaveConfirmDialog({ isOpen, onStay, onLeave }: LeaveConfirmDial
 
     const dialog = dialogRef.current;
     const focusableElements = dialog.querySelectorAll<HTMLElement>(
-      'button, [tabindex]:not([tabindex="-1"])'
+      'button, [tabindex]:not([tabindex="-1"])',
     );
     const firstElement = focusableElements[0];
     const lastElement = focusableElements[focusableElements.length - 1];
 
     const handleTab = (e: KeyboardEvent) => {
-      if (e.key !== 'Tab') return;
+      if (e.key !== "Tab") return;
 
       if (e.shiftKey && document.activeElement === firstElement) {
         e.preventDefault();
@@ -64,8 +68,8 @@ export function LeaveConfirmDialog({ isOpen, onStay, onLeave }: LeaveConfirmDial
       }
     };
 
-    document.addEventListener('keydown', handleTab);
-    return () => document.removeEventListener('keydown', handleTab);
+    document.addEventListener("keydown", handleTab);
+    return () => document.removeEventListener("keydown", handleTab);
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -85,7 +89,8 @@ export function LeaveConfirmDialog({ isOpen, onStay, onLeave }: LeaveConfirmDial
           Leave this page?
         </h2>
         <p id="leave-confirm-description" className="leave-confirm-description">
-          A response is being generated. If you leave now, the response will be lost.
+          A response is being generated. If you leave now, the response will be
+          lost.
         </p>
         <div className="leave-confirm-actions">
           <button

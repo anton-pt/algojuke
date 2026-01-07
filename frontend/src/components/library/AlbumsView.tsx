@@ -1,20 +1,23 @@
-import { useQuery, useMutation } from '@apollo/client';
-import { GET_LIBRARY_ALBUMS, REMOVE_ALBUM_FROM_LIBRARY } from '../../graphql/library';
-import { LibraryAlbumCard, LibraryAlbum } from './LibraryAlbumCard';
-import { useUndoDelete } from '../../hooks/useUndoDelete';
-import './AlbumsView.css';
+import { useQuery, useMutation } from "@apollo/client";
+import {
+  GET_LIBRARY_ALBUMS,
+  REMOVE_ALBUM_FROM_LIBRARY,
+} from "../../graphql/library";
+import { LibraryAlbumCard, LibraryAlbum } from "./LibraryAlbumCard";
+import { useUndoDelete } from "../../hooks/useUndoDelete";
+import "./AlbumsView.css";
 
 export function AlbumsView() {
-  const { loading, error, data } = useQuery<{ getLibraryAlbums: LibraryAlbum[] }>(
-    GET_LIBRARY_ALBUMS
-  );
+  const { loading, error, data } = useQuery<{
+    getLibraryAlbums: LibraryAlbum[];
+  }>(GET_LIBRARY_ALBUMS);
 
   const [removeAlbumMutation] = useMutation(REMOVE_ALBUM_FROM_LIBRARY, {
     refetchQueries: [{ query: GET_LIBRARY_ALBUMS }],
   });
 
   const { handleDelete, isDeleted } = useUndoDelete<LibraryAlbum>({
-    itemName: 'Album',
+    itemName: "Album",
     getItemLabel: (album) => `${album.title} - ${album.artistName}`,
     onDelete: async (albumId) => {
       await removeAlbumMutation({ variables: { id: albumId } });
@@ -49,7 +52,9 @@ export function AlbumsView() {
       <div className="albums-view">
         <div className="albums-empty">
           <h2>No albums in your library yet</h2>
-          <p>Search for music and add albums to your library to see them here.</p>
+          <p>
+            Search for music and add albums to your library to see them here.
+          </p>
         </div>
       </div>
     );

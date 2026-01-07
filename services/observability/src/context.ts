@@ -55,7 +55,9 @@ const contextStorage = new AsyncLocalStorage<TraceContext>();
  * });
  * ```
  */
-export function createTraceContext(options?: TraceContextOptions): TraceContext {
+export function createTraceContext(
+  options?: TraceContextOptions,
+): TraceContext {
   return {
     traceId: options?.traceId ?? randomUUID(),
     spanId: randomUUID(),
@@ -84,7 +86,7 @@ export function createTraceContext(options?: TraceContextOptions): TraceContext 
  */
 export function withTraceContext<T>(
   context: TraceContext,
-  fn: () => T | Promise<T>
+  fn: () => T | Promise<T>,
 ): T | Promise<T> {
   return contextStorage.run(context, fn);
 }
@@ -132,7 +134,7 @@ export function getCurrentContext(): TraceContext | undefined {
  * @returns New child trace context with parent span ID set
  */
 export function createChildContext(
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, unknown>,
 ): TraceContext | undefined {
   const current = contextStorage.getStore();
   if (!current) return undefined;

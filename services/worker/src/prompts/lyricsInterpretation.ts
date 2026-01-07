@@ -28,7 +28,7 @@ export function buildInterpretationPrompt(
   title: string,
   artist: string,
   album: string,
-  lyrics: string
+  lyrics: string,
 ): string {
   return `${INTERPRETATION_SYSTEM_CONTEXT}
 

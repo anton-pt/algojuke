@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import './LibraryAlbumCard.css';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import "./LibraryAlbumCard.css";
 
 export interface LibraryAlbum {
   id: string;
@@ -22,13 +22,14 @@ export function LibraryAlbumCard({ album, onDelete }: LibraryAlbumCardProps) {
   const [imageError, setImageError] = useState(false);
   const navigate = useNavigate();
 
-  const imageSrc = imageError || !album.coverArtUrl
-    ? '/images/placeholder-album.svg'
-    : album.coverArtUrl;
+  const imageSrc =
+    imageError || !album.coverArtUrl
+      ? "/images/placeholder-album.svg"
+      : album.coverArtUrl;
 
   const releaseYear = album.releaseDate
     ? new Date(album.releaseDate).getFullYear()
-    : '';
+    : "";
 
   const handleClick = () => {
     navigate(`/library/albums/${album.id}`);

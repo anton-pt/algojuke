@@ -44,7 +44,15 @@ describe("HTTPSpanMetadataSchema", () => {
   });
 
   it("should accept all valid HTTP methods", () => {
-    const methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"] as const;
+    const methods = [
+      "GET",
+      "POST",
+      "PUT",
+      "PATCH",
+      "DELETE",
+      "HEAD",
+      "OPTIONS",
+    ] as const;
 
     for (const method of methods) {
       const metadata = {

@@ -5,7 +5,7 @@
 **Status**: Draft
 **Input**: User description: "Per-user music library storage. Each authenticated user logged in via @specs/016-clerk-tidal-auth/spec.md should have their own music library that they can individually manage via the Tidal search and library management features @specs/001-tidal-search/spec.md / @specs/002-library-management/spec.md. The agent tools in @specs/011-agent-tools/spec.md should reflect the library status of each track for the currently logged in user. Additionally, each user should have their own conversation history for the agentic chat introduced in @specs/010-discover-chat/spec.md. The GraphQL queries and mutations related to all application features must require authentication via Clerk."
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - User-Specific Library Management (Priority: P1)
 
@@ -105,7 +105,7 @@ As an authenticated user, I want to search for music on Tidal while signed in so
 - What happens when the authentication service (Clerk) is unavailable? The system should return a service unavailable error rather than allowing unauthenticated access.
 - What happens when a user adds a track to their library that was previously deleted? The track should be added as a new entry with the current timestamp.
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -164,7 +164,7 @@ As an authenticated user, I want to search for music on Tidal while signed in so
 - **Conversation**: Represents a chat session between a user and the AI assistant. Contains the user identifier, messages, and timestamps. Each conversation belongs to exactly one user.
 - **Message**: Represents a single communication within a conversation. Inherits user ownership from its parent conversation.
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 

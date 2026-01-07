@@ -7,7 +7,13 @@
  * during active chat streaming.
  */
 
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  ReactNode,
+} from "react";
 
 interface StreamingContextValue {
   /** Whether a chat stream is currently active */

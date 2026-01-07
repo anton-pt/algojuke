@@ -6,7 +6,7 @@
  * Fetches a single conversation with its messages.
  */
 
-import { useQuery } from '@apollo/client';
+import { useQuery } from "@apollo/client";
 import {
   GET_CONVERSATION,
   GetConversationData,
@@ -15,7 +15,7 @@ import {
   ChatMessage,
   isConversationWithMessages,
   isChatError,
-} from '../graphql/chat';
+} from "../graphql/chat";
 
 export interface UseConversationReturn {
   /** Conversation details */
@@ -32,14 +32,18 @@ export interface UseConversationReturn {
   refetch: () => void;
 }
 
-export function useConversation(conversationId: string | null): UseConversationReturn {
-  const { data, loading, error: apolloError, refetch } = useQuery<
-    GetConversationData,
-    GetConversationVars
-  >(GET_CONVERSATION, {
+export function useConversation(
+  conversationId: string | null,
+): UseConversationReturn {
+  const {
+    data,
+    loading,
+    error: apolloError,
+    refetch,
+  } = useQuery<GetConversationData, GetConversationVars>(GET_CONVERSATION, {
     variables: { id: conversationId! },
     skip: !conversationId,
-    fetchPolicy: 'cache-and-network',
+    fetchPolicy: "cache-and-network",
   });
 
   // Handle GraphQL response

@@ -10,10 +10,10 @@
  * - isIndexed field resolver for TrackInfo type
  */
 
-import { GraphQLError } from 'graphql';
-import { TrackMetadataService } from '../services/trackMetadataService.js';
-import { IsrcDataLoader } from '../loaders/isrcDataLoader.js';
-import { logger } from '../utils/logger.js';
+import { GraphQLError } from "graphql";
+import { TrackMetadataService } from "../services/trackMetadataService.js";
+import { IsrcDataLoader } from "../loaders/isrcDataLoader.js";
+import { logger } from "../utils/logger.js";
 
 /**
  * Context type for track metadata resolvers
@@ -67,12 +67,13 @@ export const trackMetadataResolvers = {
     getExtendedTrackMetadata: async (
       _parent: unknown,
       args: { isrc: string },
-      context: TrackMetadataContext
+      context: TrackMetadataContext,
     ) => {
       const { isrc } = args;
 
       try {
-        const metadata = await context.trackMetadataService.getExtendedMetadata(isrc);
+        const metadata =
+          await context.trackMetadataService.getExtendedMetadata(isrc);
 
         if (!metadata) {
           // Return null (not an error) - track not found or not indexed
@@ -81,14 +82,14 @@ export const trackMetadataResolvers = {
 
         return metadata;
       } catch (error) {
-        logger.error('get_extended_track_metadata_resolver_error', {
+        logger.error("get_extended_track_metadata_resolver_error", {
           isrc,
           error: error instanceof Error ? error.message : String(error),
         });
 
         // For unexpected errors, throw GraphQL error
-        throw new GraphQLError('Failed to fetch extended track metadata', {
-          extensions: { code: 'INTERNAL_SERVER_ERROR' },
+        throw new GraphQLError("Failed to fetch extended track metadata", {
+          extensions: { code: "INTERNAL_SERVER_ERROR" },
         });
       }
     },
@@ -105,7 +106,7 @@ export const trackMetadataResolvers = {
     checkIndexedStatus: async (
       _parent: unknown,
       args: { isrcs: string[] },
-      context: TrackMetadataContext
+      context: TrackMetadataContext,
     ): Promise<IndexedStatusResult[]> => {
       const { isrcs } = args;
 
@@ -114,7 +115,8 @@ export const trackMetadataResolvers = {
       }
 
       try {
-        const statusMap = await context.trackMetadataService.checkIsIndexed(isrcs);
+        const statusMap =
+          await context.trackMetadataService.checkIsIndexed(isrcs);
 
         // Return results in the same order as input, with normalized ISRCs
         return isrcs.map((isrc) => ({
@@ -122,7 +124,7 @@ export const trackMetadataResolvers = {
           isIndexed: statusMap.get(isrc.toUpperCase()) ?? false,
         }));
       } catch (error) {
-        logger.error('check_indexed_status_resolver_error', {
+        logger.error("check_indexed_status_resolver_error", {
           isrcCount: isrcs.length,
           error: error instanceof Error ? error.message : String(error),
         });
@@ -155,7 +157,7 @@ export const trackMetadataResolvers = {
     isIndexed: async (
       parent: LibraryTrackParent,
       _args: unknown,
-      context: TrackMetadataContext
+      context: TrackMetadataContext,
     ): Promise<boolean> => {
       const isrc = parent.metadata?.isrc;
 
@@ -167,7 +169,7 @@ export const trackMetadataResolvers = {
       try {
         return await context.isrcDataLoader.load(isrc);
       } catch (error) {
-        logger.warn('library_track_is_indexed_error', {
+        logger.warn("library_track_is_indexed_error", {
           trackId: parent.id,
           isrc,
           error: error instanceof Error ? error.message : String(error),
@@ -197,7 +199,7 @@ export const trackMetadataResolvers = {
     isIndexed: async (
       parent: TrackInfoParent,
       _args: unknown,
-      context: TrackMetadataContext
+      context: TrackMetadataContext,
     ): Promise<boolean> => {
       const isrc = parent.isrc;
 
@@ -209,7 +211,7 @@ export const trackMetadataResolvers = {
       try {
         return await context.isrcDataLoader.load(isrc);
       } catch (error) {
-        logger.warn('track_info_is_indexed_error', {
+        logger.warn("track_info_is_indexed_error", {
           title: parent.title,
           isrc,
           error: error instanceof Error ? error.message : String(error),

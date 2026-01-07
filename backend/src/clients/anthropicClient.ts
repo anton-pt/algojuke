@@ -47,7 +47,7 @@ export class AnthropicError extends Error {
   constructor(
     message: string,
     public readonly statusCode: number,
-    public readonly retryable: boolean
+    public readonly retryable: boolean,
   ) {
     super(message);
     this.name = "AnthropicError";
@@ -65,7 +65,7 @@ export function createAnthropicClient(): AnthropicClient {
     throw new AnthropicError(
       "ANTHROPIC_API_KEY environment variable is required",
       401,
-      false
+      false,
     );
   }
 
@@ -96,7 +96,10 @@ export function createAnthropicClient(): AnthropicClient {
             logger.warn("query_expansion_parse_failed", {
               event: "parse_error",
               text: text.substring(0, 200),
-              error: parseError instanceof Error ? parseError.message : String(parseError),
+              error:
+                parseError instanceof Error
+                  ? parseError.message
+                  : String(parseError),
             });
             // Fallback: use the original query if parsing fails
             queries = [userQuery];
@@ -119,26 +122,18 @@ export function createAnthropicClient(): AnthropicClient {
             throw new AnthropicError(
               "Anthropic API rate limit exceeded",
               429,
-              true
+              true,
             );
           }
 
           // Authentication
           if (message.includes("unauthorized") || message.includes("401")) {
-            throw new AnthropicError(
-              "Invalid Anthropic API key",
-              401,
-              false
-            );
+            throw new AnthropicError("Invalid Anthropic API key", 401, false);
           }
 
           // Service errors
           if (message.includes("500") || message.includes("503")) {
-            throw new AnthropicError(
-              "Anthropic API service error",
-              503,
-              true
-            );
+            throw new AnthropicError("Anthropic API service error", 503, true);
           }
 
           logger.error("query_expansion_failed", {
@@ -148,9 +143,11 @@ export function createAnthropicClient(): AnthropicClient {
         }
 
         throw new AnthropicError(
-          error instanceof Error ? error.message : "Unknown error during query expansion",
+          error instanceof Error
+            ? error.message
+            : "Unknown error during query expansion",
           500,
-          true
+          true,
         );
       }
     },

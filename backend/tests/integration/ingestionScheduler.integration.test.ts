@@ -11,9 +11,20 @@
  * - End-to-end library addition -> scheduling flow
  */
 
-import { describe, test, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
+import {
+  describe,
+  test,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  vi,
+} from "vitest";
 import { QdrantClient } from "@qdrant/js-client-rest";
-import { BackendQdrantClient, createBackendQdrantClient } from "../../src/clients/qdrantClient.js";
+import {
+  BackendQdrantClient,
+  createBackendQdrantClient,
+} from "../../src/clients/qdrantClient.js";
 import { IngestionScheduler } from "../../src/services/ingestionScheduler.js";
 import { hashIsrcToUuid } from "../../src/utils/isrcHash.js";
 
@@ -59,7 +70,9 @@ describe("IngestionScheduler Integration Tests", () => {
 
       // Create test collection
       const collections = await qdrantClient.getCollections();
-      const exists = collections.collections.some((c) => c.name === TEST_COLLECTION);
+      const exists = collections.collections.some(
+        (c) => c.name === TEST_COLLECTION,
+      );
 
       if (!exists) {
         await qdrantClient.createCollection(TEST_COLLECTION, {
@@ -199,9 +212,8 @@ describe("IngestionScheduler Integration Tests", () => {
         return;
       }
 
-      const { sendTrackIngestionEvent } = await import(
-        "../../src/clients/inngestClient.js"
-      );
+      const { sendTrackIngestionEvent } =
+        await import("../../src/clients/inngestClient.js");
 
       // Insert track into Qdrant
       const isrc = "USRC11700099";
@@ -237,9 +249,8 @@ describe("IngestionScheduler Integration Tests", () => {
         return;
       }
 
-      const { sendTrackIngestionEvent } = await import(
-        "../../src/clients/inngestClient.js"
-      );
+      const { sendTrackIngestionEvent } =
+        await import("../../src/clients/inngestClient.js");
 
       const result = await scheduler.scheduleTrack({
         isrc: "USRC11700088",
@@ -263,9 +274,8 @@ describe("IngestionScheduler Integration Tests", () => {
         return;
       }
 
-      const { sendTrackIngestionEvent } = await import(
-        "../../src/clients/inngestClient.js"
-      );
+      const { sendTrackIngestionEvent } =
+        await import("../../src/clients/inngestClient.js");
 
       // Insert some tracks
       const existingIsrc = "USRC11700001";
@@ -334,14 +344,17 @@ describe("IngestionScheduler Integration Tests", () => {
   // ==========================================================================
   describe("Fail-Open Behavior", () => {
     test("scheduler proceeds when Qdrant client throws", async () => {
-      const { sendTrackIngestionEvent } = await import(
-        "../../src/clients/inngestClient.js"
-      );
+      const { sendTrackIngestionEvent } =
+        await import("../../src/clients/inngestClient.js");
 
       // Create scheduler with failing Qdrant client
       const failingClient = {
-        checkTracksExist: vi.fn().mockRejectedValue(new Error("Connection refused")),
-        checkTrackExists: vi.fn().mockRejectedValue(new Error("Connection refused")),
+        checkTracksExist: vi
+          .fn()
+          .mockRejectedValue(new Error("Connection refused")),
+        checkTrackExists: vi
+          .fn()
+          .mockRejectedValue(new Error("Connection refused")),
         isHealthy: vi.fn().mockResolvedValue(false),
       } as unknown as BackendQdrantClient;
 

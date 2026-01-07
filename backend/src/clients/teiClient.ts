@@ -63,7 +63,7 @@ export class TEIError extends Error {
   constructor(
     message: string,
     public readonly statusCode: number,
-    public readonly retryable: boolean
+    public readonly retryable: boolean,
   ) {
     super(message);
     this.name = "TEIError";
@@ -81,7 +81,7 @@ export function validateEmbeddingDimensions(embedding: number[]): void {
     throw new TEIError(
       `Embedding must be exactly ${EMBEDDING_DIMENSION} dimensions, got ${embedding.length}`,
       500,
-      false
+      false,
     );
   }
 }
@@ -104,7 +104,7 @@ export function createTEIClient(baseUrl?: string): TEIClient {
           headers: { "Content-Type": "application/json" },
           timeout: 60000, // 60 second timeout (embedding can be slow on CPU)
           validateStatus: () => true,
-        }
+        },
       );
 
       // Handle error status codes
@@ -114,15 +114,17 @@ export function createTEIClient(baseUrl?: string): TEIClient {
           throw new TEIError(
             "TEI model not loaded. Wait for model download to complete.",
             503,
-            true
+            true,
           );
         }
 
-        const retryable = [429, 500, 502, 503, 504, 408].includes(response.status);
+        const retryable = [429, 500, 502, 503, 504, 408].includes(
+          response.status,
+        );
         throw new TEIError(
           `Failed to generate embedding: ${response.statusText}`,
           response.status,
-          retryable
+          retryable,
         );
       }
 
@@ -142,7 +144,7 @@ export function createTEIClient(baseUrl?: string): TEIClient {
         throw new TEIError(
           `Unexpected response format from TEI: ${typeof data}`,
           500,
-          false
+          false,
         );
       }
 
@@ -158,7 +160,8 @@ export function createTEIClient(baseUrl?: string): TEIClient {
 
       // Wrap other errors
       if (axios.isAxiosError(error)) {
-        const retryable = error.code === "ECONNREFUSED" ||
+        const retryable =
+          error.code === "ECONNREFUSED" ||
           error.code === "ECONNRESET" ||
           error.code === "ETIMEDOUT";
 
@@ -171,14 +174,14 @@ export function createTEIClient(baseUrl?: string): TEIClient {
         throw new TEIError(
           error.message,
           error.response?.status ?? 500,
-          retryable
+          retryable,
         );
       }
 
       throw new TEIError(
         error instanceof Error ? error.message : "Unknown error",
         500,
-        false
+        false,
       );
     }
   }
@@ -186,7 +189,10 @@ export function createTEIClient(baseUrl?: string): TEIClient {
   return {
     embed,
 
-    async embedWithInstruct(query: string, instruct: string): Promise<number[]> {
+    async embedWithInstruct(
+      query: string,
+      instruct: string,
+    ): Promise<number[]> {
       // Format input with instruction prefix for mxbai-embed-large-v1
       // For retrieval queries, prepend the instruction
       const formattedInput = `${instruct} ${query}`;

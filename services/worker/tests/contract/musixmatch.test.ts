@@ -20,7 +20,8 @@ describe("Musixmatch Client Contract", () => {
           body: {
             lyrics: {
               lyrics_id: 12345678,
-              lyrics_body: "Is this the real life?\nIs this just fantasy?\nCaught in a landslide\nNo escape from reality",
+              lyrics_body:
+                "Is this the real life?\nIs this just fantasy?\nCaught in a landslide\nNo escape from reality",
               lyrics_language: "en",
               explicit: 0,
               lyrics_copyright: "Licensed to MusixMatch",
@@ -59,7 +60,7 @@ describe("Musixmatch Client Contract", () => {
         message: {
           header: {
             status_code: 200,
-            execute_time: 0.010,
+            execute_time: 0.01,
           },
           body: {},
         },
@@ -134,7 +135,7 @@ describe("Musixmatch Client Contract", () => {
       const response = {
         message: {
           header: {
-            execute_time: 0.010,
+            execute_time: 0.01,
           },
           body: {},
         },
@@ -149,7 +150,7 @@ describe("Musixmatch Client Contract", () => {
         message: {
           header: {
             status_code: 200,
-            execute_time: 0.020,
+            execute_time: 0.02,
           },
           body: {
             lyrics: {

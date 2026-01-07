@@ -30,7 +30,7 @@ function formatFeatureDescriptor(
   value: number | null | undefined,
   thresholds: { low: number; high: number },
   lowLabel: string,
-  highLabel: string
+  highLabel: string,
 ): string | null {
   if (value === null || value === undefined) return null;
 
@@ -57,7 +57,7 @@ export function formatAudioFeatures(features: AudioFeatures): string {
     features.energy,
     { low: 0.3, high: 0.7 },
     "low energy",
-    "high energy"
+    "high energy",
   );
   if (energy) descriptors.push(energy);
 
@@ -67,7 +67,7 @@ export function formatAudioFeatures(features: AudioFeatures): string {
     features.valence,
     { low: 0.3, high: 0.7 },
     "melancholic mood",
-    "uplifting mood"
+    "uplifting mood",
   );
   if (valence) descriptors.push(valence);
 
@@ -86,7 +86,7 @@ export function formatAudioFeatures(features: AudioFeatures): string {
     features.danceability,
     { low: 0.3, high: 0.7 },
     "ambient",
-    "danceable"
+    "danceable",
   );
   if (danceability) descriptors.push(danceability);
 
@@ -133,7 +133,7 @@ export function formatAudioFeatures(features: AudioFeatures): string {
 export function buildShortDescriptionPrompt(
   title: string,
   artist: string,
-  interpretation: string
+  interpretation: string,
 ): string {
   return `Summarize this track interpretation in exactly one sentence (max 50 words).
 Focus on mood, theme, and emotional content. Output only the sentence.
@@ -155,7 +155,7 @@ export function buildInstrumentalShortDescriptionPrompt(
   title: string,
   artist: string,
   album: string,
-  features: AudioFeatures
+  features: AudioFeatures,
 ): string {
   const formattedFeatures = formatAudioFeatures(features);
 
@@ -177,7 +177,7 @@ Audio Features: ${formattedFeatures}`;
 export function buildMetadataOnlyShortDescriptionPrompt(
   title: string,
   artist: string,
-  album: string
+  album: string,
 ): string {
   return `Create a brief, neutral description for this track in exactly one sentence (max 50 words).
 Use only the metadata provided. Output only the sentence.

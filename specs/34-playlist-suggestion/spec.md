@@ -12,7 +12,7 @@
 - Q: What size should album artwork be displayed at? → A: Standard size (160x160px)
 - Q: Should Tidal API enrichment retry on failure before falling back? → A: Retry once (1 second delay) before falling back to agent-provided data
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - Agent Presents a Curated Playlist (Priority: P1)
 
@@ -110,7 +110,7 @@ As a returning user viewing a previous conversation, I want to see the playlists
 - What happens when the SSE connection is lost while the playlist is being streamed? The user should see the last known state; on reconnection or page reload, the playlist displays from persisted data.
 - What happens when a track's reasoning exceeds expected length? The reasoning should be displayed regardless of length, with natural text wrapping in the UI.
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -170,7 +170,7 @@ As a returning user viewing a previous conversation, I want to see the playlists
 - **Playlist Track Item**: A single track within the playlist. Contains both agent-provided data (ISRC, title, artist, reasoning) and enrichment data (album artwork, duration, Tidal availability).
 - **Playlist Display State**: Frontend state for the playlist card UI. Includes tracks with their expanded/collapsed state for reasoning display.
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 

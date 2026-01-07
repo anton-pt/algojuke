@@ -6,7 +6,11 @@
  */
 
 import { Langfuse } from "langfuse";
-import { loadConfig, tryLoadConfig, type FullObservabilityConfig } from "./config.js";
+import {
+  loadConfig,
+  tryLoadConfig,
+  type FullObservabilityConfig,
+} from "./config.js";
 
 /**
  * Health check response from Langfuse.
@@ -52,7 +56,10 @@ export async function checkLangfuseHealth(): Promise<LangfuseHealthResponse> {
       };
     }
 
-    const data = (await response.json()) as { status: string; version?: string };
+    const data = (await response.json()) as {
+      status: string;
+      version?: string;
+    };
     return {
       status: data.status === "OK" ? "OK" : "ERROR",
       version: data.version,
@@ -72,7 +79,7 @@ export async function checkLangfuseHealth(): Promise<LangfuseHealthResponse> {
  * @returns Observability client instance
  */
 export function createObservabilityClient(
-  runtimeOptions?: Parameters<typeof loadConfig>[0]
+  runtimeOptions?: Parameters<typeof loadConfig>[0],
 ): ObservabilityClient {
   const config = loadConfig(runtimeOptions);
   const isEnabled = config.env.LANGFUSE_ENABLED;
@@ -105,7 +112,7 @@ export function createObservabilityClient(
  * @returns Observability client or null
  */
 export function tryCreateObservabilityClient(
-  runtimeOptions?: Parameters<typeof loadConfig>[0]
+  runtimeOptions?: Parameters<typeof loadConfig>[0],
 ): ObservabilityClient | null {
   const config = tryLoadConfig(runtimeOptions);
   if (!config) {

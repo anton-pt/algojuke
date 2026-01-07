@@ -1,10 +1,13 @@
-import { describe, test, expect, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { MockedProvider } from '@apollo/client/testing';
-import { SearchPage } from '../../src/pages/SearchPage';
-import { SEARCH_QUERY } from '../../src/graphql/queries';
-import { GET_LIBRARY_ALBUMS, GET_LIBRARY_TRACKS } from '../../src/graphql/library';
+import { describe, test, expect, vi } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { MockedProvider } from "@apollo/client/testing";
+import { SearchPage } from "../../src/pages/SearchPage";
+import { SEARCH_QUERY } from "../../src/graphql/queries";
+import {
+  GET_LIBRARY_ALBUMS,
+  GET_LIBRARY_TRACKS,
+} from "../../src/graphql/library";
 
 const libraryMocks = [
   {
@@ -33,48 +36,48 @@ const mockSearchResults = {
   search: {
     albums: [
       {
-        id: '123',
-        title: 'Abbey Road',
-        artist: 'The Beatles',
-        artists: ['The Beatles'],
-        artworkUrl: 'https://images.tidal.com/im/im?uuid=test&w=640&h=640',
-        artworkThumbUrl: 'https://images.tidal.com/im/im?uuid=test&w=320&h=320',
+        id: "123",
+        title: "Abbey Road",
+        artist: "The Beatles",
+        artists: ["The Beatles"],
+        artworkUrl: "https://images.tidal.com/im/im?uuid=test&w=640&h=640",
+        artworkThumbUrl: "https://images.tidal.com/im/im?uuid=test&w=320&h=320",
         explicit: false,
         trackCount: 17,
         duration: 2800,
-        releaseDate: '1969-09-26',
-        externalUrl: 'https://tidal.com/album/123',
-        source: 'tidal',
+        releaseDate: "1969-09-26",
+        externalUrl: "https://tidal.com/album/123",
+        source: "tidal",
       },
     ],
     tracks: [
       {
-        id: '456',
-        title: 'Come Together',
-        artist: 'The Beatles',
-        artists: ['The Beatles'],
-        albumTitle: 'Abbey Road',
-        albumId: '123',
-        artworkUrl: 'https://images.tidal.com/im/im?uuid=test&w=640&h=640',
-        artworkThumbUrl: 'https://images.tidal.com/im/im?uuid=test&w=320&h=320',
+        id: "456",
+        title: "Come Together",
+        artist: "The Beatles",
+        artists: ["The Beatles"],
+        albumTitle: "Abbey Road",
+        albumId: "123",
+        artworkUrl: "https://images.tidal.com/im/im?uuid=test&w=640&h=640",
+        artworkThumbUrl: "https://images.tidal.com/im/im?uuid=test&w=320&h=320",
         explicit: false,
         duration: 259,
-        externalUrl: 'https://tidal.com/track/456',
-        source: 'tidal',
+        externalUrl: "https://tidal.com/track/456",
+        source: "tidal",
       },
     ],
     total: {
       albums: 150,
       tracks: 1200,
     },
-    query: 'Beatles',
+    query: "Beatles",
     cached: false,
     timestamp: Date.now(),
   },
 };
 
-describe('Search Flow Integration Tests', () => {
-  test('complete search workflow from input to results', async () => {
+describe("Search Flow Integration Tests", () => {
+  test("complete search workflow from input to results", async () => {
     const user = userEvent.setup();
 
     const mocks = [
@@ -83,7 +86,7 @@ describe('Search Flow Integration Tests', () => {
         request: {
           query: SEARCH_QUERY,
           variables: {
-            query: 'Beatles',
+            query: "Beatles",
             limit: 20,
           },
         },
@@ -96,7 +99,7 @@ describe('Search Flow Integration Tests', () => {
     render(
       <MockedProvider mocks={mocks} addTypename={false}>
         <SearchPage />
-      </MockedProvider>
+      </MockedProvider>,
     );
 
     // User sees search bar
@@ -104,16 +107,16 @@ describe('Search Flow Integration Tests', () => {
     expect(searchInput).toBeInTheDocument();
 
     // User types query
-    await user.type(searchInput, 'Beatles');
+    await user.type(searchInput, "Beatles");
 
     // User clicks search button
-    const searchButton = screen.getByRole('button', { name: /search/i });
+    const searchButton = screen.getByRole("button", { name: /search/i });
     await user.click(searchButton);
 
     // User sees results (MockedProvider returns instantly, so loading state may not appear)
     await waitFor(() => {
-      expect(screen.getAllByText('Abbey Road').length).toBeGreaterThan(0);
-      expect(screen.getByText('Come Together')).toBeInTheDocument();
+      expect(screen.getAllByText("Abbey Road").length).toBeGreaterThan(0);
+      expect(screen.getByText("Come Together")).toBeInTheDocument();
     });
 
     // User sees album and track cards
@@ -121,7 +124,7 @@ describe('Search Flow Integration Tests', () => {
     expect(screen.getByText(/4:19/i)).toBeInTheDocument(); // Track duration
   });
 
-  test('shows empty results message', async () => {
+  test("shows empty results message", async () => {
     const user = userEvent.setup();
 
     const emptyMocks = [
@@ -130,7 +133,7 @@ describe('Search Flow Integration Tests', () => {
         request: {
           query: SEARCH_QUERY,
           variables: {
-            query: 'xyznotarealband',
+            query: "xyznotarealband",
             limit: 20,
           },
         },
@@ -140,7 +143,7 @@ describe('Search Flow Integration Tests', () => {
               albums: [],
               tracks: [],
               total: { albums: 0, tracks: 0 },
-              query: 'xyznotarealband',
+              query: "xyznotarealband",
               cached: false,
               timestamp: Date.now(),
             },
@@ -152,13 +155,13 @@ describe('Search Flow Integration Tests', () => {
     render(
       <MockedProvider mocks={emptyMocks} addTypename={false}>
         <SearchPage />
-      </MockedProvider>
+      </MockedProvider>,
     );
 
     const searchInput = screen.getByPlaceholderText(/search/i);
-    await user.type(searchInput, 'xyznotarealband');
+    await user.type(searchInput, "xyznotarealband");
 
-    const searchButton = screen.getByRole('button', { name: /search/i });
+    const searchButton = screen.getByRole("button", { name: /search/i });
     await user.click(searchButton);
 
     await waitFor(() => {
@@ -167,7 +170,7 @@ describe('Search Flow Integration Tests', () => {
     });
   });
 
-  test('displays error message on search failure', async () => {
+  test("displays error message on search failure", async () => {
     const user = userEvent.setup();
 
     const errorMocks = [
@@ -175,24 +178,24 @@ describe('Search Flow Integration Tests', () => {
         request: {
           query: SEARCH_QUERY,
           variables: {
-            query: 'error',
+            query: "error",
             limit: 20,
           },
         },
-        error: new Error('Search failed'),
+        error: new Error("Search failed"),
       },
     ];
 
     render(
       <MockedProvider mocks={errorMocks} addTypename={false}>
         <SearchPage />
-      </MockedProvider>
+      </MockedProvider>,
     );
 
     const searchInput = screen.getByPlaceholderText(/search/i);
-    await user.type(searchInput, 'error');
+    await user.type(searchInput, "error");
 
-    const searchButton = screen.getByRole('button', { name: /search/i });
+    const searchButton = screen.getByRole("button", { name: /search/i });
     await user.click(searchButton);
 
     await waitFor(() => {
@@ -200,16 +203,16 @@ describe('Search Flow Integration Tests', () => {
     });
   });
 
-  test('prevents empty query submission', async () => {
+  test("prevents empty query submission", async () => {
     const user = userEvent.setup();
 
     render(
       <MockedProvider mocks={[]} addTypename={false}>
         <SearchPage />
-      </MockedProvider>
+      </MockedProvider>,
     );
 
-    const searchButton = screen.getByRole('button', { name: /search/i });
+    const searchButton = screen.getByRole("button", { name: /search/i });
     await user.click(searchButton);
 
     // Should not make any GraphQL requests
@@ -217,7 +220,7 @@ describe('Search Flow Integration Tests', () => {
     expect(screen.queryByText(/searching/i)).not.toBeInTheDocument();
   });
 
-  test('displays multiple albums and tracks', async () => {
+  test("displays multiple albums and tracks", async () => {
     const user = userEvent.setup();
 
     const multipleResultsMocks = [
@@ -225,7 +228,7 @@ describe('Search Flow Integration Tests', () => {
         request: {
           query: SEARCH_QUERY,
           variables: {
-            query: 'rock',
+            query: "rock",
             limit: 20,
           },
         },
@@ -233,16 +236,36 @@ describe('Search Flow Integration Tests', () => {
           data: {
             search: {
               albums: [
-                { ...mockSearchResults.search.albums[0], id: '1', title: 'Album 1' },
-                { ...mockSearchResults.search.albums[0], id: '2', title: 'Album 2' },
-                { ...mockSearchResults.search.albums[0], id: '3', title: 'Album 3' },
+                {
+                  ...mockSearchResults.search.albums[0],
+                  id: "1",
+                  title: "Album 1",
+                },
+                {
+                  ...mockSearchResults.search.albums[0],
+                  id: "2",
+                  title: "Album 2",
+                },
+                {
+                  ...mockSearchResults.search.albums[0],
+                  id: "3",
+                  title: "Album 3",
+                },
               ],
               tracks: [
-                { ...mockSearchResults.search.tracks[0], id: '10', title: 'Track 1' },
-                { ...mockSearchResults.search.tracks[0], id: '20', title: 'Track 2' },
+                {
+                  ...mockSearchResults.search.tracks[0],
+                  id: "10",
+                  title: "Track 1",
+                },
+                {
+                  ...mockSearchResults.search.tracks[0],
+                  id: "20",
+                  title: "Track 2",
+                },
               ],
               total: { albums: 300, tracks: 5000 },
-              query: 'rock',
+              query: "rock",
               cached: false,
               timestamp: Date.now(),
             },
@@ -254,25 +277,25 @@ describe('Search Flow Integration Tests', () => {
     render(
       <MockedProvider mocks={multipleResultsMocks} addTypename={false}>
         <SearchPage />
-      </MockedProvider>
+      </MockedProvider>,
     );
 
     const searchInput = screen.getByPlaceholderText(/search/i);
-    await user.type(searchInput, 'rock');
+    await user.type(searchInput, "rock");
 
-    const searchButton = screen.getByRole('button', { name: /search/i });
+    const searchButton = screen.getByRole("button", { name: /search/i });
     await user.click(searchButton);
 
     await waitFor(() => {
-      expect(screen.getByText('Album 1')).toBeInTheDocument();
-      expect(screen.getByText('Album 2')).toBeInTheDocument();
-      expect(screen.getByText('Album 3')).toBeInTheDocument();
-      expect(screen.getByText('Track 1')).toBeInTheDocument();
-      expect(screen.getByText('Track 2')).toBeInTheDocument();
+      expect(screen.getByText("Album 1")).toBeInTheDocument();
+      expect(screen.getByText("Album 2")).toBeInTheDocument();
+      expect(screen.getByText("Album 3")).toBeInTheDocument();
+      expect(screen.getByText("Track 1")).toBeInTheDocument();
+      expect(screen.getByText("Track 2")).toBeInTheDocument();
     });
   });
 
-  test('shows cached indicator', async () => {
+  test("shows cached indicator", async () => {
     const user = userEvent.setup();
 
     const cachedMocks = [
@@ -280,7 +303,7 @@ describe('Search Flow Integration Tests', () => {
         request: {
           query: SEARCH_QUERY,
           variables: {
-            query: 'cached',
+            query: "cached",
             limit: 20,
           },
         },
@@ -289,7 +312,7 @@ describe('Search Flow Integration Tests', () => {
             ...mockSearchResults,
             search: {
               ...mockSearchResults.search,
-              query: 'cached',
+              query: "cached",
               cached: true,
             },
           },
@@ -300,13 +323,13 @@ describe('Search Flow Integration Tests', () => {
     render(
       <MockedProvider mocks={cachedMocks} addTypename={false}>
         <SearchPage />
-      </MockedProvider>
+      </MockedProvider>,
     );
 
     const searchInput = screen.getByPlaceholderText(/search/i);
-    await user.type(searchInput, 'cached');
+    await user.type(searchInput, "cached");
 
-    const searchButton = screen.getByRole('button', { name: /search/i });
+    const searchButton = screen.getByRole("button", { name: /search/i });
     await user.click(searchButton);
 
     await waitFor(() => {
@@ -314,7 +337,7 @@ describe('Search Flow Integration Tests', () => {
     });
   });
 
-  test('handles special characters in search', async () => {
+  test("handles special characters in search", async () => {
     const user = userEvent.setup();
 
     const specialCharMocks = [
@@ -322,17 +345,23 @@ describe('Search Flow Integration Tests', () => {
         request: {
           query: SEARCH_QUERY,
           variables: {
-            query: 'AC/DC',
+            query: "AC/DC",
             limit: 20,
           },
         },
         result: {
           data: {
             search: {
-              albums: [{ ...mockSearchResults.search.albums[0], title: 'Back in Black', artist: 'AC/DC' }],
+              albums: [
+                {
+                  ...mockSearchResults.search.albums[0],
+                  title: "Back in Black",
+                  artist: "AC/DC",
+                },
+              ],
               tracks: [],
               total: { albums: 50, tracks: 0 },
-              query: 'AC/DC',
+              query: "AC/DC",
               cached: false,
               timestamp: Date.now(),
             },
@@ -344,21 +373,21 @@ describe('Search Flow Integration Tests', () => {
     render(
       <MockedProvider mocks={specialCharMocks} addTypename={false}>
         <SearchPage />
-      </MockedProvider>
+      </MockedProvider>,
     );
 
     const searchInput = screen.getByPlaceholderText(/search/i);
-    await user.type(searchInput, 'AC/DC');
+    await user.type(searchInput, "AC/DC");
 
-    const searchButton = screen.getByRole('button', { name: /search/i });
+    const searchButton = screen.getByRole("button", { name: /search/i });
     await user.click(searchButton);
 
     await waitFor(() => {
-      expect(screen.getByText('Back in Black')).toBeInTheDocument();
+      expect(screen.getByText("Back in Black")).toBeInTheDocument();
     });
   });
 
-  test('images have fallback for missing artwork', async () => {
+  test("images have fallback for missing artwork", async () => {
     const user = userEvent.setup();
 
     const missingArtworkMocks = [
@@ -366,7 +395,7 @@ describe('Search Flow Integration Tests', () => {
         request: {
           query: SEARCH_QUERY,
           variables: {
-            query: 'test',
+            query: "test",
             limit: 20,
           },
         },
@@ -376,13 +405,13 @@ describe('Search Flow Integration Tests', () => {
               albums: [
                 {
                   ...mockSearchResults.search.albums[0],
-                  artworkUrl: '/images/placeholder-album.svg',
-                  artworkThumbUrl: '/images/placeholder-album.svg',
+                  artworkUrl: "/images/placeholder-album.svg",
+                  artworkThumbUrl: "/images/placeholder-album.svg",
                 },
               ],
               tracks: [],
               total: { albums: 1, tracks: 0 },
-              query: 'test',
+              query: "test",
               cached: false,
               timestamp: Date.now(),
             },
@@ -394,18 +423,18 @@ describe('Search Flow Integration Tests', () => {
     render(
       <MockedProvider mocks={missingArtworkMocks} addTypename={false}>
         <SearchPage />
-      </MockedProvider>
+      </MockedProvider>,
     );
 
     const searchInput = screen.getByPlaceholderText(/search/i);
-    await user.type(searchInput, 'test');
+    await user.type(searchInput, "test");
 
-    const searchButton = screen.getByRole('button', { name: /search/i });
+    const searchButton = screen.getByRole("button", { name: /search/i });
     await user.click(searchButton);
 
     await waitFor(() => {
-      const img = screen.getByRole('img');
-      expect(img).toHaveAttribute('src', '/images/placeholder-album.svg');
+      const img = screen.getByRole("img");
+      expect(img).toHaveAttribute("src", "/images/placeholder-album.svg");
     });
   });
 });

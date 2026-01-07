@@ -94,7 +94,10 @@ describe("Track Ingestion Pipeline Integration", () => {
           album: "Test",
           priority: -600,
         };
-        expect(TrackIngestionRequestedEvent.shape.data.safeParse(minPriority).success).toBe(true);
+        expect(
+          TrackIngestionRequestedEvent.shape.data.safeParse(minPriority)
+            .success,
+        ).toBe(true);
 
         // Valid priority at max
         const maxPriority = {
@@ -104,7 +107,10 @@ describe("Track Ingestion Pipeline Integration", () => {
           album: "Test",
           priority: 600,
         };
-        expect(TrackIngestionRequestedEvent.shape.data.safeParse(maxPriority).success).toBe(true);
+        expect(
+          TrackIngestionRequestedEvent.shape.data.safeParse(maxPriority)
+            .success,
+        ).toBe(true);
 
         // Invalid priority below min
         const belowMin = {
@@ -114,7 +120,9 @@ describe("Track Ingestion Pipeline Integration", () => {
           album: "Test",
           priority: -601,
         };
-        expect(TrackIngestionRequestedEvent.shape.data.safeParse(belowMin).success).toBe(false);
+        expect(
+          TrackIngestionRequestedEvent.shape.data.safeParse(belowMin).success,
+        ).toBe(false);
 
         // Invalid priority above max
         const aboveMax = {
@@ -124,7 +132,9 @@ describe("Track Ingestion Pipeline Integration", () => {
           album: "Test",
           priority: 601,
         };
-        expect(TrackIngestionRequestedEvent.shape.data.safeParse(aboveMax).success).toBe(false);
+        expect(
+          TrackIngestionRequestedEvent.shape.data.safeParse(aboveMax).success,
+        ).toBe(false);
       });
     });
 

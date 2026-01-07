@@ -8,12 +8,12 @@
  * from the Qdrant vector index.
  */
 
-import { BackendQdrantClient } from '../clients/qdrantClient.js';
-import { logger } from '../utils/logger.js';
+import { BackendQdrantClient } from "../clients/qdrantClient.js";
+import { logger } from "../utils/logger.js";
 import {
   ExtendedTrackMetadata,
   transformPayloadToMetadata,
-} from '../types/trackMetadata.js';
+} from "../types/trackMetadata.js";
 
 /**
  * ISRC validation regex: 12 alphanumeric characters
@@ -48,12 +48,14 @@ export class TrackMetadataService {
    * @param isrc - Track ISRC (12 alphanumeric characters)
    * @returns ExtendedTrackMetadata or null
    */
-  async getExtendedMetadata(isrc: string): Promise<ExtendedTrackMetadata | null> {
+  async getExtendedMetadata(
+    isrc: string,
+  ): Promise<ExtendedTrackMetadata | null> {
     const normalizedIsrc = isrc.toUpperCase();
 
     // Validate ISRC format
     if (!isValidIsrc(normalizedIsrc)) {
-      logger.debug('track_metadata_invalid_isrc', { isrc: normalizedIsrc });
+      logger.debug("track_metadata_invalid_isrc", { isrc: normalizedIsrc });
       return null;
     }
 
@@ -61,13 +63,13 @@ export class TrackMetadataService {
       const payload = await this.qdrantClient.getTrackPayload(normalizedIsrc);
 
       if (!payload) {
-        logger.debug('track_metadata_not_found', { isrc: normalizedIsrc });
+        logger.debug("track_metadata_not_found", { isrc: normalizedIsrc });
         return null;
       }
 
       return transformPayloadToMetadata(payload);
     } catch (error) {
-      logger.error('track_metadata_fetch_error', {
+      logger.error("track_metadata_fetch_error", {
         isrc: normalizedIsrc,
         error: error instanceof Error ? error.message : String(error),
       });
@@ -84,10 +86,13 @@ export class TrackMetadataService {
    * @param isrcs - Array of ISRCs to check
    * @returns Map of ISRC to indexed status
    */
-  async checkIsIndexed(isrcs: (string | null | undefined)[]): Promise<Map<string, boolean>> {
+  async checkIsIndexed(
+    isrcs: (string | null | undefined)[],
+  ): Promise<Map<string, boolean>> {
     // Filter out null/undefined ISRCs
     const validIsrcs = isrcs.filter(
-      (isrc): isrc is string => isrc != null && typeof isrc === 'string' && isrc.length > 0
+      (isrc): isrc is string =>
+        isrc != null && typeof isrc === "string" && isrc.length > 0,
     );
 
     if (validIsrcs.length === 0) {
@@ -97,7 +102,7 @@ export class TrackMetadataService {
     try {
       return await this.qdrantClient.checkTracksExist(validIsrcs);
     } catch (error) {
-      logger.error('check_indexed_error', {
+      logger.error("check_indexed_error", {
         isrcCount: validIsrcs.length,
         error: error instanceof Error ? error.message : String(error),
       });

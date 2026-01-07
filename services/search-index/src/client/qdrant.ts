@@ -2,12 +2,12 @@
  * Qdrant client configuration for vector search index
  */
 
-import { QdrantClient } from '@qdrant/js-client-rest';
+import { QdrantClient } from "@qdrant/js-client-rest";
 
 /**
  * Environment variables for Qdrant connection
  */
-const QDRANT_URL = process.env.QDRANT_URL || 'http://localhost:6333';
+const QDRANT_URL = process.env.QDRANT_URL || "http://localhost:6333";
 const QDRANT_API_KEY = process.env.QDRANT_API_KEY; // Optional for local Docker
 
 /**

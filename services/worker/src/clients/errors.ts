@@ -16,7 +16,7 @@ export class APIError extends Error {
     message: string,
     public readonly statusCode: number,
     public readonly service: string,
-    public readonly retryable: boolean
+    public readonly retryable: boolean,
   ) {
     super(message);
     this.name = "APIError";
@@ -88,7 +88,7 @@ export function isRetryableError(error: unknown): boolean {
 export function createAPIError(
   statusCode: number,
   service: string,
-  message: string
+  message: string,
 ): APIError {
   const retryable = RETRYABLE_STATUS_CODES.has(statusCode);
   return new APIError(message, statusCode, service, retryable);

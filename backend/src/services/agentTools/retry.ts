@@ -7,8 +7,8 @@
  * Implements single retry with 1000ms delay for specific error types.
  */
 
-import { createToolError, type ToolError } from '../../types/agentTools.js';
-import { logger } from '../../utils/logger.js';
+import { createToolError, type ToolError } from "../../types/agentTools.js";
+import { logger } from "../../utils/logger.js";
 
 // -----------------------------------------------------------------------------
 // Configuration
@@ -28,28 +28,28 @@ const RETRYABLE_STATUS_CODES = [429, 503, 504];
  * Error codes/messages that indicate transient errors
  */
 const RETRYABLE_ERROR_PATTERNS = [
-  'ECONNREFUSED',
-  'ETIMEDOUT',
-  'ENOTFOUND',
-  'ENETUNREACH',
-  'ECONNRESET',
-  'socket hang up',
-  'network',
-  'timeout',
-  'rate limit',
-  'temporarily unavailable',
+  "ECONNREFUSED",
+  "ETIMEDOUT",
+  "ENOTFOUND",
+  "ENETUNREACH",
+  "ECONNRESET",
+  "socket hang up",
+  "network",
+  "timeout",
+  "rate limit",
+  "temporarily unavailable",
 ];
 
 /**
  * Error codes/messages that should NOT retry (validation, auth, etc.)
  */
 const NON_RETRYABLE_ERROR_PATTERNS = [
-  'validation',
-  'invalid',
-  'unauthorized',
-  'forbidden',
-  'not found',
-  'bad request',
+  "validation",
+  "invalid",
+  "unauthorized",
+  "forbidden",
+  "not found",
+  "bad request",
 ];
 
 // -----------------------------------------------------------------------------
@@ -61,12 +61,12 @@ const NON_RETRYABLE_ERROR_PATTERNS = [
  */
 function isRetryableError(error: unknown): boolean {
   // Check if it's a ToolError with retryable flag
-  if (error instanceof Error && 'retryable' in error) {
+  if (error instanceof Error && "retryable" in error) {
     return (error as ToolError).retryable;
   }
 
   // Check for HTTP status codes
-  if (error instanceof Error && 'status' in error) {
+  if (error instanceof Error && "status" in error) {
     const status = (error as any).status;
     if (RETRYABLE_STATUS_CODES.includes(status)) {
       return true;
@@ -78,7 +78,10 @@ function isRetryableError(error: unknown): boolean {
   }
 
   // Check error message for patterns
-  const errorMessage = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  const errorMessage =
+    error instanceof Error
+      ? error.message.toLowerCase()
+      : String(error).toLowerCase();
 
   // Check for non-retryable patterns first
   for (const pattern of NON_RETRYABLE_ERROR_PATTERNS) {
@@ -109,22 +112,28 @@ function sleep(ms: number): Promise<void> {
  * Map common error types to user-friendly messages
  */
 function getUserFriendlyMessage(error: unknown, toolName: string): string {
-  const errorMessage = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  const errorMessage =
+    error instanceof Error
+      ? error.message.toLowerCase()
+      : String(error).toLowerCase();
 
-  if (errorMessage.includes('econnrefused') || errorMessage.includes('enetunreach')) {
+  if (
+    errorMessage.includes("econnrefused") ||
+    errorMessage.includes("enetunreach")
+  ) {
     return `${formatToolName(toolName)} service is currently unavailable`;
   }
 
-  if (errorMessage.includes('etimedout') || errorMessage.includes('timeout')) {
+  if (errorMessage.includes("etimedout") || errorMessage.includes("timeout")) {
     return `${formatToolName(toolName)} operation timed out`;
   }
 
-  if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
-    return 'Rate limit exceeded. Please wait a moment and try again.';
+  if (errorMessage.includes("rate limit") || errorMessage.includes("429")) {
+    return "Rate limit exceeded. Please wait a moment and try again.";
   }
 
-  if (errorMessage.includes('validation') || errorMessage.includes('invalid')) {
-    return error instanceof Error ? error.message : 'Invalid input';
+  if (errorMessage.includes("validation") || errorMessage.includes("invalid")) {
+    return error instanceof Error ? error.message : "Invalid input";
   }
 
   return `${formatToolName(toolName)} is temporarily unavailable`;
@@ -135,14 +144,14 @@ function getUserFriendlyMessage(error: unknown, toolName: string): string {
  */
 function formatToolName(toolName: string): string {
   switch (toolName) {
-    case 'semanticSearch':
-      return 'Vector search';
-    case 'tidalSearch':
-      return 'Tidal search';
-    case 'batchMetadata':
-      return 'Metadata lookup';
-    case 'albumTracks':
-      return 'Album tracks';
+    case "semanticSearch":
+      return "Vector search";
+    case "tidalSearch":
+      return "Tidal search";
+    case "batchMetadata":
+      return "Metadata lookup";
+    case "albumTracks":
+      return "Album tracks";
     default:
       return toolName;
   }
@@ -165,7 +174,7 @@ function formatToolName(toolName: string): string {
  */
 export async function executeWithRetry<T>(
   fn: () => Promise<T>,
-  toolName: string
+  toolName: string,
 ): Promise<{ result: T; wasRetried: boolean }> {
   try {
     // First attempt
@@ -174,13 +183,14 @@ export async function executeWithRetry<T>(
   } catch (firstError) {
     // Check if error is retryable
     if (!isRetryableError(firstError)) {
-      logger.debug('tool_retry_not_retryable', {
+      logger.debug("tool_retry_not_retryable", {
         toolName,
-        error: firstError instanceof Error ? firstError.message : String(firstError),
+        error:
+          firstError instanceof Error ? firstError.message : String(firstError),
       });
 
       // Wrap in ToolError if not already
-      if (firstError instanceof Error && 'retryable' in firstError) {
+      if (firstError instanceof Error && "retryable" in firstError) {
         throw firstError;
       }
 
@@ -188,15 +198,16 @@ export async function executeWithRetry<T>(
         getUserFriendlyMessage(firstError, toolName),
         false,
         false,
-        'NON_RETRYABLE_ERROR'
+        "NON_RETRYABLE_ERROR",
       );
     }
 
     // Log retry attempt
-    logger.info('tool_retry_attempting', {
+    logger.info("tool_retry_attempting", {
       toolName,
       delayMs: RETRY_DELAY_MS,
-      error: firstError instanceof Error ? firstError.message : String(firstError),
+      error:
+        firstError instanceof Error ? firstError.message : String(firstError),
     });
 
     // Wait before retry
@@ -205,23 +216,26 @@ export async function executeWithRetry<T>(
     try {
       // Second attempt
       const result = await fn();
-      logger.info('tool_retry_succeeded', { toolName });
+      logger.info("tool_retry_succeeded", { toolName });
       return { result, wasRetried: true };
     } catch (secondError) {
       // Both attempts failed
-      logger.warn('tool_retry_failed', {
+      logger.warn("tool_retry_failed", {
         toolName,
-        error: secondError instanceof Error ? secondError.message : String(secondError),
+        error:
+          secondError instanceof Error
+            ? secondError.message
+            : String(secondError),
       });
 
       // Return error with wasRetried = true
-      if (secondError instanceof Error && 'retryable' in secondError) {
+      if (secondError instanceof Error && "retryable" in secondError) {
         const toolError = secondError as ToolError;
         throw createToolError(
           toolError.message,
           toolError.retryable,
           true, // wasRetried
-          toolError.code
+          toolError.code,
         );
       }
 
@@ -229,7 +243,7 @@ export async function executeWithRetry<T>(
         getUserFriendlyMessage(secondError, toolName),
         isRetryableError(secondError),
         true, // wasRetried
-        'RETRY_EXHAUSTED'
+        "RETRY_EXHAUSTED",
       );
     }
   }

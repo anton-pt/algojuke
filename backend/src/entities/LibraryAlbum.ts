@@ -1,4 +1,4 @@
-import 'reflect-metadata';
+import "reflect-metadata";
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -6,7 +6,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Index,
-} from 'typeorm';
+} from "typeorm";
 
 export interface TrackInfo {
   position: number;
@@ -17,36 +17,41 @@ export interface TrackInfo {
   isrc?: string;
 }
 
-@Entity('library_albums')
-@Index(['tidalAlbumId', 'userId'], { unique: true })  // Composite unique - per-user
-@Index(['userId'])
-@Index(['artistName', 'title'])
+@Entity("library_albums")
+@Index(["tidalAlbumId", "userId"], { unique: true }) // Composite unique - per-user
+@Index(["userId"])
+@Index(["artistName", "title"])
 export class LibraryAlbum {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column({ name: 'tidal_album_id', type: 'varchar', length: 255 })  // Removed unique: true
+  @Column({ name: "tidal_album_id", type: "varchar", length: 255 }) // Removed unique: true
   tidalAlbumId!: string;
 
-  @Column({ type: 'varchar', length: 255 })
+  @Column({ type: "varchar", length: 255 })
   title!: string;
 
-  @Column({ name: 'artist_name', type: 'varchar', length: 255 })
+  @Column({ name: "artist_name", type: "varchar", length: 255 })
   artistName!: string;
 
-  @Column({ name: 'cover_art_url', type: 'varchar', length: 500, nullable: true })
+  @Column({
+    name: "cover_art_url",
+    type: "varchar",
+    length: 500,
+    nullable: true,
+  })
   coverArtUrl: string | null = null;
 
-  @Column({ name: 'release_date', type: 'date', nullable: true })
+  @Column({ name: "release_date", type: "date", nullable: true })
   releaseDate: Date | null = null;
 
-  @Column({ name: 'track_count', type: 'integer', default: 0 })
+  @Column({ name: "track_count", type: "integer", default: 0 })
   trackCount!: number;
 
-  @Column({ name: 'track_listing', type: 'jsonb', default: () => "'[]'" })
+  @Column({ name: "track_listing", type: "jsonb", default: () => "'[]'" })
   trackListing!: TrackInfo[];
 
-  @Column({ type: 'jsonb', nullable: true, default: () => "'{}'" })
+  @Column({ type: "jsonb", nullable: true, default: () => "'{}'" })
   metadata: {
     label?: string;
     genres?: string[];
@@ -54,12 +59,12 @@ export class LibraryAlbum {
     popularity?: number;
   } = {};
 
-  @Column({ name: 'user_id', type: 'varchar', length: 255 })
+  @Column({ name: "user_id", type: "varchar", length: 255 })
   userId!: string;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ name: "updated_at" })
   updatedAt!: Date;
 }

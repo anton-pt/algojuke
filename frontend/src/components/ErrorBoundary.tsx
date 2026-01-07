@@ -1,5 +1,5 @@
-import { Component, ReactNode } from 'react';
-import './ErrorBoundary.css';
+import { Component, ReactNode } from "react";
+import "./ErrorBoundary.css";
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -14,7 +14,10 @@ interface ErrorBoundaryState {
  * Error boundary component to catch React errors and display fallback UI
  * Prevents entire app from crashing when a component throws an error
  */
-export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -27,7 +30,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     // Log error to console in development
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    console.error("ErrorBoundary caught an error:", error, errorInfo);
   }
 
   handleRetry = () => {
@@ -42,7 +45,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <div className="error-boundary-content">
             <h1 className="error-boundary-title">Something went wrong</h1>
             <p className="error-boundary-message">
-              {this.state.error?.message || 'An unexpected error occurred'}
+              {this.state.error?.message || "An unexpected error occurred"}
             </p>
             <div className="error-boundary-actions">
               <button
@@ -53,7 +56,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 Try Again
               </button>
               <button
-                onClick={() => window.location.href = '/'}
+                onClick={() => (window.location.href = "/")}
                 className="error-boundary-home-button"
                 type="button"
               >

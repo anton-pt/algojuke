@@ -12,8 +12,8 @@
  * GraphQL request don't result in redundant Qdrant calls.
  */
 
-import DataLoader from 'dataloader';
-import { TrackMetadataService } from '../services/trackMetadataService.js';
+import DataLoader from "dataloader";
+import { TrackMetadataService } from "../services/trackMetadataService.js";
 
 /**
  * Creates a DataLoader for batching ISRC indexed status lookups
@@ -25,7 +25,7 @@ import { TrackMetadataService } from '../services/trackMetadataService.js';
  * @returns DataLoader that batches ISRC lookups
  */
 export function createIsrcDataLoader(
-  trackMetadataService: TrackMetadataService
+  trackMetadataService: TrackMetadataService,
 ): DataLoader<string, boolean> {
   return new DataLoader<string, boolean>(
     async (isrcs: readonly string[]): Promise<boolean[]> => {
@@ -40,7 +40,7 @@ export function createIsrcDataLoader(
       cache: true,
       // Normalize keys to uppercase for consistent caching
       cacheKeyFn: (key) => key.toUpperCase(),
-    }
+    },
   );
 }
 

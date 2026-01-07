@@ -47,9 +47,9 @@ export const discoveryResolvers = {
     discoverTracks: async (
       _parent: unknown,
       args: DiscoverTracksArgs,
-      context: DiscoveryContext
+      context: DiscoveryContext,
     ): Promise<DiscoverySearchResult> => {
-      requireAuth(context, 'discoverTracks');
+      requireAuth(context, "discoverTracks");
       const { input } = args;
 
       try {
@@ -79,11 +79,14 @@ export const discoveryResolvers = {
           error: error instanceof Error ? error.message : String(error),
         });
 
-        throw new GraphQLError("An unexpected error occurred during discovery search", {
-          extensions: {
-            code: "INTERNAL_SERVER_ERROR",
+        throw new GraphQLError(
+          "An unexpected error occurred during discovery search",
+          {
+            extensions: {
+              code: "INTERNAL_SERVER_ERROR",
+            },
           },
-        });
+        );
       }
     },
 
@@ -93,9 +96,9 @@ export const discoveryResolvers = {
     discoveryIndexedCount: async (
       _parent: unknown,
       _args: unknown,
-      context: DiscoveryContext
+      context: DiscoveryContext,
     ): Promise<number> => {
-      requireAuth(context, 'discoveryIndexedCount');
+      requireAuth(context, "discoveryIndexedCount");
       return context.discoveryService.getIndexedCount();
     },
   },

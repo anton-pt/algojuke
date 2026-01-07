@@ -11,7 +11,7 @@
 
 - Q: How should the three score components (vector similarity, BM25 on interpretation, BM25 on lyrics) be combined into the final ranking score? → A: Use Qdrant's built-in Reciprocal Rank Fusion (RRF) for score combination
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - Natural Language Music Discovery (Priority: P1)
 
@@ -110,7 +110,7 @@ As a music listener, I want clear feedback when my discovery search doesn't matc
 - What happens when network latency causes search to take longer than expected? A loading indicator should remain visible, and the search should timeout gracefully after a reasonable period (e.g., 30 seconds) with an error message.
 - What happens when results come from tracks with very short or fragmentary lyrics? These tracks are included if their interpretation matches; the ranking algorithm handles varying content quality.
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -142,7 +142,7 @@ As a music listener, I want clear feedback when my discovery search doesn't matc
 - **Discovery Result**: A track returned from the search, including track metadata (title, artist, album, artwork) and expandable extended metadata (lyrics, interpretation, audio features)
 - **Result Page**: A batch of up to 20 discovery results; the system supports up to 5 pages (100 results total)
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 

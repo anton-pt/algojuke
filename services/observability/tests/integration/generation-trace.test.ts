@@ -7,7 +7,10 @@
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 
-import { createObservabilityClient, type ObservabilityClient } from "../../src/client.js";
+import {
+  createObservabilityClient,
+  type ObservabilityClient,
+} from "../../src/client.js";
 import {
   createGenerationSpan,
   type GenerationSpanOptions,

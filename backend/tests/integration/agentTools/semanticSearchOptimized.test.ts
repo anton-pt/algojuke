@@ -7,29 +7,30 @@
  * Requires Qdrant to be running.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { QdrantClient } from '@qdrant/js-client-rest';
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { QdrantClient } from "@qdrant/js-client-rest";
 import {
   BackendQdrantClient,
   AGENT_SEARCH_PAYLOAD_FIELDS,
   type OptimizedSearchResult,
-} from '../../../src/clients/qdrantClient.js';
-import { hashIsrcToUuid } from '../../../src/utils/isrcHash.js';
+} from "../../../src/clients/qdrantClient.js";
+import { hashIsrcToUuid } from "../../../src/utils/isrcHash.js";
 
 // Test configuration
-const QDRANT_URL = process.env.QDRANT_URL || 'http://localhost:6333';
-const TEST_COLLECTION = 'tracks-test-optimized-search';
+const QDRANT_URL = process.env.QDRANT_URL || "http://localhost:6333";
+const TEST_COLLECTION = "tracks-test-optimized-search";
 
 // Mock track data for testing
 const MOCK_TRACKS = [
   {
-    isrc: 'USRC12345001',
-    title: 'Melancholic Ballad',
-    artist: 'Test Artist 1',
-    album: 'Test Album 1',
-    short_description: 'A melancholic song about lost love and longing.',
-    interpretation: 'This is a very long interpretation text that analyzes the song in detail...',
-    lyrics: 'Verse 1: These are the lyrics...\nChorus: More lyrics...',
+    isrc: "USRC12345001",
+    title: "Melancholic Ballad",
+    artist: "Test Artist 1",
+    album: "Test Album 1",
+    short_description: "A melancholic song about lost love and longing.",
+    interpretation:
+      "This is a very long interpretation text that analyzes the song in detail...",
+    lyrics: "Verse 1: These are the lyrics...\nChorus: More lyrics...",
     acousticness: 0.7,
     danceability: 0.3,
     energy: 0.4,
@@ -43,13 +44,13 @@ const MOCK_TRACKS = [
     valence: 0.2,
   },
   {
-    isrc: 'USRC12345002',
-    title: 'Upbeat Dance Track',
-    artist: 'Test Artist 2',
-    album: 'Test Album 2',
-    short_description: 'An energetic dance track with powerful beats.',
-    interpretation: 'Another long interpretation explaining the dance track...',
-    lyrics: 'Dance lyrics here...',
+    isrc: "USRC12345002",
+    title: "Upbeat Dance Track",
+    artist: "Test Artist 2",
+    album: "Test Album 2",
+    short_description: "An energetic dance track with powerful beats.",
+    interpretation: "Another long interpretation explaining the dance track...",
+    lyrics: "Dance lyrics here...",
     acousticness: 0.1,
     danceability: 0.9,
     energy: 0.9,
@@ -63,12 +64,12 @@ const MOCK_TRACKS = [
     valence: 0.8,
   },
   {
-    isrc: 'USRC12345003',
-    title: 'Instrumental Piece',
-    artist: 'Test Artist 3',
-    album: 'Test Album 3',
+    isrc: "USRC12345003",
+    title: "Instrumental Piece",
+    artist: "Test Artist 3",
+    album: "Test Album 3",
     short_description: null, // No short description (backfill incomplete)
-    interpretation: 'Interpretation of the instrumental...',
+    interpretation: "Interpretation of the instrumental...",
     lyrics: null, // Instrumental, no lyrics
     acousticness: 0.9,
     danceability: 0.2,
@@ -97,7 +98,7 @@ function createMockSparseVector(): { indices: number[]; values: number[] } {
   };
 }
 
-describe('hybridSearchOptimized Integration', () => {
+describe("hybridSearchOptimized Integration", () => {
   let qdrantClient: QdrantClient;
   let backendClient: BackendQdrantClient;
   let testCollectionCreated = false;
@@ -109,7 +110,7 @@ describe('hybridSearchOptimized Integration', () => {
     try {
       await qdrantClient.getCollections();
     } catch {
-      console.log('Qdrant not available, skipping integration tests');
+      console.log("Qdrant not available, skipping integration tests");
       return;
     }
 
@@ -127,7 +128,7 @@ describe('hybridSearchOptimized Integration', () => {
         vectors: {
           interpretation_embedding: {
             size: 4096,
-            distance: 'Cosine',
+            distance: "Cosine",
           },
         },
         sparse_vectors: {
@@ -155,7 +156,7 @@ describe('hybridSearchOptimized Integration', () => {
       // Create backend client
       backendClient = new BackendQdrantClient(QDRANT_URL, TEST_COLLECTION);
     } catch (error) {
-      console.error('Failed to setup test collection:', error);
+      console.error("Failed to setup test collection:", error);
       throw error;
     }
   });
@@ -171,15 +172,20 @@ describe('hybridSearchOptimized Integration', () => {
     }
   });
 
-  it('returns results with only optimized fields', async () => {
+  it("returns results with only optimized fields", async () => {
     if (!testCollectionCreated) {
-      console.log('Skipping: Qdrant not available');
+      console.log("Skipping: Qdrant not available");
       return;
     }
 
     const results = await backendClient.hybridSearchOptimized(
-      [{ denseVector: createMockEmbedding(), sparseVector: createMockSparseVector() }],
-      { limit: 10, offset: 0 }
+      [
+        {
+          denseVector: createMockEmbedding(),
+          sparseVector: createMockSparseVector(),
+        },
+      ],
+      { limit: 10, offset: 0 },
     );
 
     expect(results.length).toBeGreaterThan(0);
@@ -194,24 +200,29 @@ describe('hybridSearchOptimized Integration', () => {
       expect(result.score).toBeDefined();
 
       // Should have shortDescription (may be null)
-      expect('shortDescription' in result).toBe(true);
+      expect("shortDescription" in result).toBe(true);
 
       // Should have audio features (may be null)
-      expect('acousticness' in result).toBe(true);
-      expect('danceability' in result).toBe(true);
-      expect('energy' in result).toBe(true);
+      expect("acousticness" in result).toBe(true);
+      expect("danceability" in result).toBe(true);
+      expect("energy" in result).toBe(true);
     }
   });
 
-  it('does NOT return interpretation field', async () => {
+  it("does NOT return interpretation field", async () => {
     if (!testCollectionCreated) {
-      console.log('Skipping: Qdrant not available');
+      console.log("Skipping: Qdrant not available");
       return;
     }
 
     const results = await backendClient.hybridSearchOptimized(
-      [{ denseVector: createMockEmbedding(), sparseVector: createMockSparseVector() }],
-      { limit: 10, offset: 0 }
+      [
+        {
+          denseVector: createMockEmbedding(),
+          sparseVector: createMockSparseVector(),
+        },
+      ],
+      { limit: 10, offset: 0 },
     );
 
     expect(results.length).toBeGreaterThan(0);
@@ -219,62 +230,77 @@ describe('hybridSearchOptimized Integration', () => {
     for (const result of results) {
       // TypeScript type doesn't have interpretation
       // We verify the raw result also doesn't have it
-      expect('interpretation' in result).toBe(false);
+      expect("interpretation" in result).toBe(false);
     }
   });
 
-  it('does NOT return lyrics field', async () => {
+  it("does NOT return lyrics field", async () => {
     if (!testCollectionCreated) {
-      console.log('Skipping: Qdrant not available');
+      console.log("Skipping: Qdrant not available");
       return;
     }
 
     const results = await backendClient.hybridSearchOptimized(
-      [{ denseVector: createMockEmbedding(), sparseVector: createMockSparseVector() }],
-      { limit: 10, offset: 0 }
+      [
+        {
+          denseVector: createMockEmbedding(),
+          sparseVector: createMockSparseVector(),
+        },
+      ],
+      { limit: 10, offset: 0 },
     );
 
     expect(results.length).toBeGreaterThan(0);
 
     for (const result of results) {
-      expect('lyrics' in result).toBe(false);
+      expect("lyrics" in result).toBe(false);
     }
   });
 
-  it('handles tracks with null short_description', async () => {
+  it("handles tracks with null short_description", async () => {
     if (!testCollectionCreated) {
-      console.log('Skipping: Qdrant not available');
+      console.log("Skipping: Qdrant not available");
       return;
     }
 
     const results = await backendClient.hybridSearchOptimized(
-      [{ denseVector: createMockEmbedding(), sparseVector: createMockSparseVector() }],
-      { limit: 10, offset: 0 }
+      [
+        {
+          denseVector: createMockEmbedding(),
+          sparseVector: createMockSparseVector(),
+        },
+      ],
+      { limit: 10, offset: 0 },
     );
 
     // Find the instrumental track which has null short_description
-    const instrumentalTrack = results.find((r) => r.isrc === 'USRC12345003');
+    const instrumentalTrack = results.find((r) => r.isrc === "USRC12345003");
 
     if (instrumentalTrack) {
       expect(instrumentalTrack.shortDescription).toBeNull();
     }
   });
 
-  it('returns all audio features', async () => {
+  it("returns all audio features", async () => {
     if (!testCollectionCreated) {
-      console.log('Skipping: Qdrant not available');
+      console.log("Skipping: Qdrant not available");
       return;
     }
 
     const results = await backendClient.hybridSearchOptimized(
-      [{ denseVector: createMockEmbedding(), sparseVector: createMockSparseVector() }],
-      { limit: 10, offset: 0 }
+      [
+        {
+          denseVector: createMockEmbedding(),
+          sparseVector: createMockSparseVector(),
+        },
+      ],
+      { limit: 10, offset: 0 },
     );
 
     expect(results.length).toBeGreaterThan(0);
 
     // Find a track with known audio features
-    const track1 = results.find((r) => r.isrc === 'USRC12345001');
+    const track1 = results.find((r) => r.isrc === "USRC12345001");
 
     if (track1) {
       expect(track1.acousticness).toBe(0.7);
@@ -291,18 +317,24 @@ describe('hybridSearchOptimized Integration', () => {
     }
   });
 
-  it('deduplicates results by ISRC', async () => {
+  it("deduplicates results by ISRC", async () => {
     if (!testCollectionCreated) {
-      console.log('Skipping: Qdrant not available');
+      console.log("Skipping: Qdrant not available");
       return;
     }
 
     const results = await backendClient.hybridSearchOptimized(
       [
-        { denseVector: createMockEmbedding(), sparseVector: createMockSparseVector() },
-        { denseVector: createMockEmbedding(), sparseVector: createMockSparseVector() },
+        {
+          denseVector: createMockEmbedding(),
+          sparseVector: createMockSparseVector(),
+        },
+        {
+          denseVector: createMockEmbedding(),
+          sparseVector: createMockSparseVector(),
+        },
       ],
-      { limit: 10, offset: 0 }
+      { limit: 10, offset: 0 },
     );
 
     // Check for duplicates
@@ -312,23 +344,28 @@ describe('hybridSearchOptimized Integration', () => {
     expect(isrcs.length).toBe(uniqueIsrcs.size); // No duplicates
   });
 
-  it('respects limit parameter', async () => {
+  it("respects limit parameter", async () => {
     if (!testCollectionCreated) {
-      console.log('Skipping: Qdrant not available');
+      console.log("Skipping: Qdrant not available");
       return;
     }
 
     const results = await backendClient.hybridSearchOptimized(
-      [{ denseVector: createMockEmbedding(), sparseVector: createMockSparseVector() }],
-      { limit: 2, offset: 0 }
+      [
+        {
+          denseVector: createMockEmbedding(),
+          sparseVector: createMockSparseVector(),
+        },
+      ],
+      { limit: 2, offset: 0 },
     );
 
     expect(results.length).toBeLessThanOrEqual(2);
   });
 
-  it('AGENT_SEARCH_PAYLOAD_FIELDS matches Qdrant schema', async () => {
+  it("AGENT_SEARCH_PAYLOAD_FIELDS matches Qdrant schema", async () => {
     if (!testCollectionCreated) {
-      console.log('Skipping: Qdrant not available');
+      console.log("Skipping: Qdrant not available");
       return;
     }
 

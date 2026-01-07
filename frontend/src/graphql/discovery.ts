@@ -1,4 +1,4 @@
-import { gql } from '@apollo/client';
+import { gql } from "@apollo/client";
 
 /**
  * GraphQL queries for Semantic Discovery Search feature
@@ -72,12 +72,12 @@ export interface DiscoverySearchResponse {
 }
 
 export type DiscoveryErrorCode =
-  | 'EMPTY_QUERY'
-  | 'LLM_UNAVAILABLE'
-  | 'EMBEDDING_UNAVAILABLE'
-  | 'INDEX_UNAVAILABLE'
-  | 'TIMEOUT'
-  | 'INTERNAL_ERROR';
+  | "EMPTY_QUERY"
+  | "LLM_UNAVAILABLE"
+  | "EMBEDDING_UNAVAILABLE"
+  | "INDEX_UNAVAILABLE"
+  | "TIMEOUT"
+  | "INTERNAL_ERROR";
 
 export interface DiscoverySearchError {
   message: string;
@@ -85,7 +85,9 @@ export interface DiscoverySearchError {
   retryable: boolean;
 }
 
-export type DiscoverySearchResult = DiscoverySearchResponse | DiscoverySearchError;
+export type DiscoverySearchResult =
+  | DiscoverySearchResponse
+  | DiscoverySearchError;
 
 export interface DiscoverySearchInput {
   query: string;
@@ -105,16 +107,16 @@ export interface DiscoverTracksVars {
  * Type guard to check if result is an error
  */
 export function isDiscoverySearchError(
-  result: DiscoverySearchResult
+  result: DiscoverySearchResult,
 ): result is DiscoverySearchError {
-  return 'code' in result && 'retryable' in result;
+  return "code" in result && "retryable" in result;
 }
 
 /**
  * Type guard to check if result is a success response
  */
 export function isDiscoverySearchResponse(
-  result: DiscoverySearchResult
+  result: DiscoverySearchResult,
 ): result is DiscoverySearchResponse {
-  return 'results' in result && 'expandedQueries' in result;
+  return "results" in result && "expandedQueries" in result;
 }

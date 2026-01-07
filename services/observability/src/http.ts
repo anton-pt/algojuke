@@ -105,7 +105,7 @@ export interface HTTPSpan {
  */
 export function createHTTPSpan(
   parent: LangfuseTraceClient | LangfuseSpanClient,
-  options: HTTPSpanOptions
+  options: HTTPSpanOptions,
 ): HTTPSpan {
   // Validate metadata
   HTTPSpanMetadataSchema.parse({

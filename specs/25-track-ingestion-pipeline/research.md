@@ -12,16 +12,19 @@
 **Endpoint**: `GET https://api.reccobeats.com/v1/audio-features?isrc={ISRC}`
 
 **Rationale**:
+
 - Free API, no authentication required
 - Returns all 11 audio features matching the vector index schema
 - May return zero or multiple results for a single ISRC
 
 **Response Handling**:
+
 - Zero results: Proceed with null audio features
 - Multiple results: Use first result, log warning
 - Rate limit (429): Rely on Inngest step retry with exponential backoff
 
 **Alternatives Considered**:
+
 - Spotify Audio Features API: Requires OAuth, more complex authentication
 - AcousticBrainz: Deprecated as of 2022
 
@@ -34,21 +37,25 @@
 **Endpoint**: `GET https://api.musixmatch.com/ws/1.1/track.lyrics.get?track_isrc={ISRC}&apikey={API_KEY}`
 
 **Rationale**:
+
 - Direct ISRC lookup avoids additional search step
 - Returns lyrics body and metadata in single call
 - 2000 requests/day on free tier sufficient for prototype
 
 **Response Fields Used**:
+
 - `lyrics_body`: Full lyric text for LLM interpretation
 - `lyrics_language`: For logging/debugging
 - `explicit`: Flag stored for future filtering
 
 **Error Handling**:
+
 - 404 Not Found: Proceed with empty lyrics, skip interpretation
 - 401 Unauthorized: Fail step, check API key configuration
 - Rate limit: Rely on Inngest step retry
 
 **Alternatives Considered**:
+
 - Genius API: More complex auth, requires scraping for full lyrics
 - LyricFind: Enterprise pricing only
 
@@ -61,17 +68,19 @@
 **Model**: `claude-sonnet-4-20250514` (Claude Sonnet 4.5)
 
 **Rationale**:
+
 - Vercel AI SDK provides clean TypeScript interface
 - Standardized API across providers
 - Built-in token counting in response
 
 **Integration Pattern**:
+
 ```typescript
-import { generateText } from 'ai';
-import { anthropic } from '@ai-sdk/anthropic';
+import { generateText } from "ai";
+import { anthropic } from "@ai-sdk/anthropic";
 
 const result = await generateText({
-  model: anthropic('claude-sonnet-4-20250514'),
+  model: anthropic("claude-sonnet-4-20250514"),
   prompt: interpretationPrompt,
 });
 ```
@@ -79,6 +88,7 @@ const result = await generateText({
 **Prompt Storage**: In-code (`src/prompts/lyricsInterpretation.ts`) per user requirement - no Langfuse prompt management needed.
 
 **Alternatives Considered**:
+
 - Direct Anthropic SDK: More verbose, less standardized
 - OpenAI: Different model capabilities for lyric analysis
 
@@ -89,6 +99,7 @@ const result = await generateText({
 **Decision**: Run TEI in Docker with CPU backend
 
 **Docker Command**:
+
 ```bash
 docker run -p 8080:80 -v hf_cache:/data --pull always \
   ghcr.io/huggingface/text-embeddings-inference:cpu-1.7.2 \
@@ -96,6 +107,7 @@ docker run -p 8080:80 -v hf_cache:/data --pull always \
 ```
 
 **Docker Compose Configuration**:
+
 ```yaml
 tei:
   image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.7.2
@@ -110,11 +122,13 @@ tei:
 ```
 
 **Model Specifications** (Qwen3-Embedding-8B):
+
 - Embedding dimensions: 4096 (matches vector index schema)
 - Context length: 32K tokens
 - Instruction-aware: Yes (improves retrieval by 1-5%)
 
 **Embedding API**:
+
 ```bash
 curl http://localhost:8080/embed \
   -X POST \
@@ -123,17 +137,20 @@ curl http://localhost:8080/embed \
 ```
 
 **Instruction Format** (for queries, not documents):
+
 ```
 Instruct: Given song lyrics interpretation, create an embedding for music discovery and playlist generation
 Query: {interpretation_text}
 ```
 
 **Rationale**:
+
 - CPU mode simpler than native Metal build
 - ~10 vectors/minute throughput acceptable for prototype
 - Docker ensures consistent environment
 
 **Alternatives Considered**:
+
 - Native Metal build: Better performance but complex setup, Docker GPU passthrough not supported on macOS
 - Smaller model (0.6B): Faster but lower quality embeddings
 
@@ -144,6 +161,7 @@ Query: {interpretation_text}
 **Decision**: Use existing `@algojuke/observability` service
 
 **Trace Structure**:
+
 ```
 trace: track-ingestion/{isrc}
 ├── span: fetch-audio-features (HTTP)
@@ -154,6 +172,7 @@ trace: track-ingestion/{isrc}
 ```
 
 **Integration Pattern**:
+
 - Create trace at pipeline start with ISRC as identifier
 - Use `createHTTPSpan` for API calls (ReccoBeats, Musixmatch, TEI)
 - Use `createGenerationSpan` for LLM call (captures prompt, completion, tokens)
@@ -168,6 +187,7 @@ trace: track-ingestion/{isrc}
 **Decision**: Single-purpose interpretation prompt optimized for playlist generation
 
 **Prompt Requirements**:
+
 1. Extract thematic content (love, loss, celebration, etc.)
 2. Identify emotional tone and mood
 3. Describe narrative arc if present
@@ -175,6 +195,7 @@ trace: track-ingestion/{isrc}
 5. Output suitable for embedding and semantic search
 
 **Prompt Template** (draft):
+
 ```
 You are analyzing song lyrics to create a rich, searchable interpretation for a music discovery system.
 
@@ -202,6 +223,7 @@ Lyrics:
 **Decision**: 6 discrete steps for maximum memoization granularity
 
 **Pipeline Steps**:
+
 1. `fetch-audio-features`: ReccoBeats API call
 2. `fetch-lyrics`: Musixmatch API call
 3. `generate-interpretation`: LLM call (only if lyrics available)
@@ -210,6 +232,7 @@ Lyrics:
 6. `emit-completion`: Send completion event
 
 **Step Configuration**:
+
 - Retries: 5 (per spec FR-005)
 - Concurrency: 10 (per spec)
 - Throttle: 10/minute (protects external APIs)
@@ -221,12 +244,12 @@ Lyrics:
 
 ## Dependencies Summary
 
-| Package | Version | Purpose |
-|---------|---------|---------|
-| `ai` | ^4.0.0 | Vercel AI SDK core |
-| `@ai-sdk/anthropic` | ^1.0.0 | Anthropic provider |
-| `axios` | ^1.6.0 | HTTP client for APIs |
-| `inngest` | ^3.22.12 | Already installed |
-| `zod` | ^3.23.8 | Already installed |
+| Package             | Version  | Purpose              |
+| ------------------- | -------- | -------------------- |
+| `ai`                | ^4.0.0   | Vercel AI SDK core   |
+| `@ai-sdk/anthropic` | ^1.0.0   | Anthropic provider   |
+| `axios`             | ^1.6.0   | HTTP client for APIs |
+| `inngest`           | ^3.22.12 | Already installed    |
+| `zod`               | ^3.23.8  | Already installed    |
 
 **No new infrastructure dependencies** - TEI added to existing docker-compose.yml.

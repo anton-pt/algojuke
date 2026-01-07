@@ -1,39 +1,39 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import basicSsl from '@vitejs/plugin-basic-ssl';
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import basicSsl from "@vitejs/plugin-basic-ssl";
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react(), basicSsl()],
   build: {
-    target: ['chrome91', 'firefox89', 'safari14', 'edge91'],
-    outDir: 'dist',
+    target: ["chrome91", "firefox89", "safari14", "edge91"],
+    outDir: "dist",
     sourcemap: true,
   },
   server: {
     // HTTPS provided by basicSsl plugin (required for Tidal OAuth secure context)
     port: 5173,
     proxy: {
-      '/graphql': {
-        target: 'http://localhost:4000',
+      "/graphql": {
+        target: "http://localhost:4000",
         changeOrigin: true,
       },
-      '/api': {
-        target: 'http://localhost:4000',
+      "/api": {
+        target: "http://localhost:4000",
         changeOrigin: true,
         // Required for SSE streaming - disable timeouts and buffering
         timeout: 0,
         proxyTimeout: 0,
         configure: (proxy) => {
           // Disable connection timeout
-          proxy.on('proxyReq', (proxyReq) => {
-            proxyReq.setHeader('Connection', 'keep-alive');
+          proxy.on("proxyReq", (proxyReq) => {
+            proxyReq.setHeader("Connection", "keep-alive");
           });
-          proxy.on('proxyRes', (proxyRes) => {
+          proxy.on("proxyRes", (proxyRes) => {
             // Disable buffering for SSE
-            proxyRes.headers['x-accel-buffering'] = 'no';
-            proxyRes.headers['cache-control'] = 'no-cache';
-            proxyRes.headers['connection'] = 'keep-alive';
+            proxyRes.headers["x-accel-buffering"] = "no";
+            proxyRes.headers["cache-control"] = "no-cache";
+            proxyRes.headers["connection"] = "keep-alive";
           });
         },
       },

@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner, TableIndex } from 'typeorm';
+import { MigrationInterface, QueryRunner, TableIndex } from "typeorm";
 
 /**
  * Migration: Enable Multi-User Library Support
@@ -22,10 +22,10 @@ export class EnableMultiUserLibrary1736000000000 implements MigrationInterface {
    * This ID is intentionally hardcoded as it represents the historical data owner,
    * not a configurable value.
    */
-  private readonly ANTON_USER_ID = 'user_37kEhnuC2FIotkGnoA4EQjMOsQn';
+  private readonly ANTON_USER_ID = "user_37kEhnuC2FIotkGnoA4EQjMOsQn";
 
   // Old placeholder user ID that may exist in records
-  private readonly OLD_PLACEHOLDER_ID = '00000000-0000-0000-0000-000000000001';
+  private readonly OLD_PLACEHOLDER_ID = "00000000-0000-0000-0000-000000000001";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Step 0: Alter user_id column type from uuid to varchar(255)
@@ -47,25 +47,34 @@ export class EnableMultiUserLibrary1736000000000 implements MigrationInterface {
 
     // Step 1: Update existing library_albums to use the correct Clerk userId
     // This handles both placeholder IDs and any other existing values
-    await queryRunner.query(`
+    await queryRunner.query(
+      `
       UPDATE library_albums
       SET user_id = $1
       WHERE user_id != $1 OR user_id IS NULL
-    `, [this.ANTON_USER_ID]);
+    `,
+      [this.ANTON_USER_ID],
+    );
 
     // Step 2: Update existing library_tracks to use the correct Clerk userId
-    await queryRunner.query(`
+    await queryRunner.query(
+      `
       UPDATE library_tracks
       SET user_id = $1
       WHERE user_id != $1 OR user_id IS NULL
-    `, [this.ANTON_USER_ID]);
+    `,
+      [this.ANTON_USER_ID],
+    );
 
     // Step 3: Update existing conversations to use the correct Clerk userId
-    await queryRunner.query(`
+    await queryRunner.query(
+      `
       UPDATE conversations
       SET user_id = $1
       WHERE user_id != $1 OR user_id IS NULL
-    `, [this.ANTON_USER_ID]);
+    `,
+      [this.ANTON_USER_ID],
+    );
 
     // Step 4: Drop the global unique constraint on library_albums.tidal_album_id
     // TypeORM creates these with a specific naming pattern
@@ -153,29 +162,35 @@ export class EnableMultiUserLibrary1736000000000 implements MigrationInterface {
 
     // Step 6: Create composite unique index on (tidal_album_id, user_id)
     await queryRunner.createIndex(
-      'library_albums',
+      "library_albums",
       new TableIndex({
-        name: 'IDX_library_albums_tidal_album_user',
-        columnNames: ['tidal_album_id', 'user_id'],
+        name: "IDX_library_albums_tidal_album_user",
+        columnNames: ["tidal_album_id", "user_id"],
         isUnique: true,
-      })
+      }),
     );
 
     // Step 7: Create composite unique index on (tidal_track_id, user_id)
     await queryRunner.createIndex(
-      'library_tracks',
+      "library_tracks",
       new TableIndex({
-        name: 'IDX_library_tracks_tidal_track_user',
-        columnNames: ['tidal_track_id', 'user_id'],
+        name: "IDX_library_tracks_tidal_track_user",
+        columnNames: ["tidal_track_id", "user_id"],
         isUnique: true,
-      })
+      }),
     );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Step 1: Drop composite unique indexes
-    await queryRunner.dropIndex('library_albums', 'IDX_library_albums_tidal_album_user');
-    await queryRunner.dropIndex('library_tracks', 'IDX_library_tracks_tidal_track_user');
+    await queryRunner.dropIndex(
+      "library_albums",
+      "IDX_library_albums_tidal_album_user",
+    );
+    await queryRunner.dropIndex(
+      "library_tracks",
+      "IDX_library_tracks_tidal_track_user",
+    );
 
     // Step 2: Recreate global unique constraints
     // NOTE: This will fail if multiple users have the same album/track
@@ -192,17 +207,26 @@ export class EnableMultiUserLibrary1736000000000 implements MigrationInterface {
     `);
 
     // Step 3: Update user_id to placeholder UUID before type change
-    await queryRunner.query(`
+    await queryRunner.query(
+      `
       UPDATE library_albums SET user_id = $1
-    `, [this.OLD_PLACEHOLDER_ID]);
+    `,
+      [this.OLD_PLACEHOLDER_ID],
+    );
 
-    await queryRunner.query(`
+    await queryRunner.query(
+      `
       UPDATE library_tracks SET user_id = $1
-    `, [this.OLD_PLACEHOLDER_ID]);
+    `,
+      [this.OLD_PLACEHOLDER_ID],
+    );
 
-    await queryRunner.query(`
+    await queryRunner.query(
+      `
       UPDATE conversations SET user_id = $1
-    `, [this.OLD_PLACEHOLDER_ID]);
+    `,
+      [this.OLD_PLACEHOLDER_ID],
+    );
 
     // Step 4: Revert user_id column type from varchar back to uuid
     await queryRunner.query(`

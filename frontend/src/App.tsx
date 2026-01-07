@@ -1,18 +1,18 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { Toaster } from 'sonner';
-import { ApolloProviderWithAuth } from './graphql/ApolloProviderWithAuth';
-import { UndoDeleteProvider } from './contexts/UndoDeleteContext';
-import { AppHeader } from './components/AppHeader';
-import { SearchPage } from './pages/SearchPage';
-import { LibraryPage } from './pages/LibraryPage';
-import { DiscoverPage } from './pages/DiscoverPage';
-import { LandingPage } from './pages/LandingPage';
-import { TidalConnectPage } from './pages/TidalConnectPage';
-import { CallbackPage } from './pages/CallbackPage';
-import { WaitlistPage } from './pages/WaitlistPage';
-import { ProtectedRoute } from './components/auth/ProtectedRoute';
-import { ErrorBoundary } from './components/ErrorBoundary';
-import './App.css';
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Toaster } from "sonner";
+import { ApolloProviderWithAuth } from "./graphql/ApolloProviderWithAuth";
+import { UndoDeleteProvider } from "./contexts/UndoDeleteContext";
+import { AppHeader } from "./components/AppHeader";
+import { SearchPage } from "./pages/SearchPage";
+import { LibraryPage } from "./pages/LibraryPage";
+import { DiscoverPage } from "./pages/DiscoverPage";
+import { LandingPage } from "./pages/LandingPage";
+import { TidalConnectPage } from "./pages/TidalConnectPage";
+import { CallbackPage } from "./pages/CallbackPage";
+import { WaitlistPage } from "./pages/WaitlistPage";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import "./App.css";
 
 export function App() {
   return (

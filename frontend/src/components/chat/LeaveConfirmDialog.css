@@ -75,7 +75,9 @@
   border-radius: 8px;
   border: none;
   cursor: pointer;
-  transition: background-color 0.2s, transform 0.1s;
+  transition:
+    background-color 0.2s,
+    transform 0.1s;
 }
 
 .leave-confirm-button:active {

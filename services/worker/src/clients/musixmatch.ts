@@ -102,14 +102,14 @@ export function createMusixmatchClient(apiKey?: string): MusixmatchClient {
             throw createAPIError(
               401,
               "Musixmatch",
-              "Invalid Musixmatch API key"
+              "Invalid Musixmatch API key",
             );
           }
 
           throw createAPIError(
             response.status,
             "Musixmatch",
-            `Failed to fetch lyrics: ${response.statusText}`
+            `Failed to fetch lyrics: ${response.statusText}`,
           );
         }
 
@@ -119,7 +119,7 @@ export function createMusixmatchClient(apiKey?: string): MusixmatchClient {
         if (!parsed.success) {
           console.warn(
             "Musixmatch response validation failed:",
-            parsed.error.message
+            parsed.error.message,
           );
           return null;
         }
@@ -142,7 +142,7 @@ export function createMusixmatchClient(apiKey?: string): MusixmatchClient {
           throw createAPIError(
             429,
             "Musixmatch",
-            "Musixmatch rate limit exceeded"
+            "Musixmatch rate limit exceeded",
           );
         }
 
@@ -151,7 +151,7 @@ export function createMusixmatchClient(apiKey?: string): MusixmatchClient {
           throw createAPIError(
             apiStatusCode,
             "Musixmatch",
-            `Musixmatch API returned status ${apiStatusCode}`
+            `Musixmatch API returned status ${apiStatusCode}`,
           );
         }
 
@@ -177,14 +177,14 @@ export function createMusixmatchClient(apiKey?: string): MusixmatchClient {
           throw createAPIError(
             error.response?.status ?? 500,
             "Musixmatch",
-            error.message
+            error.message,
           );
         }
 
         throw createAPIError(
           500,
           "Musixmatch",
-          error instanceof Error ? error.message : "Unknown error"
+          error instanceof Error ? error.message : "Unknown error",
         );
       }
     },

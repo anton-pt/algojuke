@@ -28,13 +28,15 @@ app.use(
   serve({
     client: inngest,
     functions: functions,
-  })
+  }),
 );
 
 // Start server
 app.listen(port, () => {
   console.log(`✓ Worker service listening on port ${port}`);
-  console.log(`✓ Inngest functions served at http://localhost:${port}/api/inngest`);
+  console.log(
+    `✓ Inngest functions served at http://localhost:${port}/api/inngest`,
+  );
   console.log(`✓ Health check available at http://localhost:${port}/health`);
   console.log(`✓ Registered functions: ${functions.length}`);
   functions.forEach((fn) => {

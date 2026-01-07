@@ -105,7 +105,7 @@ export interface SearchSpan {
  */
 export function createSearchSpan(
   parent: LangfuseTraceClient | LangfuseSpanClient,
-  options: SearchSpanOptions
+  options: SearchSpanOptions,
 ): SearchSpan {
   // Validate metadata
   VectorSearchMetadataSchema.parse({

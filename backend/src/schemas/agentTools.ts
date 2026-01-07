@@ -7,7 +7,7 @@
  * Used by Vercel AI SDK for type-safe tool definitions.
  */
 
-import { z } from 'zod';
+import { z } from "zod";
 
 /**
  * ISRC format validation pattern.
@@ -30,20 +30,14 @@ export const SemanticSearchInputSchema = z.object({
    */
   query: z
     .string()
-    .min(1, 'Query cannot be empty')
-    .max(2000, 'Query too long (max 2000 characters)'),
+    .min(1, "Query cannot be empty")
+    .max(2000, "Query too long (max 2000 characters)"),
 
   /**
    * Maximum number of results to return.
    * Default increased to 50 (feature 013) for better initial scanning.
    */
-  limit: z
-    .number()
-    .int()
-    .min(1)
-    .max(50)
-    .optional()
-    .default(50),
+  limit: z.number().int().min(1).max(50).optional().default(50),
 });
 
 export type SemanticSearchInput = z.infer<typeof SemanticSearchInputSchema>;
@@ -63,24 +57,18 @@ export const TidalSearchInputSchema = z.object({
    */
   query: z
     .string()
-    .min(1, 'Query cannot be empty')
-    .max(500, 'Query too long (max 500 characters)'),
+    .min(1, "Query cannot be empty")
+    .max(500, "Query too long (max 500 characters)"),
 
   /**
    * What type of content to search for.
    */
-  searchType: z.enum(['tracks', 'albums', 'both']),
+  searchType: z.enum(["tracks", "albums", "both"]),
 
   /**
    * Maximum number of results per type.
    */
-  limit: z
-    .number()
-    .int()
-    .min(1)
-    .max(100)
-    .optional()
-    .default(20),
+  limit: z.number().int().min(1).max(100).optional().default(20),
 });
 
 export type TidalSearchInput = z.infer<typeof TidalSearchInputSchema>;
@@ -100,10 +88,13 @@ export const BatchMetadataInputSchema = z.object({
     .array(
       z
         .string()
-        .regex(ISRC_PATTERN, 'Invalid ISRC format (must be 12 alphanumeric characters)')
+        .regex(
+          ISRC_PATTERN,
+          "Invalid ISRC format (must be 12 alphanumeric characters)",
+        ),
     )
     .min(0)
-    .max(100, 'Maximum 100 ISRCs per request'),
+    .max(100, "Maximum 100 ISRCs per request"),
 });
 
 export type BatchMetadataInput = z.infer<typeof BatchMetadataInputSchema>;
@@ -117,7 +108,7 @@ export const AlbumTracksInputSchema = z.object({
   /**
    * Tidal album ID from a previous search result.
    */
-  albumId: z.string().min(1, 'Album ID cannot be empty'),
+  albumId: z.string().min(1, "Album ID cannot be empty"),
 });
 
 export type AlbumTracksInput = z.infer<typeof AlbumTracksInputSchema>;
@@ -136,23 +127,26 @@ export const PlaylistInputTrackSchema = z.object({
    */
   isrc: z
     .string()
-    .regex(ISRC_PATTERN, 'Invalid ISRC format (must be 12 alphanumeric characters)'),
+    .regex(
+      ISRC_PATTERN,
+      "Invalid ISRC format (must be 12 alphanumeric characters)",
+    ),
 
   /**
    * Track title (fallback if Tidal lookup fails).
    */
   title: z
     .string()
-    .min(1, 'Track title cannot be empty')
-    .max(500, 'Track title too long (max 500 characters)'),
+    .min(1, "Track title cannot be empty")
+    .max(500, "Track title too long (max 500 characters)"),
 
   /**
    * Artist name (fallback if Tidal lookup fails).
    */
   artist: z
     .string()
-    .min(1, 'Artist name cannot be empty')
-    .max(500, 'Artist name too long (max 500 characters)'),
+    .min(1, "Artist name cannot be empty")
+    .max(500, "Artist name too long (max 500 characters)"),
 
   /**
    * One sentence explaining why this track was selected.
@@ -160,8 +154,8 @@ export const PlaylistInputTrackSchema = z.object({
    */
   reasoning: z
     .string()
-    .min(1, 'Reasoning cannot be empty')
-    .max(1000, 'Reasoning too long (max 1000 characters)'),
+    .min(1, "Reasoning cannot be empty")
+    .max(1000, "Reasoning too long (max 1000 characters)"),
 });
 
 export type PlaylistInputTrack = z.infer<typeof PlaylistInputTrackSchema>;
@@ -180,8 +174,8 @@ export const SuggestPlaylistInputSchema = z.object({
    */
   title: z
     .string()
-    .min(1, 'Playlist title cannot be empty')
-    .max(200, 'Playlist title too long (max 200 characters)'),
+    .min(1, "Playlist title cannot be empty")
+    .max(200, "Playlist title too long (max 200 characters)"),
 
   /**
    * Array of tracks to include in the playlist.
@@ -189,8 +183,8 @@ export const SuggestPlaylistInputSchema = z.object({
    */
   tracks: z
     .array(PlaylistInputTrackSchema)
-    .min(1, 'Playlist must have at least 1 track')
-    .max(50, 'Playlist cannot exceed 50 tracks'),
+    .min(1, "Playlist must have at least 1 track")
+    .max(50, "Playlist cannot exceed 50 tracks"),
 });
 
 export type SuggestPlaylistInput = z.infer<typeof SuggestPlaylistInputSchema>;
@@ -209,11 +203,11 @@ export type ToolInput =
  * Tool name enum for type safety
  */
 export const ToolName = z.enum([
-  'semanticSearch',
-  'tidalSearch',
-  'batchMetadata',
-  'albumTracks',
-  'suggestPlaylist',
+  "semanticSearch",
+  "tidalSearch",
+  "batchMetadata",
+  "albumTracks",
+  "suggestPlaylist",
 ]);
 
 export type ToolNameType = z.infer<typeof ToolName>;

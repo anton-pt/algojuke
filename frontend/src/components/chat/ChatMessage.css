@@ -127,7 +127,7 @@
   padding: 0.15em 0.4em;
   border-radius: 4px;
   font-size: 0.9em;
-  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-family: "SF Mono", Monaco, Consolas, monospace;
 }
 
 .chat-message--assistant .chat-message__text pre {
@@ -181,7 +181,7 @@
 
 /* Streaming indicator for empty assistant messages */
 .chat-message--assistant .chat-message__text:empty::after {
-  content: '';
+  content: "";
   display: inline-block;
   width: 8px;
   height: 8px;
@@ -191,7 +191,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {

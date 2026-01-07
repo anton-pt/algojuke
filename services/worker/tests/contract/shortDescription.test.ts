@@ -16,7 +16,7 @@ describe("Short Description Prompts", () => {
       const prompt = buildShortDescriptionPrompt(
         "Bohemian Rhapsody",
         "Queen",
-        "A complex rock opera about a young man's confession and descent."
+        "A complex rock opera about a young man's confession and descent.",
       );
 
       expect(prompt).toContain("Bohemian Rhapsody");
@@ -29,7 +29,7 @@ describe("Short Description Prompts", () => {
       const prompt = buildShortDescriptionPrompt(
         "Test Track",
         "Test Artist",
-        interpretation
+        interpretation,
       );
 
       expect(prompt).toContain(interpretation);
@@ -39,7 +39,7 @@ describe("Short Description Prompts", () => {
       const prompt = buildShortDescriptionPrompt(
         "Test",
         "Artist",
-        "Some interpretation"
+        "Some interpretation",
       );
 
       expect(prompt).toContain("exactly one sentence");
@@ -50,7 +50,7 @@ describe("Short Description Prompts", () => {
       const prompt = buildShortDescriptionPrompt(
         "Test",
         "Artist",
-        "Some interpretation"
+        "Some interpretation",
       );
 
       expect(prompt).toContain("Output only the sentence");
@@ -63,7 +63,7 @@ describe("Short Description Prompts", () => {
         "Instrumental Track",
         "Test Artist",
         "Test Album",
-        { energy: 0.8, tempo: 140 }
+        { energy: 0.8, tempo: 140 },
       );
 
       expect(prompt).toContain("Instrumental Track");
@@ -76,7 +76,7 @@ describe("Short Description Prompts", () => {
         "Test",
         "Artist",
         "Album",
-        { energy: 0.8, tempo: 140 }
+        { energy: 0.8, tempo: 140 },
       );
 
       expect(prompt).toContain("high energy");
@@ -88,7 +88,7 @@ describe("Short Description Prompts", () => {
         "Test",
         "Artist",
         "Album",
-        {}
+        {},
       );
 
       expect(prompt).toContain("exactly one sentence");
@@ -101,7 +101,7 @@ describe("Short Description Prompts", () => {
       const prompt = buildMetadataOnlyShortDescriptionPrompt(
         "Unknown Track",
         "Unknown Artist",
-        "Unknown Album"
+        "Unknown Album",
       );
 
       expect(prompt).toContain("Unknown Track");
@@ -113,7 +113,7 @@ describe("Short Description Prompts", () => {
       const prompt = buildMetadataOnlyShortDescriptionPrompt(
         "Test",
         "Artist",
-        "Album"
+        "Album",
       );
 
       expect(prompt).toContain("exactly one sentence");

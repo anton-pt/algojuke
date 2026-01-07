@@ -5,12 +5,12 @@
  * for the tracks collection supporting hybrid search (dense + sparse vectors).
  */
 
-import type { Schemas } from '@qdrant/js-client-rest';
+import type { Schemas } from "@qdrant/js-client-rest";
 
 /**
  * Collection name for production tracks index
  */
-export const PRODUCTION_COLLECTION_NAME = 'tracks';
+export const PRODUCTION_COLLECTION_NAME = "tracks";
 
 /**
  * Vector configuration for track collection
@@ -20,9 +20,9 @@ export const PRODUCTION_COLLECTION_NAME = 'tracks';
 export const VECTOR_CONFIG = {
   interpretation_embedding: {
     size: 1024,
-    distance: 'Cosine',
+    distance: "Cosine",
     on_disk: false, // Keep in memory for performance
-    datatype: 'float16', // Use float16 for embedding vectors
+    datatype: "float16", // Use float16 for embedding vectors
   },
 };
 
@@ -35,7 +35,7 @@ export const VECTOR_CONFIG = {
  * - hnsw_ef=128: Query-time search depth (higher = better recall, slower search)
  * - full_scan_threshold=10000: Use brute force below this size for better accuracy
  */
-export const HNSW_CONFIG: Schemas['HnswConfigDiff'] = {
+export const HNSW_CONFIG: Schemas["HnswConfigDiff"] = {
   m: 16,
   ef_construct: 200,
   on_disk: false,
@@ -49,7 +49,7 @@ export const HNSW_CONFIG: Schemas['HnswConfigDiff'] = {
  * - memmap_threshold: Memory-map segments >50k points
  * - max_segment_size: Split segments above 200k points
  */
-export const OPTIMIZER_CONFIG: Schemas['OptimizersConfigDiff'] = {
+export const OPTIMIZER_CONFIG: Schemas["OptimizersConfigDiff"] = {
   indexing_threshold: 20000,
   memmap_threshold: 50000,
   max_segment_size: 200000,
@@ -62,17 +62,19 @@ export const OPTIMIZER_CONFIG: Schemas['OptimizersConfigDiff'] = {
  * - title, artist, lyrics, interpretation: Text indexes for BM25 search
  */
 export const PAYLOAD_INDEXES = {
-  isrc: 'keyword' as const,
-  title: 'text' as const,
-  artist: 'text' as const,
-  lyrics: 'text' as const,
-  interpretation: 'text' as const,
+  isrc: "keyword" as const,
+  title: "text" as const,
+  artist: "text" as const,
+  lyrics: "text" as const,
+  interpretation: "text" as const,
 };
 
 /**
  * Complete collection creation configuration
  */
-export function getCollectionConfig(_collectionName: string): Schemas['CreateCollection'] {
+export function getCollectionConfig(
+  _collectionName: string,
+): Schemas["CreateCollection"] {
   return {
     vectors: VECTOR_CONFIG as any, // Type assertion needed for complex schema
     hnsw_config: HNSW_CONFIG,
@@ -81,7 +83,7 @@ export function getCollectionConfig(_collectionName: string): Schemas['CreateCol
     // IDF modifier enables BM25-style weighting
     sparse_vectors: {
       text_sparse: {
-        modifier: 'idf' as any, // BM25 weighting (required for keyword search)
+        modifier: "idf" as any, // BM25 weighting (required for keyword search)
       },
     },
   };

@@ -5,20 +5,20 @@
  * GraphQL handles conversation list/history queries.
  */
 
-import { Router, Request, Response } from 'express';
-import { Repository } from 'typeorm';
-import { ChatService } from '../services/chatService.js';
-import { ChatStreamService, SSEEvent } from '../services/chatStreamService.js';
-import { ChatStreamRequestSchema } from '../schemas/chat.js';
-import { logger } from '../utils/logger.js';
-import { DataSource } from 'typeorm';
-import { DiscoveryService } from '../services/discoveryService.js';
-import { TrackMetadataService } from '../services/trackMetadataService.js';
-import { TidalService } from '../services/tidalService.js';
-import { BackendQdrantClient } from '../clients/qdrantClient.js';
-import { LibraryTrack } from '../entities/LibraryTrack.js';
-import { LibraryAlbum } from '../entities/LibraryAlbum.js';
-import { requireAuth, getAuth } from '../middleware/clerkAuth.js';
+import { Router, Request, Response } from "express";
+import { Repository } from "typeorm";
+import { ChatService } from "../services/chatService.js";
+import { ChatStreamService, SSEEvent } from "../services/chatStreamService.js";
+import { ChatStreamRequestSchema } from "../schemas/chat.js";
+import { logger } from "../utils/logger.js";
+import { DataSource } from "typeorm";
+import { DiscoveryService } from "../services/discoveryService.js";
+import { TrackMetadataService } from "../services/trackMetadataService.js";
+import { TidalService } from "../services/tidalService.js";
+import { BackendQdrantClient } from "../clients/qdrantClient.js";
+import { LibraryTrack } from "../entities/LibraryTrack.js";
+import { LibraryAlbum } from "../entities/LibraryAlbum.js";
+import { requireAuth, getAuth } from "../middleware/clerkAuth.js";
 
 /**
  * Options for chat routes with tool support
@@ -54,7 +54,7 @@ export function createChatRoutes(options: ChatRoutesOptions): Router {
    * Stream an AI response for a chat message via SSE.
    * Requires authentication (FR-006, US3)
    */
-  router.post('/stream', requireAuth, async (req: Request, res: Response) => {
+  router.post("/stream", requireAuth, async (req: Request, res: Response) => {
     // Get authenticated user ID
     const auth = getAuth(req);
     const userId = auth?.userId;
@@ -63,8 +63,8 @@ export function createChatRoutes(options: ChatRoutesOptions): Router {
       // This shouldn't happen after requireAuth, but TypeScript needs it
       return res.status(401).json({
         error: {
-          code: 'UNAUTHENTICATED',
-          message: 'Authentication required',
+          code: "UNAUTHENTICATED",
+          message: "Authentication required",
         },
       });
     }
@@ -73,16 +73,16 @@ export function createChatRoutes(options: ChatRoutesOptions): Router {
     const validation = ChatStreamRequestSchema.safeParse(req.body);
     if (!validation.success) {
       const errors = validation.error.issues.map((e) => ({
-        field: e.path.join('.'),
+        field: e.path.join("."),
         message: e.message,
       }));
 
-      logger.warn('chat_stream_validation_error', { errors });
+      logger.warn("chat_stream_validation_error", { errors });
 
       return res.status(400).json({
         error: {
-          code: 'VALIDATION_ERROR',
-          message: errors[0]?.message || 'Invalid request',
+          code: "VALIDATION_ERROR",
+          message: errors[0]?.message || "Invalid request",
           details: errors,
         },
       });
@@ -90,8 +90,8 @@ export function createChatRoutes(options: ChatRoutesOptions): Router {
 
     const { message, conversationId } = validation.data;
 
-    logger.info('chat_stream_request', {
-      conversationId: conversationId || 'new',
+    logger.info("chat_stream_request", {
+      conversationId: conversationId || "new",
       messageLength: message.length,
     });
 
@@ -100,21 +100,21 @@ export function createChatRoutes(options: ChatRoutesOptions): Router {
 
     // Handle client disconnect - use res.on('close') to detect actual disconnect
     // Note: req.on('close') fires when request body is received, NOT when client disconnects
-    res.on('close', () => {
+    res.on("close", () => {
       // Only abort if we didn't close the response ourselves
       if (!res.writableFinished && !abortController.signal.aborted) {
-        logger.info('chat_stream_client_disconnected', {
-          conversationId: conversationId || 'new',
+        logger.info("chat_stream_client_disconnected", {
+          conversationId: conversationId || "new",
         });
         abortController.abort();
       }
     });
 
     // Set SSE headers
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no"); // Disable nginx buffering
     res.flushHeaders();
 
     // Send SSE event helper
@@ -131,7 +131,7 @@ export function createChatRoutes(options: ChatRoutesOptions): Router {
         conversationId,
         userId,
         sendEvent,
-        abortController.signal
+        abortController.signal,
       );
 
       // End the response
@@ -139,17 +139,17 @@ export function createChatRoutes(options: ChatRoutesOptions): Router {
         res.end();
       }
     } catch (error) {
-      logger.error('chat_stream_route_error', {
-        conversationId: conversationId || 'new',
+      logger.error("chat_stream_route_error", {
+        conversationId: conversationId || "new",
         error: error instanceof Error ? error.message : String(error),
       });
 
       // Send error event if stream hasn't ended
       if (!res.writableEnded) {
         sendEvent({
-          type: 'error',
-          code: 'INTERNAL_ERROR',
-          message: 'An unexpected error occurred. Please try again.',
+          type: "error",
+          code: "INTERNAL_ERROR",
+          message: "An unexpected error occurred. Please try again.",
           retryable: true,
         });
         res.end();

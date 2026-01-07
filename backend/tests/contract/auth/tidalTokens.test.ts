@@ -4,32 +4,32 @@
  * Tests the Tidal tokens storage request/response schemas.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from "vitest";
 import {
   TidalTokensInputSchema,
   TidalTokensResponseSchema,
   hasRequiredScopes,
   REQUIRED_TIDAL_SCOPES,
-} from '../../../src/schemas/auth.js';
+} from "../../../src/schemas/auth.js";
 
-describe('POST /api/auth/tidal/tokens contract', () => {
-  describe('TidalTokensInputSchema', () => {
-    it('validates valid token input', () => {
+describe("POST /api/auth/tidal/tokens contract", () => {
+  describe("TidalTokensInputSchema", () => {
+    it("validates valid token input", () => {
       const input = {
-        accessToken: 'access_token_123',
-        refreshToken: 'refresh_token_456',
+        accessToken: "access_token_123",
+        refreshToken: "refresh_token_456",
         expiresAt: Date.now() + 86400000,
-        scopes: ['collection.read', 'playlists.read'],
+        scopes: ["collection.read", "playlists.read"],
       };
 
       const result = TidalTokensInputSchema.safeParse(input);
       expect(result.success).toBe(true);
     });
 
-    it('validates input with all required scopes', () => {
+    it("validates input with all required scopes", () => {
       const input = {
-        accessToken: 'access_token_123',
-        refreshToken: 'refresh_token_456',
+        accessToken: "access_token_123",
+        refreshToken: "refresh_token_456",
         expiresAt: Date.now() + 86400000,
         scopes: [...REQUIRED_TIDAL_SCOPES],
       };
@@ -38,52 +38,54 @@ describe('POST /api/auth/tidal/tokens contract', () => {
       expect(result.success).toBe(true);
     });
 
-    it('rejects empty access token', () => {
+    it("rejects empty access token", () => {
       const input = {
-        accessToken: '',
-        refreshToken: 'refresh_token_456',
+        accessToken: "",
+        refreshToken: "refresh_token_456",
         expiresAt: Date.now() + 86400000,
-        scopes: ['collection.read'],
+        scopes: ["collection.read"],
       };
 
       const result = TidalTokensInputSchema.safeParse(input);
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].message).toBe('Access token is required');
+        expect(result.error.issues[0].message).toBe("Access token is required");
       }
     });
 
-    it('rejects empty refresh token', () => {
+    it("rejects empty refresh token", () => {
       const input = {
-        accessToken: 'access_token_123',
-        refreshToken: '',
+        accessToken: "access_token_123",
+        refreshToken: "",
         expiresAt: Date.now() + 86400000,
-        scopes: ['collection.read'],
+        scopes: ["collection.read"],
       };
 
       const result = TidalTokensInputSchema.safeParse(input);
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].message).toBe('Refresh token is required');
+        expect(result.error.issues[0].message).toBe(
+          "Refresh token is required",
+        );
       }
     });
 
-    it('rejects negative expiresAt', () => {
+    it("rejects negative expiresAt", () => {
       const input = {
-        accessToken: 'access_token_123',
-        refreshToken: 'refresh_token_456',
+        accessToken: "access_token_123",
+        refreshToken: "refresh_token_456",
         expiresAt: -1,
-        scopes: ['collection.read'],
+        scopes: ["collection.read"],
       };
 
       const result = TidalTokensInputSchema.safeParse(input);
       expect(result.success).toBe(false);
     });
 
-    it('rejects empty scopes array', () => {
+    it("rejects empty scopes array", () => {
       const input = {
-        accessToken: 'access_token_123',
-        refreshToken: 'refresh_token_456',
+        accessToken: "access_token_123",
+        refreshToken: "refresh_token_456",
         expiresAt: Date.now() + 86400000,
         scopes: [],
       };
@@ -91,13 +93,15 @@ describe('POST /api/auth/tidal/tokens contract', () => {
       const result = TidalTokensInputSchema.safeParse(input);
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].message).toBe('At least one scope is required');
+        expect(result.error.issues[0].message).toBe(
+          "At least one scope is required",
+        );
       }
     });
   });
 
-  describe('TidalTokensResponseSchema', () => {
-    it('validates successful response', () => {
+  describe("TidalTokensResponseSchema", () => {
+    it("validates successful response", () => {
       const response = {
         success: true,
         connectedAt: Date.now(),
@@ -107,7 +111,7 @@ describe('POST /api/auth/tidal/tokens contract', () => {
       expect(result.success).toBe(true);
     });
 
-    it('rejects missing connectedAt', () => {
+    it("rejects missing connectedAt", () => {
       const response = {
         success: true,
       };
@@ -116,7 +120,7 @@ describe('POST /api/auth/tidal/tokens contract', () => {
       expect(result.success).toBe(false);
     });
 
-    it('rejects negative connectedAt', () => {
+    it("rejects negative connectedAt", () => {
       const response = {
         success: true,
         connectedAt: -1,
@@ -127,23 +131,23 @@ describe('POST /api/auth/tidal/tokens contract', () => {
     });
   });
 
-  describe('hasRequiredScopes', () => {
-    it('returns true when all required scopes are present', () => {
+  describe("hasRequiredScopes", () => {
+    it("returns true when all required scopes are present", () => {
       const scopes = [...REQUIRED_TIDAL_SCOPES];
       expect(hasRequiredScopes(scopes)).toBe(true);
     });
 
-    it('returns true when extra scopes are present', () => {
-      const scopes = [...REQUIRED_TIDAL_SCOPES, 'extra.scope'];
+    it("returns true when extra scopes are present", () => {
+      const scopes = [...REQUIRED_TIDAL_SCOPES, "extra.scope"];
       expect(hasRequiredScopes(scopes)).toBe(true);
     });
 
-    it('returns false when a required scope is missing', () => {
+    it("returns false when a required scope is missing", () => {
       const scopes = REQUIRED_TIDAL_SCOPES.slice(0, -1);
       expect(hasRequiredScopes(scopes)).toBe(false);
     });
 
-    it('returns false for empty scopes', () => {
+    it("returns false for empty scopes", () => {
       expect(hasRequiredScopes([])).toBe(false);
     });
   });

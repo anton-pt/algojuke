@@ -101,20 +101,26 @@ describe("demoTask", () => {
     const eventDataSchema = DemoTaskRequestedEvent.shape.data;
 
     // Valid priorities
-    expect(() => eventDataSchema.parse({
-      taskId: "550e8400-e29b-41d4-a716-446655440000",
-      priority: -600
-    })).not.toThrow();
+    expect(() =>
+      eventDataSchema.parse({
+        taskId: "550e8400-e29b-41d4-a716-446655440000",
+        priority: -600,
+      }),
+    ).not.toThrow();
 
-    expect(() => eventDataSchema.parse({
-      taskId: "550e8400-e29b-41d4-a716-446655440000",
-      priority: 600
-    })).not.toThrow();
+    expect(() =>
+      eventDataSchema.parse({
+        taskId: "550e8400-e29b-41d4-a716-446655440000",
+        priority: 600,
+      }),
+    ).not.toThrow();
 
-    expect(() => eventDataSchema.parse({
-      taskId: "550e8400-e29b-41d4-a716-446655440000",
-      priority: 0
-    })).not.toThrow();
+    expect(() =>
+      eventDataSchema.parse({
+        taskId: "550e8400-e29b-41d4-a716-446655440000",
+        priority: 0,
+      }),
+    ).not.toThrow();
   });
 
   /**
@@ -125,15 +131,19 @@ describe("demoTask", () => {
     const eventDataSchema = DemoTaskRequestedEvent.shape.data;
 
     // Invalid priorities (out of range)
-    expect(() => eventDataSchema.parse({
-      taskId: "550e8400-e29b-41d4-a716-446655440000",
-      priority: -601
-    })).toThrow();
+    expect(() =>
+      eventDataSchema.parse({
+        taskId: "550e8400-e29b-41d4-a716-446655440000",
+        priority: -601,
+      }),
+    ).toThrow();
 
-    expect(() => eventDataSchema.parse({
-      taskId: "550e8400-e29b-41d4-a716-446655440000",
-      priority: 601
-    })).toThrow();
+    expect(() =>
+      eventDataSchema.parse({
+        taskId: "550e8400-e29b-41d4-a716-446655440000",
+        priority: 601,
+      }),
+    ).toThrow();
   });
 
   /**
@@ -144,21 +154,27 @@ describe("demoTask", () => {
     const eventDataSchema = DemoTaskRequestedEvent.shape.data;
 
     // Valid delay
-    expect(() => eventDataSchema.parse({
-      taskId: "550e8400-e29b-41d4-a716-446655440000",
-      delayMs: 1000
-    })).not.toThrow();
+    expect(() =>
+      eventDataSchema.parse({
+        taskId: "550e8400-e29b-41d4-a716-446655440000",
+        delayMs: 1000,
+      }),
+    ).not.toThrow();
 
     // Invalid delay (negative)
-    expect(() => eventDataSchema.parse({
-      taskId: "550e8400-e29b-41d4-a716-446655440000",
-      delayMs: -1
-    })).toThrow();
+    expect(() =>
+      eventDataSchema.parse({
+        taskId: "550e8400-e29b-41d4-a716-446655440000",
+        delayMs: -1,
+      }),
+    ).toThrow();
 
     // Invalid delay (too large)
-    expect(() => eventDataSchema.parse({
-      taskId: "550e8400-e29b-41d4-a716-446655440000",
-      delayMs: 40000
-    })).toThrow();
+    expect(() =>
+      eventDataSchema.parse({
+        taskId: "550e8400-e29b-41d4-a716-446655440000",
+        delayMs: 40000,
+      }),
+    ).toThrow();
   });
 });

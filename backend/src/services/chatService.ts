@@ -5,11 +5,11 @@
  * Handles CRUD operations for conversations and messages.
  */
 
-import { Repository, DataSource } from 'typeorm';
-import { Conversation } from '../entities/Conversation.js';
-import { Message, ContentBlock } from '../entities/Message.js';
-import { isTextBlock } from '../schemas/chat.js';
-import { logAccessViolation } from '../utils/securityLogger.js';
+import { Repository, DataSource } from "typeorm";
+import { Conversation } from "../entities/Conversation.js";
+import { Message, ContentBlock } from "../entities/Message.js";
+import { isTextBlock } from "../schemas/chat.js";
+import { logAccessViolation } from "../utils/securityLogger.js";
 
 /**
  * Maximum conversations to return per SC-004
@@ -50,22 +50,28 @@ export class ChatService {
   async getConversations(userId: string): Promise<ConversationWithComputed[]> {
     const conversations = await this.conversationRepo.find({
       where: { userId },
-      order: { updatedAt: 'DESC' },
+      order: { updatedAt: "DESC" },
       take: MAX_CONVERSATIONS,
-      relations: ['messages'],
+      relations: ["messages"],
     });
 
-    return conversations.map(conv => this.toConversationWithComputed(conv));
+    return conversations.map((conv) => this.toConversationWithComputed(conv));
   }
 
   /**
    * Get a single conversation with all messages
    * Verifies user ownership before returning
    */
-  async getConversation(id: string, userId: string): Promise<{ conversation: ConversationWithComputed; messages: Message[] } | null> {
+  async getConversation(
+    id: string,
+    userId: string,
+  ): Promise<{
+    conversation: ConversationWithComputed;
+    messages: Message[];
+  } | null> {
     const conversation = await this.conversationRepo.findOne({
       where: { id },
-      relations: ['messages'],
+      relations: ["messages"],
     });
 
     if (!conversation) {
@@ -75,7 +81,7 @@ export class ChatService {
     // Verify user ownership (T034, FR-027)
     if (conversation.userId !== userId) {
       logAccessViolation(userId, {
-        type: 'conversation',
+        type: "conversation",
         id,
       });
       return null; // Return null as if not found to avoid information leakage
@@ -83,7 +89,7 @@ export class ChatService {
 
     // Sort messages by created_at ascending
     const sortedMessages = [...conversation.messages].sort(
-      (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
+      (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
     );
 
     return {
@@ -119,7 +125,7 @@ export class ChatService {
 
     if (conversation.userId !== userId) {
       logAccessViolation(userId, {
-        type: 'conversation',
+        type: "conversation",
         id,
       });
       return false; // Return false as if not found to avoid information leakage
@@ -150,11 +156,13 @@ export class ChatService {
   async createMessage(
     conversationId: string,
     userId: string,
-    role: 'user' | 'assistant',
-    content: ContentBlock[]
+    role: "user" | "assistant",
+    content: ContentBlock[],
   ): Promise<Message | null> {
     // Verify conversation ownership (T038, FR-027)
-    const conversation = await this.conversationRepo.findOne({ where: { id: conversationId } });
+    const conversation = await this.conversationRepo.findOne({
+      where: { id: conversationId },
+    });
 
     if (!conversation) {
       return null;
@@ -162,7 +170,7 @@ export class ChatService {
 
     if (conversation.userId !== userId) {
       logAccessViolation(userId, {
-        type: 'conversation',
+        type: "conversation",
         id: conversationId,
       });
       return null;
@@ -190,7 +198,7 @@ export class ChatService {
    */
   async createConversationWithMessage(
     message: string,
-    userId: string
+    userId: string,
   ): Promise<{ conversation: Conversation; userMessage: Message }> {
     return this.dataSource.transaction(async (manager) => {
       const conversation = manager.create(Conversation, {
@@ -200,8 +208,8 @@ export class ChatService {
 
       const userMessage = manager.create(Message, {
         conversationId: conversation.id,
-        role: 'user',
-        content: [{ type: 'text', text: message }],
+        role: "user",
+        content: [{ type: "text", text: message }],
       });
       await manager.save(userMessage);
 
@@ -213,16 +221,26 @@ export class ChatService {
    * Add user message to existing conversation
    * Verifies conversation ownership before adding
    */
-  async addUserMessage(conversationId: string, userId: string, message: string): Promise<Message | null> {
-    return this.createMessage(conversationId, userId, 'user', [{ type: 'text', text: message }]);
+  async addUserMessage(
+    conversationId: string,
+    userId: string,
+    message: string,
+  ): Promise<Message | null> {
+    return this.createMessage(conversationId, userId, "user", [
+      { type: "text", text: message },
+    ]);
   }
 
   /**
    * Add assistant message to conversation
    * Verifies conversation ownership before adding
    */
-  async addAssistantMessage(conversationId: string, userId: string, content: ContentBlock[]): Promise<Message | null> {
-    return this.createMessage(conversationId, userId, 'assistant', content);
+  async addAssistantMessage(
+    conversationId: string,
+    userId: string,
+    content: ContentBlock[],
+  ): Promise<Message | null> {
+    return this.createMessage(conversationId, userId, "assistant", content);
   }
 
   /**
@@ -231,14 +249,16 @@ export class ChatService {
   async getConversationMessages(conversationId: string): Promise<Message[]> {
     return this.messageRepo.find({
       where: { conversationId },
-      order: { createdAt: 'ASC' },
+      order: { createdAt: "ASC" },
     });
   }
 
   /**
    * Convert Conversation entity to GraphQL-ready format with computed fields
    */
-  private toConversationWithComputed(conversation: Conversation): ConversationWithComputed {
+  private toConversationWithComputed(
+    conversation: Conversation,
+  ): ConversationWithComputed {
     const messages = conversation.messages || [];
 
     return {
@@ -255,19 +275,19 @@ export class ChatService {
    * Get preview text from first user message
    */
   private getConversationPreview(messages: Message[]): string {
-    const firstUserMessage = messages.find(m => m.role === 'user');
+    const firstUserMessage = messages.find((m) => m.role === "user");
     if (!firstUserMessage) {
-      return 'New conversation';
+      return "New conversation";
     }
 
-    const textBlock = firstUserMessage.content.find(c => isTextBlock(c));
+    const textBlock = firstUserMessage.content.find((c) => isTextBlock(c));
     if (!textBlock || !isTextBlock(textBlock)) {
-      return 'New conversation';
+      return "New conversation";
     }
 
     const text = textBlock.text;
     return text.length > PREVIEW_MAX_LENGTH
-      ? text.slice(0, PREVIEW_MAX_LENGTH) + '...'
+      ? text.slice(0, PREVIEW_MAX_LENGTH) + "..."
       : text;
   }
 }

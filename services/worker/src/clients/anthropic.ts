@@ -48,7 +48,7 @@ export interface LLMClient {
     title: string,
     artist: string,
     album: string,
-    lyrics: string
+    lyrics: string,
   ): Promise<InterpretationResult>;
 
   generateShortDescription(prompt: string): Promise<ShortDescriptionResult>;
@@ -73,7 +73,7 @@ export function createAnthropicClient(): LLMClient {
       title: string,
       artist: string,
       album: string,
-      lyrics: string
+      lyrics: string,
     ): Promise<InterpretationResult> {
       try {
         const result = await generateText({
@@ -87,7 +87,7 @@ export function createAnthropicClient(): LLMClient {
           throw createAPIError(
             500,
             "Anthropic",
-            "Empty interpretation received from LLM"
+            "Empty interpretation received from LLM",
           );
         }
 
@@ -131,7 +131,7 @@ export function createAnthropicClient(): LLMClient {
             throw createAPIError(
               500,
               "Anthropic",
-              `Server error: ${error.message}`
+              `Server error: ${error.message}`,
             );
           }
         }
@@ -139,13 +139,13 @@ export function createAnthropicClient(): LLMClient {
         throw createAPIError(
           500,
           "Anthropic",
-          error instanceof Error ? error.message : "Unknown error"
+          error instanceof Error ? error.message : "Unknown error",
         );
       }
     },
 
     async generateShortDescription(
-      prompt: string
+      prompt: string,
     ): Promise<ShortDescriptionResult> {
       try {
         const result = await generateText({
@@ -159,7 +159,7 @@ export function createAnthropicClient(): LLMClient {
           throw createAPIError(
             500,
             "Anthropic",
-            "Empty short description received from LLM"
+            "Empty short description received from LLM",
           );
         }
 
@@ -203,7 +203,7 @@ export function createAnthropicClient(): LLMClient {
             throw createAPIError(
               500,
               "Anthropic",
-              `Server error: ${error.message}`
+              `Server error: ${error.message}`,
             );
           }
         }
@@ -211,7 +211,7 @@ export function createAnthropicClient(): LLMClient {
         throw createAPIError(
           500,
           "Anthropic",
-          error instanceof Error ? error.message : "Unknown error"
+          error instanceof Error ? error.message : "Unknown error",
         );
       }
     },

@@ -1,4 +1,4 @@
-import { AudioFeatures } from '../../graphql/trackMetadata';
+import { AudioFeatures } from "../../graphql/trackMetadata";
 import {
   formatKey,
   formatPercentage,
@@ -6,8 +6,8 @@ import {
   formatLoudness,
   formatValence,
   getValenceEmoji,
-} from '../../utils/audioFeatureFormatters';
-import './AudioFeaturesDisplay.css';
+} from "../../utils/audioFeatureFormatters";
+import "./AudioFeaturesDisplay.css";
 
 interface AudioFeaturesDisplayProps {
   audioFeatures: AudioFeatures | null;
@@ -16,7 +16,9 @@ interface AudioFeaturesDisplayProps {
 /**
  * Display formatted audio features in a grid layout
  */
-export function AudioFeaturesDisplay({ audioFeatures }: AudioFeaturesDisplayProps) {
+export function AudioFeaturesDisplay({
+  audioFeatures,
+}: AudioFeaturesDisplayProps) {
   if (!audioFeatures) {
     return (
       <div className="audio-features-unavailable">
@@ -53,7 +55,9 @@ export function AudioFeaturesDisplay({ audioFeatures }: AudioFeaturesDisplayProp
         {audioFeatures.tempo !== null && (
           <div className="audio-feature-item">
             <span className="audio-feature-label">Tempo</span>
-            <span className="audio-feature-value">{formatTempo(audioFeatures.tempo)}</span>
+            <span className="audio-feature-value">
+              {formatTempo(audioFeatures.tempo)}
+            </span>
           </div>
         )}
 
@@ -61,7 +65,9 @@ export function AudioFeaturesDisplay({ audioFeatures }: AudioFeaturesDisplayProp
         {audioFeatures.energy !== null && (
           <div className="audio-feature-item">
             <span className="audio-feature-label">Energy</span>
-            <span className="audio-feature-value">{formatPercentage(audioFeatures.energy)}</span>
+            <span className="audio-feature-value">
+              {formatPercentage(audioFeatures.energy)}
+            </span>
           </div>
         )}
 
@@ -80,7 +86,8 @@ export function AudioFeaturesDisplay({ audioFeatures }: AudioFeaturesDisplayProp
           <div className="audio-feature-item">
             <span className="audio-feature-label">Mood</span>
             <span className="audio-feature-value">
-              {formatValence(audioFeatures.valence)} {getValenceEmoji(audioFeatures.valence)}
+              {formatValence(audioFeatures.valence)}{" "}
+              {getValenceEmoji(audioFeatures.valence)}
             </span>
           </div>
         )}
@@ -109,7 +116,9 @@ export function AudioFeaturesDisplay({ audioFeatures }: AudioFeaturesDisplayProp
         {audioFeatures.liveness !== null && (
           <div className="audio-feature-item">
             <span className="audio-feature-label">Live</span>
-            <span className="audio-feature-value">{formatPercentage(audioFeatures.liveness)}</span>
+            <span className="audio-feature-value">
+              {formatPercentage(audioFeatures.liveness)}
+            </span>
           </div>
         )}
 
@@ -127,7 +136,9 @@ export function AudioFeaturesDisplay({ audioFeatures }: AudioFeaturesDisplayProp
         {audioFeatures.loudness !== null && (
           <div className="audio-feature-item">
             <span className="audio-feature-label">Loudness</span>
-            <span className="audio-feature-value">{formatLoudness(audioFeatures.loudness)}</span>
+            <span className="audio-feature-value">
+              {formatLoudness(audioFeatures.loudness)}
+            </span>
           </div>
         )}
       </div>

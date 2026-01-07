@@ -28,6 +28,7 @@
    - Max 20 ISRCs per request
 
 **Alternatives Considered**:
+
 - Tidal v1 API: Deprecated, inconsistent with existing codebase patterns
 - Direct track IDs: Would require tracks to already have tidalId, but playlist tracks come from agent suggestions with only ISRCs
 
@@ -38,14 +39,15 @@
 **Rationale**: Spec clarification specifies playlists should be private (only user can see). Tidal API has `PUBLIC` and `UNLISTED` options - `UNLISTED` achieves privacy.
 
 **Schema Structure**:
+
 ```json
 {
   "data": {
     "type": "playlists",
     "attributes": {
-      "name": "string",           // Required, max 150 chars
-      "description": "string",    // Optional
-      "accessType": "UNLISTED"    // For private playlist
+      "name": "string", // Required, max 150 chars
+      "description": "string", // Optional
+      "accessType": "UNLISTED" // For private playlist
     }
   }
 }
@@ -58,6 +60,7 @@
 **Rationale**: Tidal API enforces `maxItems: 20` constraint. For playlists up to 50 tracks (spec limit), this means max 3 API calls.
 
 **Schema Structure**:
+
 ```json
 {
   "data": [
@@ -65,12 +68,12 @@
       "type": "tracks",
       "id": "tidal-track-id",
       "meta": {
-        "addedAt": "2026-01-04T12:00:00Z"  // Required ISO 8601 datetime
+        "addedAt": "2026-01-04T12:00:00Z" // Required ISO 8601 datetime
       }
     }
   ],
   "meta": {
-    "positionBefore": "string"  // Optional, for ordering
+    "positionBefore": "string" // Optional, for ordering
   }
 }
 ```
@@ -82,6 +85,7 @@
 **Rationale**: Feature 016 stores user's Tidal OAuth tokens in Clerk private metadata with `playlists.write` scope. We retrieve these tokens via `getTidalTokens(userId)` and use them for API calls.
 
 **Flow**:
+
 1. Frontend calls `POST /api/playlists/export` with playlist data
 2. Backend extracts userId from Clerk session
 3. Backend retrieves user's Tidal tokens from `getTidalTokens(userId)`
@@ -89,6 +93,7 @@
 5. Use access token for Tidal API Authorization header
 
 **Alternatives Considered**:
+
 - Client credentials: Not user-specific, can't access user's playlists
 - Frontend direct API calls: Would expose tokens, violates security principles
 
@@ -99,6 +104,7 @@
 **Rationale**: TidalService already has a method that resolves ISRCs to Tidal track IDs in batches of 20. This handles the lookup efficiently and respects rate limits.
 
 **Flow**:
+
 1. Extract ISRCs from playlist suggestion tracks
 2. Call `batchFetchTracksByIsrc(isrcs, countryCode)`
 3. Map ISRC -> tidalId for each found track
@@ -111,6 +117,7 @@
 **Rationale**: Per spec, users should receive actionable error messages (SC-007).
 
 **Error Categories**:
+
 1. **No Tidal connection**: Return 401 with `no_tidal_connection` code
 2. **Token expired + refresh failed**: Return 401 with `token_refresh_failed` code
 3. **No tracks found**: Return 422 with `no_tracks_available` code
@@ -124,10 +131,11 @@
 **Rationale**: TidalService already has a rate limiter (`this.rateLimiter`) configured for 2 req/s, max 3 concurrent. Playlist creation will use the same limiter.
 
 **API Calls per Export** (worst case, 50 tracks):
+
 1. ISRC resolution: 3 calls (50 ISRCs / 20 per batch)
 2. Create playlist: 1 call
 3. Add tracks: 3 calls (50 tracks / 20 per batch)
-Total: 7 API calls
+   Total: 7 API calls
 
 At 2 req/s, this completes in ~4 seconds, well under the 10-second SLA.
 
@@ -138,6 +146,7 @@ At 2 req/s, this completes in ~4 seconds, well under the 10-second SLA.
 **Rationale**: Consistent with existing app patterns, no external modal library needed. Accessible via native dialog semantics.
 
 **Behavior**:
+
 - Opens on "Save to Tidal" button click
 - Pre-filled name input with playlist title
 - Client-side validation (non-empty, max 150 chars)
@@ -146,5 +155,6 @@ At 2 req/s, this completes in ~4 seconds, well under the 10-second SLA.
 - Reset state on cancel
 
 **Alternatives Considered**:
+
 - Headless UI Dialog: Adds dependency, overkill for single modal
 - React Portal: Native dialog already handles z-index correctly

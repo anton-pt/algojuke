@@ -12,7 +12,7 @@
 - Q: How should conversation titles/previews be determined for sidebar display? → A: First message preview - show truncated text from first user message
 - Q: Should users be able to send additional messages while the AI is still generating a response? → A: Disable input - block sending new messages until current response completes
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - Chat with AI Assistant (Priority: P1)
 
@@ -145,7 +145,7 @@ As a user who wants to start fresh, I want to be able to begin a new conversatio
 - What happens when the sidebar has many conversations (100+)? The sidebar should support scrolling and maintain performance.
 - What happens when the user tries to delete a conversation while a response is in progress for that conversation? The deletion should either be blocked with an explanation, or the in-progress request should be cancelled first.
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -182,7 +182,7 @@ As a user who wants to start fresh, I want to be able to begin a new conversatio
 - **Message**: Represents a single communication within a conversation. Contains the message content, role (user or assistant), timestamp, and reference to the parent conversation. Messages are persisted in order to reconstruct conversation history.
 - **Chat Request**: A transient entity representing an in-flight request to the AI service. Contains the conversation context, current user message, and streaming state. Not persisted directly but tracked for observability.
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 

@@ -7,7 +7,7 @@
  * Streaming chat responses are handled via REST/SSE (see useChatStream hook).
  */
 
-import { gql } from '@apollo/client';
+import { gql } from "@apollo/client";
 
 // -----------------------------------------------------------------------------
 // Types
@@ -26,7 +26,7 @@ export interface ContentBlock {
 /** Single message in a conversation */
 export interface ChatMessage {
   id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: ContentBlock[];
   createdAt: string;
 }
@@ -42,7 +42,7 @@ export interface Conversation {
 
 /** Chat error response */
 export interface ChatError {
-  __typename: 'ChatError';
+  __typename: "ChatError";
   message: string;
   code: string;
   retryable: boolean;
@@ -50,21 +50,21 @@ export interface ChatError {
 
 /** Success response for conversation list */
 export interface ConversationsList {
-  __typename: 'ConversationsList';
+  __typename: "ConversationsList";
   conversations: Conversation[];
   totalCount: number;
 }
 
 /** Success response for single conversation with messages */
 export interface ConversationWithMessages {
-  __typename: 'ConversationWithMessages';
+  __typename: "ConversationWithMessages";
   conversation: Conversation;
   messages: ChatMessage[];
 }
 
 /** Success response for delete operation */
 export interface DeleteSuccess {
-  __typename: 'DeleteSuccess';
+  __typename: "DeleteSuccess";
   deletedId: string;
   message: string;
 }
@@ -76,27 +76,27 @@ export type DeleteConversationResult = DeleteSuccess | ChatError;
 
 // Type guards
 export function isConversationsList(
-  result: ConversationsResult
+  result: ConversationsResult,
 ): result is ConversationsList {
-  return result.__typename === 'ConversationsList';
+  return result.__typename === "ConversationsList";
 }
 
 export function isConversationWithMessages(
-  result: ConversationResult
+  result: ConversationResult,
 ): result is ConversationWithMessages {
-  return result.__typename === 'ConversationWithMessages';
+  return result.__typename === "ConversationWithMessages";
 }
 
 export function isDeleteSuccess(
-  result: DeleteConversationResult
+  result: DeleteConversationResult,
 ): result is DeleteSuccess {
-  return result.__typename === 'DeleteSuccess';
+  return result.__typename === "DeleteSuccess";
 }
 
 export function isChatError(
-  result: ConversationsResult | ConversationResult | DeleteConversationResult
+  result: ConversationsResult | ConversationResult | DeleteConversationResult,
 ): result is ChatError {
-  return result.__typename === 'ChatError';
+  return result.__typename === "ChatError";
 }
 
 // -----------------------------------------------------------------------------

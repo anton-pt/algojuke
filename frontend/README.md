@@ -28,12 +28,12 @@ cp .env.example .env
 
 Configure the following required variables:
 
-| Variable | Description |
-|----------|-------------|
-| `VITE_CLERK_PUBLISHABLE_KEY` | Clerk publishable key (pk_test_...) |
-| `VITE_TIDAL_CLIENT_ID` | Tidal API client ID |
-| `VITE_TIDAL_REDIRECT_URI` | OAuth callback URL (https://localhost:5173/auth/tidal/callback) |
-| `VITE_API_URL` | Backend API URL (http://localhost:4000) |
+| Variable                     | Description                                                     |
+| ---------------------------- | --------------------------------------------------------------- |
+| `VITE_CLERK_PUBLISHABLE_KEY` | Clerk publishable key (pk*test*...)                             |
+| `VITE_TIDAL_CLIENT_ID`       | Tidal API client ID                                             |
+| `VITE_TIDAL_REDIRECT_URI`    | OAuth callback URL (https://localhost:5173/auth/tidal/callback) |
+| `VITE_API_URL`               | Backend API URL (http://localhost:4000)                         |
 
 ### Running the Development Server
 
@@ -70,26 +70,26 @@ The app uses a three-tier authentication flow:
 
 ### Auth Routes
 
-| Route | Component | Access |
-|-------|-----------|--------|
-| `/` | LandingPage | Public |
-| `/waitlist` | WaitlistPage | Authenticated (non-approved) |
-| `/connect-tidal` | TidalConnectPage | Authenticated + Approved |
-| `/auth/tidal/callback` | CallbackPage | Authenticated + Approved |
-| `/discover` | DiscoverChat | Fully Connected |
+| Route                  | Component        | Access                       |
+| ---------------------- | ---------------- | ---------------------------- |
+| `/`                    | LandingPage      | Public                       |
+| `/waitlist`            | WaitlistPage     | Authenticated (non-approved) |
+| `/connect-tidal`       | TidalConnectPage | Authenticated + Approved     |
+| `/auth/tidal/callback` | CallbackPage     | Authenticated + Approved     |
+| `/discover`            | DiscoverChat     | Fully Connected              |
 
 ### Key Components
 
-| Component | Purpose |
-|-----------|---------|
-| `ProtectedRoute` | Route guard checking auth/approval/Tidal status |
-| `TidalConnectButton` | Initiates Tidal OAuth flow |
-| `AuthLayout` | Centered layout for auth pages |
+| Component            | Purpose                                         |
+| -------------------- | ----------------------------------------------- |
+| `ProtectedRoute`     | Route guard checking auth/approval/Tidal status |
+| `TidalConnectButton` | Initiates Tidal OAuth flow                      |
+| `AuthLayout`         | Centered layout for auth pages                  |
 
 ### Key Hooks
 
-| Hook | Purpose |
-|------|---------|
+| Hook           | Purpose                                |
+| -------------- | -------------------------------------- |
 | `useTidalAuth` | Manages Tidal SDK state and OAuth flow |
 
 ## Project Structure
@@ -134,6 +134,7 @@ server: {
 ```
 
 If you see this error:
+
 1. Ensure you're accessing https://localhost:5173 (not http://)
 2. Accept the self-signed certificate warning in your browser
 
@@ -156,5 +157,6 @@ The user's email is not in the backend allowlist. Add their email to `backend/sr
 ### Sign-Out Not Working
 
 The UserButton from Clerk handles sign-out. If it's not visible:
+
 1. Ensure the user is signed in
 2. Check that ClerkProvider wraps the app in `main.tsx`

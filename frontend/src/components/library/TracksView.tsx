@@ -1,22 +1,25 @@
-import { useQuery, useMutation } from '@apollo/client';
-import { GET_LIBRARY_TRACKS, REMOVE_TRACK_FROM_LIBRARY } from '../../graphql/library';
-import { LibraryTrackCard, LibraryTrack } from './LibraryTrackCard';
-import { TrackAccordion } from './TrackAccordion';
-import { useUndoDelete } from '../../hooks/useUndoDelete';
-import { useTrackMetadata } from '../../hooks/useTrackMetadata';
-import './TracksView.css';
+import { useQuery, useMutation } from "@apollo/client";
+import {
+  GET_LIBRARY_TRACKS,
+  REMOVE_TRACK_FROM_LIBRARY,
+} from "../../graphql/library";
+import { LibraryTrackCard, LibraryTrack } from "./LibraryTrackCard";
+import { TrackAccordion } from "./TrackAccordion";
+import { useUndoDelete } from "../../hooks/useUndoDelete";
+import { useTrackMetadata } from "../../hooks/useTrackMetadata";
+import "./TracksView.css";
 
 export function TracksView() {
-  const { loading, error, data } = useQuery<{ getLibraryTracks: LibraryTrack[] }>(
-    GET_LIBRARY_TRACKS
-  );
+  const { loading, error, data } = useQuery<{
+    getLibraryTracks: LibraryTrack[];
+  }>(GET_LIBRARY_TRACKS);
 
   const [removeTrackMutation] = useMutation(REMOVE_TRACK_FROM_LIBRARY, {
     refetchQueries: [{ query: GET_LIBRARY_TRACKS }],
   });
 
   const { handleDelete, isDeleted } = useUndoDelete<LibraryTrack>({
-    itemName: 'Track',
+    itemName: "Track",
     getItemLabel: (track) => `${track.title} - ${track.artistName}`,
     onDelete: async (trackId) => {
       await removeTrackMutation({ variables: { id: trackId } });
@@ -61,7 +64,10 @@ export function TracksView() {
       <div className="tracks-view">
         <div className="tracks-empty">
           <h2>No tracks in your library yet</h2>
-          <p>Search for music and add individual tracks to your library to see them here.</p>
+          <p>
+            Search for music and add individual tracks to your library to see
+            them here.
+          </p>
         </div>
       </div>
     );
@@ -82,10 +88,7 @@ export function TracksView() {
             metadata={isExpanded(track.id) ? metadata : null}
             onRetry={retry}
           >
-            <LibraryTrackCard
-              track={track}
-              onDelete={handleDelete}
-            />
+            <LibraryTrackCard track={track} onDelete={handleDelete} />
           </TrackAccordion>
         ))}
       </div>

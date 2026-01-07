@@ -4,17 +4,17 @@
  * Endpoints for authentication status and Tidal token management.
  */
 
-import { Router, Request, Response } from 'express';
-import { getAuth, clerkClient } from '../middleware/clerkAuth.js';
-import { requireAuth, requireApproved } from '../middleware/clerkAuth.js';
-import { isApprovedUser } from '../config/allowlist.js';
+import { Router, Request, Response } from "express";
+import { getAuth, clerkClient } from "../middleware/clerkAuth.js";
+import { requireAuth, requireApproved } from "../middleware/clerkAuth.js";
+import { isApprovedUser } from "../config/allowlist.js";
 import {
   getTidalTokens,
   storeTidalTokens,
   hasTidalConnection,
   isTokenExpired,
   refreshTidalTokens,
-} from '../services/tidalAuthService.js';
+} from "../services/tidalAuthService.js";
 import {
   TidalTokensInputSchema,
   hasRequiredScopes,
@@ -22,7 +22,7 @@ import {
   type AuthStatus,
   type TidalTokensResponse,
   type TidalTokenStatus,
-} from '../schemas/auth.js';
+} from "../schemas/auth.js";
 
 /**
  * Create auth routes
@@ -34,7 +34,7 @@ export function createAuthRoutes(): Router {
    * GET /api/auth/status
    * Get current user's authentication status
    */
-  router.get('/status', async (req: Request, res: Response) => {
+  router.get("/status", async (req: Request, res: Response) => {
     const auth = getAuth(req);
 
     // Not authenticated
@@ -71,10 +71,10 @@ export function createAuthRoutes(): Router {
       };
       res.json(response);
     } catch (error) {
-      console.error('Error fetching auth status:', error);
+      console.error("Error fetching auth status:", error);
       res.status(500).json({
-        error: 'internal_error',
-        message: 'Failed to fetch auth status',
+        error: "internal_error",
+        message: "Failed to fetch auth status",
       });
     }
   });
@@ -84,7 +84,7 @@ export function createAuthRoutes(): Router {
    * Store Tidal OAuth tokens (requires approved user)
    */
   router.post(
-    '/tidal/tokens',
+    "/tidal/tokens",
     requireAuth,
     requireApproved,
     async (req: Request, res: Response) => {
@@ -94,8 +94,8 @@ export function createAuthRoutes(): Router {
       const parsed = TidalTokensInputSchema.safeParse(req.body);
       if (!parsed.success) {
         res.status(400).json({
-          error: 'validation_error',
-          message: 'Invalid token data',
+          error: "validation_error",
+          message: "Invalid token data",
           details: parsed.error.issues,
         });
         return;
@@ -104,8 +104,8 @@ export function createAuthRoutes(): Router {
       // Validate that all required scopes are present (FR-006)
       if (!hasRequiredScopes(parsed.data.scopes)) {
         res.status(400).json({
-          error: 'insufficient_scopes',
-          message: 'Missing required Tidal scopes',
+          error: "insufficient_scopes",
+          message: "Missing required Tidal scopes",
           requiredScopes: REQUIRED_TIDAL_SCOPES,
           providedScopes: parsed.data.scopes,
         });
@@ -121,50 +121,54 @@ export function createAuthRoutes(): Router {
         };
         res.json(response);
       } catch (error) {
-        console.error('Error storing Tidal tokens:', error);
+        console.error("Error storing Tidal tokens:", error);
         res.status(500).json({
-          error: 'internal_error',
-          message: 'Failed to store Tidal tokens',
+          error: "internal_error",
+          message: "Failed to store Tidal tokens",
         });
       }
-    }
+    },
   );
 
   /**
    * GET /api/auth/tidal/tokens
    * Get Tidal token status (does not return actual tokens)
    */
-  router.get('/tidal/tokens', requireAuth, async (req: Request, res: Response) => {
-    const auth = getAuth(req);
+  router.get(
+    "/tidal/tokens",
+    requireAuth,
+    async (req: Request, res: Response) => {
+      const auth = getAuth(req);
 
-    try {
-      const tokens = await getTidalTokens(auth!.userId!);
+      try {
+        const tokens = await getTidalTokens(auth!.userId!);
 
-      if (!tokens) {
+        if (!tokens) {
+          const response: TidalTokenStatus = {
+            hasTokens: false,
+          };
+          res.json(response);
+          return;
+        }
+
+        const expired = await isTokenExpired(auth!.userId!);
+
         const response: TidalTokenStatus = {
-          hasTokens: false,
+          hasTokens: true,
+          expiresAt: tokens.expiresAt,
+          isExpired: expired ?? undefined,
+          scopes: tokens.scopes,
         };
         res.json(response);
-        return;
+      } catch (error) {
+        console.error("Error fetching Tidal token status:", error);
+        res.status(500).json({
+          error: "internal_error",
+          message: "Failed to fetch Tidal token status",
+        });
       }
-
-      const expired = await isTokenExpired(auth!.userId!);
-
-      const response: TidalTokenStatus = {
-        hasTokens: true,
-        expiresAt: tokens.expiresAt,
-        isExpired: expired ?? undefined,
-        scopes: tokens.scopes,
-      };
-      res.json(response);
-    } catch (error) {
-      console.error('Error fetching Tidal token status:', error);
-      res.status(500).json({
-        error: 'internal_error',
-        message: 'Failed to fetch Tidal token status',
-      });
-    }
-  });
+    },
+  );
 
   /**
    * POST /api/auth/tidal/refresh
@@ -175,7 +179,7 @@ export function createAuthRoutes(): Router {
    * 2. Without body: Returns current token status (for checking expiration)
    */
   router.post(
-    '/tidal/refresh',
+    "/tidal/refresh",
     requireAuth,
     requireApproved,
     async (req: Request, res: Response) => {
@@ -190,8 +194,8 @@ export function createAuthRoutes(): Router {
           const parsed = TidalTokensInputSchema.safeParse(req.body);
           if (!parsed.success) {
             res.status(400).json({
-              error: 'validation_error',
-              message: 'Invalid token data',
+              error: "validation_error",
+              message: "Invalid token data",
               details: parsed.error.issues,
             });
             return;
@@ -215,8 +219,8 @@ export function createAuthRoutes(): Router {
 
         if (!tokens) {
           res.status(422).json({
-            error: 'no_connection',
-            message: 'No Tidal connection found',
+            error: "no_connection",
+            message: "No Tidal connection found",
           });
           return;
         }
@@ -231,13 +235,13 @@ export function createAuthRoutes(): Router {
         };
         res.json(response);
       } catch (error) {
-        console.error('Error refreshing Tidal tokens:', error);
+        console.error("Error refreshing Tidal tokens:", error);
         res.status(500).json({
-          error: 'internal_error',
-          message: 'Failed to refresh Tidal tokens',
+          error: "internal_error",
+          message: "Failed to refresh Tidal tokens",
         });
       }
-    }
+    },
   );
 
   return router;

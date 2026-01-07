@@ -4,12 +4,16 @@
  * Manages Tidal OAuth tokens stored in Clerk private metadata.
  */
 
-import { clerkClient } from '@clerk/express';
-import axios from 'axios';
-import { TidalTokens, TidalTokensSchema, TidalTokensInput } from '../schemas/auth.js';
-import { logger } from '../utils/logger.js';
+import { clerkClient } from "@clerk/express";
+import axios from "axios";
+import {
+  TidalTokens,
+  TidalTokensSchema,
+  TidalTokensInput,
+} from "../schemas/auth.js";
+import { logger } from "../utils/logger.js";
 
-const TIDAL_TOKEN_URL = 'https://auth.tidal.com/v1/oauth2/token';
+const TIDAL_TOKEN_URL = "https://auth.tidal.com/v1/oauth2/token";
 
 /**
  * Get Tidal tokens for a user from Clerk private metadata
@@ -17,7 +21,9 @@ const TIDAL_TOKEN_URL = 'https://auth.tidal.com/v1/oauth2/token';
  * @param userId - Clerk user ID
  * @returns Tidal tokens if connected, null otherwise
  */
-export async function getTidalTokens(userId: string): Promise<TidalTokens | null> {
+export async function getTidalTokens(
+  userId: string,
+): Promise<TidalTokens | null> {
   try {
     const user = await clerkClient.users.getUser(userId);
     const tidalData = user.privateMetadata?.tidal;
@@ -29,7 +35,7 @@ export async function getTidalTokens(userId: string): Promise<TidalTokens | null
     // Validate the stored data matches our schema
     const parsed = TidalTokensSchema.safeParse(tidalData);
     if (!parsed.success) {
-      logger.warn('tidal_tokens_invalid', {
+      logger.warn("tidal_tokens_invalid", {
         userId,
         errors: parsed.error.issues,
       });
@@ -38,7 +44,7 @@ export async function getTidalTokens(userId: string): Promise<TidalTokens | null
 
     return parsed.data;
   } catch (error) {
-    logger.error('get_tidal_tokens_failed', {
+    logger.error("get_tidal_tokens_failed", {
       userId,
       error: String(error),
     });
@@ -55,7 +61,7 @@ export async function getTidalTokens(userId: string): Promise<TidalTokens | null
  */
 export async function storeTidalTokens(
   userId: string,
-  tokens: TidalTokensInput
+  tokens: TidalTokensInput,
 ): Promise<number> {
   const startTime = Date.now();
   const connectedAt = Date.now();
@@ -73,7 +79,7 @@ export async function storeTidalTokens(
     });
 
     const duration = Date.now() - startTime;
-    logger.info('tidal_tokens_stored', {
+    logger.info("tidal_tokens_stored", {
       userId,
       connectedAt,
       duration,
@@ -83,7 +89,7 @@ export async function storeTidalTokens(
     return connectedAt;
   } catch (error) {
     const duration = Date.now() - startTime;
-    logger.error('store_tidal_tokens_failed', {
+    logger.error("store_tidal_tokens_failed", {
       userId,
       duration,
       error: String(error),
@@ -126,13 +132,15 @@ export async function isTokenExpired(userId: string): Promise<boolean | null> {
  * @param userId - Clerk user ID
  * @returns The refreshed access token, or null if refresh failed
  */
-export async function attemptTokenRefresh(userId: string): Promise<string | null> {
+export async function attemptTokenRefresh(
+  userId: string,
+): Promise<string | null> {
   const startTime = Date.now();
 
   try {
     const existingTokens = await getTidalTokens(userId);
     if (!existingTokens) {
-      logger.warn('token_refresh_no_tokens', { userId });
+      logger.warn("token_refresh_no_tokens", { userId });
       return null;
     }
 
@@ -140,7 +148,7 @@ export async function attemptTokenRefresh(userId: string): Promise<string | null
     const clientSecret = process.env.TIDAL_CLIENT_SECRET;
 
     if (!clientId || !clientSecret) {
-      logger.error('token_refresh_missing_credentials', { userId });
+      logger.error("token_refresh_missing_credentials", { userId });
       return null;
     }
 
@@ -148,23 +156,23 @@ export async function attemptTokenRefresh(userId: string): Promise<string | null
     const response = await axios.post(
       TIDAL_TOKEN_URL,
       new URLSearchParams({
-        grant_type: 'refresh_token',
+        grant_type: "refresh_token",
         refresh_token: existingTokens.refreshToken,
         client_id: clientId,
         client_secret: clientSecret,
       }).toString(),
       {
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          "Content-Type": "application/x-www-form-urlencoded",
         },
         timeout: 10000,
-      }
+      },
     );
 
     const { access_token, refresh_token, expires_in } = response.data;
 
     // Calculate new expiration (expires_in is in seconds)
-    const expiresAt = Date.now() + (expires_in * 1000);
+    const expiresAt = Date.now() + expires_in * 1000;
 
     // Update tokens in Clerk metadata
     const updatedTokens: TidalTokens = {
@@ -182,7 +190,7 @@ export async function attemptTokenRefresh(userId: string): Promise<string | null
     });
 
     const duration = Date.now() - startTime;
-    logger.info('token_refresh_success', {
+    logger.info("token_refresh_success", {
       userId,
       duration,
       expiresAt,
@@ -194,14 +202,14 @@ export async function attemptTokenRefresh(userId: string): Promise<string | null
     const duration = Date.now() - startTime;
 
     if (axios.isAxiosError(error)) {
-      logger.error('token_refresh_api_failed', {
+      logger.error("token_refresh_api_failed", {
         userId,
         duration,
         status: error.response?.status,
         error: error.response?.data || error.message,
       });
     } else {
-      logger.error('token_refresh_failed', {
+      logger.error("token_refresh_failed", {
         userId,
         duration,
         error: error instanceof Error ? error.message : String(error),
@@ -224,7 +232,7 @@ export async function attemptTokenRefresh(userId: string): Promise<string | null
  */
 export async function refreshTidalTokens(
   userId: string,
-  tokens: TidalTokensInput
+  tokens: TidalTokensInput,
 ): Promise<{ success: boolean; expiresAt: number }> {
   const startTime = Date.now();
 
@@ -245,7 +253,7 @@ export async function refreshTidalTokens(
     });
 
     const duration = Date.now() - startTime;
-    logger.info('tidal_tokens_refreshed', {
+    logger.info("tidal_tokens_refreshed", {
       userId,
       duration,
       expiresAt: tokens.expiresAt,
@@ -259,7 +267,7 @@ export async function refreshTidalTokens(
     };
   } catch (error) {
     const duration = Date.now() - startTime;
-    logger.error('tidal_token_refresh_failed', {
+    logger.error("tidal_token_refresh_failed", {
       userId,
       duration,
       error: String(error),
@@ -285,13 +293,13 @@ export async function clearTidalTokens(userId: string): Promise<void> {
     });
 
     const duration = Date.now() - startTime;
-    logger.info('tidal_tokens_cleared', {
+    logger.info("tidal_tokens_cleared", {
       userId,
       duration,
     });
   } catch (error) {
     const duration = Date.now() - startTime;
-    logger.error('clear_tidal_tokens_failed', {
+    logger.error("clear_tidal_tokens_failed", {
       userId,
       duration,
       error: String(error),

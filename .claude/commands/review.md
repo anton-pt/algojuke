@@ -1,7 +1,9 @@
 # Code Simplification Pass
 
 ## Steps
+
 1. Find recently modified files:
+
    ```bash
    git diff --name-only HEAD~10 | grep -E '\.(ts|tsx)$' | grep -v '\.test\.'
    ```

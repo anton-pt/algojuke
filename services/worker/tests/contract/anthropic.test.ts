@@ -53,7 +53,7 @@ describe("Anthropic Client Contract", () => {
           title: string,
           artist: string,
           album: string,
-          lyrics: string
+          lyrics: string,
         ): Promise<InterpretationResult> => {
           return {
             text: `Interpretation of ${title} by ${artist}`,
@@ -63,7 +63,7 @@ describe("Anthropic Client Contract", () => {
           };
         },
         generateShortDescription: async (
-          prompt: string
+          prompt: string,
         ): Promise<ShortDescriptionResult> => {
           return {
             text: "A test short description.",
@@ -87,7 +87,7 @@ describe("Anthropic Client Contract", () => {
         "Bohemian Rhapsody",
         "Queen",
         "A Night at the Opera",
-        "Is this the real life?\nIs this just fantasy?"
+        "Is this the real life?\nIs this just fantasy?",
       );
 
       expect(prompt).toContain("Bohemian Rhapsody");
@@ -104,10 +104,10 @@ describe("Anthropic Client Contract", () => {
         "Test Song",
         "Test Artist",
         "Test Album",
-        "Line with \"quotes\" and 'apostrophes'\nLine with <brackets> & ampersands"
+        "Line with \"quotes\" and 'apostrophes'\nLine with <brackets> & ampersands",
       );
 
-      expect(prompt).toContain("\"quotes\"");
+      expect(prompt).toContain('"quotes"');
       expect(prompt).toContain("'apostrophes'");
       expect(prompt).toContain("<brackets>");
       expect(prompt).toContain("& ampersands");
@@ -118,7 +118,7 @@ describe("Anthropic Client Contract", () => {
         "La Vie en Rose",
         "Édith Piaf",
         "Album",
-        "Quand il me prend dans ses bras\nIl me parle tout bas"
+        "Quand il me prend dans ses bras\nIl me parle tout bas",
       );
 
       expect(prompt).toContain("Édith Piaf");
@@ -131,7 +131,7 @@ describe("Anthropic Client Contract", () => {
         "Long Song",
         "Artist",
         "Album",
-        longLyrics
+        longLyrics,
       );
 
       // Should contain the full lyrics

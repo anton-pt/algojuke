@@ -7,16 +7,19 @@
  * Returns tracks with library membership and vector index status flags.
  */
 
-import { Repository } from 'typeorm';
-import { TidalService } from '../tidalService.js';
-import { BackendQdrantClient } from '../../clients/qdrantClient.js';
-import { LibraryTrack } from '../../entities/LibraryTrack.js';
-import { LibraryAlbum } from '../../entities/LibraryAlbum.js';
-import { AlbumTracksInputSchema, type AlbumTracksInput } from '../../schemas/agentTools.js';
-import type { AlbumTracksOutput, TrackResult } from '../../types/agentTools.js';
-import { createToolError, type ToolError } from '../../types/agentTools.js';
-import { getLibraryIsrcs } from './libraryStatus.js';
-import { logger } from '../../utils/logger.js';
+import { Repository } from "typeorm";
+import { TidalService } from "../tidalService.js";
+import { BackendQdrantClient } from "../../clients/qdrantClient.js";
+import { LibraryTrack } from "../../entities/LibraryTrack.js";
+import { LibraryAlbum } from "../../entities/LibraryAlbum.js";
+import {
+  AlbumTracksInputSchema,
+  type AlbumTracksInput,
+} from "../../schemas/agentTools.js";
+import type { AlbumTracksOutput, TrackResult } from "../../types/agentTools.js";
+import { createToolError, type ToolError } from "../../types/agentTools.js";
+import { getLibraryIsrcs } from "./libraryStatus.js";
+import { logger } from "../../utils/logger.js";
 
 // -----------------------------------------------------------------------------
 // Types
@@ -47,12 +50,12 @@ export interface AlbumTracksContext {
  */
 export async function executeAlbumTracks(
   input: AlbumTracksInput,
-  context: AlbumTracksContext
+  context: AlbumTracksContext,
 ): Promise<AlbumTracksOutput> {
   const startTime = Date.now();
   const { userId } = context;
 
-  logger.info('album_tracks_tool_start', {
+  logger.info("album_tracks_tool_start", {
     albumId: input.albumId,
   });
 
@@ -61,8 +64,8 @@ export async function executeAlbumTracks(
   if (!validationResult.success) {
     const errorMessage = validationResult.error.issues
       .map((e) => e.message)
-      .join(', ');
-    throw createToolError(errorMessage, false, false, 'VALIDATION_ERROR');
+      .join(", ");
+    throw createToolError(errorMessage, false, false, "VALIDATION_ERROR");
   }
 
   const { albumId } = validationResult.data;
@@ -76,16 +79,17 @@ export async function executeAlbumTracks(
 
     // Extract Tidal track IDs for ISRC batch fetch
     const trackTidalIds = tidalIds
-      .filter(t => t.tidalId)
-      .map(t => t.tidalId!);
+      .filter((t) => t.tidalId)
+      .map((t) => t.tidalId!);
 
     // Fetch ISRCs for all tracks
     let isrcMap = new Map<string, string | undefined>();
     if (trackTidalIds.length > 0) {
       try {
-        isrcMap = await context.tidalService.batchFetchTrackIsrcs(trackTidalIds);
+        isrcMap =
+          await context.tidalService.batchFetchTrackIsrcs(trackTidalIds);
       } catch (error) {
-        logger.warn('album_tracks_isrc_fetch_failed', {
+        logger.warn("album_tracks_isrc_fetch_failed", {
           albumId,
           error: error instanceof Error ? error.message : String(error),
         });
@@ -110,7 +114,7 @@ export async function executeAlbumTracks(
       context.libraryTrackRepository,
       context.libraryAlbumRepository,
       userId,
-      'album_tracks'
+      "album_tracks",
     );
 
     // Check index status for all tracks
@@ -119,7 +123,7 @@ export async function executeAlbumTracks(
       try {
         indexedIsrcs = await context.qdrantClient.checkTracksExist(isrcs);
       } catch (error) {
-        logger.warn('album_tracks_index_check_failed', {
+        logger.warn("album_tracks_index_check_failed", {
           albumId,
           isrcCount: isrcs.length,
           error: error instanceof Error ? error.message : String(error),
@@ -130,7 +134,9 @@ export async function executeAlbumTracks(
 
     // Transform tracks with enrichment
     const tracks: TrackResult[] = tidalIds.map((trackInfo) => {
-      const isrc = trackInfo.tidalId ? isrcMap.get(trackInfo.tidalId) ?? '' : '';
+      const isrc = trackInfo.tidalId
+        ? (isrcMap.get(trackInfo.tidalId) ?? "")
+        : "";
       const normalizedIsrc = isrc.toUpperCase();
 
       return {
@@ -143,14 +149,16 @@ export async function executeAlbumTracks(
         duration: trackInfo.duration,
         explicit: trackInfo.explicit,
         inLibrary: normalizedIsrc ? libraryIsrcs.has(normalizedIsrc) : false,
-        isIndexed: normalizedIsrc ? (indexedIsrcs.get(normalizedIsrc) ?? false) : false,
+        isIndexed: normalizedIsrc
+          ? (indexedIsrcs.get(normalizedIsrc) ?? false)
+          : false,
       };
     });
 
     const durationMs = Date.now() - startTime;
-    const summary = `${albumData.title} has ${tracks.length} track${tracks.length === 1 ? '' : 's'}`;
+    const summary = `${albumData.title} has ${tracks.length} track${tracks.length === 1 ? "" : "s"}`;
 
-    logger.info('album_tracks_tool_complete', {
+    logger.info("album_tracks_tool_complete", {
       albumId,
       albumTitle: albumData.title,
       trackCount: tracks.length,
@@ -169,8 +177,8 @@ export async function executeAlbumTracks(
     const durationMs = Date.now() - startTime;
 
     // Re-throw ToolErrors
-    if (error instanceof Error && 'retryable' in error) {
-      logger.error('album_tracks_tool_error', {
+    if (error instanceof Error && "retryable" in error) {
+      logger.error("album_tracks_tool_error", {
         albumId,
         durationMs,
         error: error.message,
@@ -181,11 +189,11 @@ export async function executeAlbumTracks(
 
     // Check for specific error types
     const errorMessage = error instanceof Error ? error.message : String(error);
-    const isNotFoundError = errorMessage.toLowerCase().includes('not found');
-    const isRateLimitError = errorMessage.toLowerCase().includes('rate limit');
-    const isTimeoutError = errorMessage.toLowerCase().includes('timeout');
+    const isNotFoundError = errorMessage.toLowerCase().includes("not found");
+    const isRateLimitError = errorMessage.toLowerCase().includes("rate limit");
+    const isTimeoutError = errorMessage.toLowerCase().includes("timeout");
 
-    logger.error('album_tracks_tool_unexpected_error', {
+    logger.error("album_tracks_tool_unexpected_error", {
       albumId,
       durationMs,
       error: errorMessage,
@@ -196,19 +204,23 @@ export async function executeAlbumTracks(
         `Album not found: ${albumId}`,
         false,
         false,
-        'NOT_FOUND'
+        "NOT_FOUND",
       );
     }
 
     throw createToolError(
       isRateLimitError
-        ? 'Rate limit exceeded. Please wait a moment and try again.'
+        ? "Rate limit exceeded. Please wait a moment and try again."
         : isTimeoutError
-          ? 'Album fetch timed out. Please try again.'
-          : 'Failed to retrieve album tracks',
+          ? "Album fetch timed out. Please try again."
+          : "Failed to retrieve album tracks",
       isRateLimitError || isTimeoutError,
       false,
-      isRateLimitError ? 'RATE_LIMIT' : isTimeoutError ? 'TIMEOUT' : 'INTERNAL_ERROR'
+      isRateLimitError
+        ? "RATE_LIMIT"
+        : isTimeoutError
+          ? "TIMEOUT"
+          : "INTERNAL_ERROR",
     );
   }
 }

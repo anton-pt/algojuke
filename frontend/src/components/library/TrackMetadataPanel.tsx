@@ -1,7 +1,7 @@
-import ReactMarkdown from 'react-markdown';
-import { ExtendedTrackMetadata } from '../../graphql/trackMetadata';
-import { AudioFeaturesDisplay } from './AudioFeaturesDisplay';
-import './TrackMetadataPanel.css';
+import ReactMarkdown from "react-markdown";
+import { ExtendedTrackMetadata } from "../../graphql/trackMetadata";
+import { AudioFeaturesDisplay } from "./AudioFeaturesDisplay";
+import "./TrackMetadataPanel.css";
 
 interface TrackMetadataPanelProps {
   /** Loading state */
@@ -39,7 +39,10 @@ export function TrackMetadataPanel({
           <div className="skeleton-line skeleton-title" aria-hidden="true" />
           <div className="skeleton-line skeleton-text" aria-hidden="true" />
           <div className="skeleton-line skeleton-text" aria-hidden="true" />
-          <div className="skeleton-line skeleton-text short" aria-hidden="true" />
+          <div
+            className="skeleton-line skeleton-text short"
+            aria-hidden="true"
+          />
         </div>
       </div>
     );

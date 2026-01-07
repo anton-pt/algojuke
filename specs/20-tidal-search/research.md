@@ -11,6 +11,7 @@
 **Implementation Discovery**: During initial implementation, we discovered that the public Tidal API has changed significantly from community documentation. The official API uses **v2 endpoints** with **JSON:API specification**, not the v1 REST endpoints previously documented by the community.
 
 ### What Changed from Initial Research
+
 - ❌ **OLD**: `https://api.tidal.com/v1/search` (NOT for external use)
 - ✅ **NEW**: `https://openapi.tidal.com/v2/searchResults/{query}` (official external API)
 - ❌ **OLD**: Custom JSON response format
@@ -25,6 +26,7 @@
 ### API Endpoint Base URLs
 
 **IMPORTANT**: Tidal has TWO separate API bases:
+
 - **Internal API** (NOT FOR EXTERNAL USE): `https://api.tidal.com/v1/`
   - Used by Tidal's own apps
   - Returns 401 Unauthorized for external developers
@@ -37,12 +39,14 @@
   - **THIS IS WHAT WE USE**
 
 ### Official Documentation
+
 - **Developer Portal**: https://developer.tidal.com
 - **API Reference**: https://developer.tidal.com/apiref
 - **Documentation**: https://developer.tidal.com/documentation/api-sdk
 - **Status**: Official, but access to some docs requires developer account
 
 ### GitHub Resources
+
 - **Official GitHub**: https://github.com/orgs/tidal-music
 - **API Reference**: https://tidal-music.github.io/tidal-api-reference/
 - **Discussions**: https://github.com/orgs/tidal-music/discussions
@@ -58,16 +62,19 @@
 **Method**: OAuth 2.0 Client Credentials Flow
 
 **Token Endpoint**:
+
 ```
 POST https://auth.tidal.com/v1/oauth2/token
 ```
 
 **Request Headers**:
+
 ```
 Content-Type: application/x-www-form-urlencoded
 ```
 
 **Request Body**:
+
 ```
 grant_type=client_credentials
 client_id={YOUR_CLIENT_ID}
@@ -75,6 +82,7 @@ client_secret={YOUR_CLIENT_SECRET}
 ```
 
 **Response**:
+
 ```json
 {
   "access_token": "eyJhbGciOiJIUz...",
@@ -123,18 +131,20 @@ GET https://openapi.tidal.com/v2/searchResults/{query}
 ```
 
 **Path Parameters**:
+
 - `query`: The search term (URL-encoded)
 
 **Query Parameters**:
 
-| Parameter | Type | Required | Default | Notes |
-|-----------|------|----------|---------|-------|
-| `countryCode` | string | NO | US | ISO 3166-1 country code |
-| `explicitFilter` | string | NO | INCLUDE | INCLUDE, EXCLUDE, or EXCLUSIVE |
-| `include` | string | NO | - | Comma-separated resource types to include in response |
-| `limit` | integer | NO | 20 | Max results per type |
+| Parameter        | Type    | Required | Default | Notes                                                 |
+| ---------------- | ------- | -------- | ------- | ----------------------------------------------------- |
+| `countryCode`    | string  | NO       | US      | ISO 3166-1 country code                               |
+| `explicitFilter` | string  | NO       | INCLUDE | INCLUDE, EXCLUDE, or EXCLUSIVE                        |
+| `include`        | string  | NO       | -       | Comma-separated resource types to include in response |
+| `limit`          | integer | NO       | 20      | Max results per type                                  |
 
 **Supported Include Types**:
+
 - `albums` - Album resources
 - `tracks` - Track/song resources
 - `artists` - Artist resources (separate endpoint calls required for full data)
@@ -142,6 +152,7 @@ GET https://openapi.tidal.com/v2/searchResults/{query}
 - `videos` - Video resources
 
 **Example Request**:
+
 ```bash
 curl -X 'GET' \
   'https://openapi.tidal.com/v2/searchResults/beatles?explicitFilter=INCLUDE&countryCode=US&include=albums,tracks' \
@@ -176,9 +187,7 @@ The response follows JSON:API specification with `data`, `included`, `relationsh
         }
       },
       "tracks": {
-        "data": [
-          { "id": "track_id", "type": "tracks" }
-        ],
+        "data": [{ "id": "track_id", "type": "tracks" }],
         "links": {
           "self": "/searchResults/beatles/relationships/tracks?..."
         }
@@ -229,14 +238,17 @@ The response follows JSON:API specification with `data`, `included`, `relationsh
 ### Key Response Features
 
 **Duration Format**: ISO 8601 duration (e.g., `"PT41M49S"` = 41 minutes 49 seconds)
+
 - Parse pattern: `PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?`
 - Convert to seconds for UI display
 
 **Pagination**: Cursor-based, not offset-based
+
 - Use `links.next` and `meta.nextCursor` for pagination
 - Traditional offset pagination not supported in v2
 
 **Relationships**: Data references that require additional API calls
+
 - Artist names: Must fetch from `/albums/{id}/relationships/artists`
 - Cover art: Must fetch from `/albums/{id}/relationships/coverArt`
 - **Limitation**: Initial search does NOT include full artist/artwork data
@@ -260,6 +272,7 @@ The v2 search API returns artwork URLs through **relationship links**, not direc
 ```
 
 To get actual cover images, you must:
+
 1. Perform search to get album IDs
 2. Make additional request to `/albums/{id}/relationships/coverArt`
 3. Parse the cover art resource
@@ -267,6 +280,7 @@ To get actual cover images, you must:
 ### Workaround Implemented
 
 **Current approach**: Use placeholder images until artwork fetching is implemented
+
 - Placeholder SVG for all results
 - Maintains acceptable UX while reducing API calls
 - Future enhancement: Implement batch artwork fetching
@@ -274,11 +288,13 @@ To get actual cover images, you must:
 ### Image URL Format (From CoverArt Endpoint)
 
 Once fetched, cover art follows the pattern:
+
 ```
 https://resources.tidal.com/images/{uuid}/{width}x{height}.jpg
 ```
 
 **Recommended Sizes**:
+
 - Thumbnail: 160x160
 - Standard: 320x320
 - Detail: 640x640
@@ -305,12 +321,14 @@ Similar to artwork, artist names are in relationships:
 ### Workaround Implemented
 
 **Current approach**: Display "Unknown Artist" placeholder
+
 - Maintains functional search
 - Future enhancement: Batch fetch artist data
 
 ### Future Enhancement
 
 To get artist names:
+
 1. Extract artist relationship links from albums/tracks
 2. Make batch request to artist endpoints
 3. Map artist IDs to names
@@ -367,12 +385,14 @@ To get artist names:
 ### Performance Characteristics
 
 **Measured Latency** (from implementation testing):
+
 - Token acquisition: ~700-900ms (cached for 4 hours)
 - Search query: ~350-450ms
 - Total first search: ~1.2-1.4 seconds
 - Cached search: <50ms (GraphQL cache)
 
 **Rate Limiting** (observed):
+
 - No 429 errors encountered during testing
 - Successful with ~5-10 requests per minute
 - Conservative approach: implement caching to minimize calls
@@ -389,14 +409,17 @@ class TidalTokenService {
 
   async getValidToken(): Promise<string> {
     // Check if cached token valid (with 5-minute buffer)
-    if (this.cachedToken && this.cachedToken.expiresAt > Date.now() + 5 * 60 * 1000) {
+    if (
+      this.cachedToken &&
+      this.cachedToken.expiresAt > Date.now() + 5 * 60 * 1000
+    ) {
       return this.cachedToken.token;
     }
     // Fetch new token
     const token = await this.fetchNewToken();
     this.cachedToken = {
       token,
-      expiresAt: Date.now() + 4 * 60 * 60 * 1000 // 4 hours
+      expiresAt: Date.now() + 4 * 60 * 60 * 1000, // 4 hours
     };
     return token;
   }
@@ -444,9 +467,9 @@ function parseDuration(iso: string): number {
   // "PT41M49S" -> 2509 seconds
   const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
   if (!match) return 0;
-  const hours = parseInt(match[1] || '0');
-  const minutes = parseInt(match[2] || '0');
-  const seconds = parseInt(match[3] || '0');
+  const hours = parseInt(match[1] || "0");
+  const minutes = parseInt(match[2] || "0");
+  const seconds = parseInt(match[3] || "0");
   return hours * 3600 + minutes * 60 + seconds;
 }
 ```
@@ -462,14 +485,14 @@ try {
     if (error.response?.status === 401) {
       // Token invalid - clear cache and throw
       this.tokenService.clearCache();
-      throw new ApiUnavailableError('Tidal authentication failed');
+      throw new ApiUnavailableError("Tidal authentication failed");
     }
     if (error.response?.status === 429) {
       // Rate limited
       throw new RateLimitError(retryAfter);
     }
   }
-  throw new ApiUnavailableError('Search service unavailable');
+  throw new ApiUnavailableError("Search service unavailable");
 }
 ```
 
@@ -482,12 +505,14 @@ try {
 **Goal**: Display actual artist names instead of "Unknown Artist"
 
 **Approach**:
+
 1. Extract artist relationship links from search results
 2. Batch fetch artist data: `GET /albums/{id}/relationships/artists`
 3. Parse artist names from response
 4. Update cached search results with artist information
 
 **Complexity**: Moderate
+
 - Requires additional API calls (batching recommended)
 - Response parsing for artist resources
 - Cache invalidation strategy
@@ -497,12 +522,14 @@ try {
 **Goal**: Display actual album artwork instead of placeholders
 
 **Approach**:
+
 1. Extract coverArt relationship links from search results
 2. Batch fetch cover art: `GET /albums/{id}/relationships/coverArt`
 3. Parse image URLs from response
 4. Update UI with lazy-loaded images
 
 **Complexity**: Moderate
+
 - Additional API calls (batching critical for performance)
 - Image loading/caching strategy
 - Fallback handling for missing/failed images
@@ -512,12 +539,14 @@ try {
 **Goal**: Support browsing beyond first page of results
 
 **Approach**:
+
 1. Parse `links.next` and `meta.nextCursor` from response
 2. Implement cursor-based pagination in GraphQL
 3. Frontend "Load More" or infinite scroll
 4. Cache management for paginated results
 
 **Complexity**: Moderate
+
 - Cursor state management
 - Cache key strategy for pages
 - UI pattern (button vs. infinite scroll)
@@ -527,18 +556,21 @@ try {
 ## SECURITY CONSIDERATIONS ✅ IMPLEMENTED
 
 ### Credential Management
+
 - ✅ Credentials stored in environment variables only
 - ✅ `.env` in `.gitignore`
 - ✅ `.env.example` provided without sensitive values
 - ✅ Backend-only token management (never exposed to frontend)
 
 ### Input Validation
+
 - ✅ Query validation: 1-200 characters
 - ✅ Empty/whitespace rejection
 - ✅ URL encoding via `encodeURIComponent()`
 - ✅ GraphQL Int overflow fix (timestamp as Float)
 
 ### API Security
+
 - ✅ HTTPS-only communication
 - ✅ 10-second request timeout
 - ✅ Response validation (TypeScript types)
@@ -550,17 +582,20 @@ try {
 ## REFERENCES
 
 ### Official Resources
+
 - **Developer Portal**: https://developer.tidal.com
 - **API Reference**: https://developer.tidal.com/apiref
 - **Quick Start Guide**: https://developer.tidal.com/documentation/api-sdk/api-sdk-quick-start
 - **Authorization Docs**: https://developer.tidal.com/documentation/api-sdk/api-sdk-authorization
 
 ### Community Resources
+
 - **GitHub Organization**: https://github.com/orgs/tidal-music
 - **API Reference (GitHub Pages)**: https://tidal-music.github.io/tidal-api-reference/
 - **Discussions**: https://github.com/orgs/tidal-music/discussions
 
 ### Standards & Specifications
+
 - **JSON:API Specification**: https://jsonapi.org/
 - **OAuth 2.0 Client Credentials**: https://tools.ietf.org/html/rfc6749#section-4.4
 - **ISO 8601 Duration**: https://en.wikipedia.org/wiki/ISO_8601#Durations
@@ -575,6 +610,7 @@ try {
 ### Current Approach (Inefficient)
 
 **Problem**: For N albums, we make 2N API calls:
+
 - N calls to `/albums/{id}?include=artists` for artist names
 - N calls to `/albums/{id}/relationships/coverArt` for cover art UUIDs
 
@@ -585,20 +621,25 @@ try {
 **Solution**: Use Tidal's batch query capabilities to reduce to 3 total API calls:
 
 #### Step 1: Initial Search
+
 ```
 GET /v2/searchResults/{query}?include=albums,tracks&countryCode=US
 ```
+
 **Returns**: Basic album and track data (no artist names, no cover art)
 
 #### Step 2: Batch Track Details (if tracks returned)
+
 ```
 GET /v2/tracks?filter[isrc]={isrc1},{isrc2},...&include=albums&countryCode=US
 ```
+
 **Purpose**: Get album IDs associated with returned tracks
 **Input**: Comma-separated ISRCs from Step 1 track results
 **Returns**: Track details with album relationships in `included` array
 
 **Example**:
+
 ```bash
 curl 'https://openapi.tidal.com/v2/tracks?countryCode=US&include=albums&filter%5Bisrc%5D=UK5EV2200031%2CUK5EV2400023' \
   -H 'accept: application/vnd.api+json' \
@@ -606,22 +647,30 @@ curl 'https://openapi.tidal.com/v2/tracks?countryCode=US&include=albums&filter%5
 ```
 
 **Response Structure**:
+
 ```json
 {
-  "data": [/* track resources with album relationships */],
-  "included": [/* album resources */]
+  "data": [
+    /* track resources with album relationships */
+  ],
+  "included": [
+    /* album resources */
+  ]
 }
 ```
 
 #### Step 3: Batch Album Details
+
 ```
 GET /v2/albums?filter[id]={id1},{id2},...&include=artists,coverArt&countryCode=US
 ```
+
 **Purpose**: Get all artist names and cover art in ONE request
 **Input**: Comma-separated album IDs from Steps 1 and 2
 **Returns**: Album resources with artists and coverArt in `included` array
 
 **Example**:
+
 ```bash
 curl 'https://openapi.tidal.com/v2/albums?countryCode=US&include=artists%2CcoverArt&filter%5Bid%5D=271026774%2C392171595' \
   -H 'accept: application/vnd.api+json' \
@@ -629,6 +678,7 @@ curl 'https://openapi.tidal.com/v2/albums?countryCode=US&include=artists%2Ccover
 ```
 
 **Response Structure**:
+
 ```json
 {
   "data": [
@@ -637,10 +687,10 @@ curl 'https://openapi.tidal.com/v2/albums?countryCode=US&include=artists%2Ccover
       "type": "albums",
       "relationships": {
         "artists": {
-          "data": [{"id": "3887727", "type": "artists"}]
+          "data": [{ "id": "3887727", "type": "artists" }]
         },
         "coverArt": {
-          "data": [{"id": "2xpmpI1s9DzeL3OrxSwxpU", "type": "artworks"}]
+          "data": [{ "id": "2xpmpI1s9DzeL3OrxSwxpU", "type": "artworks" }]
         }
       }
     }
@@ -649,15 +699,21 @@ curl 'https://openapi.tidal.com/v2/albums?countryCode=US&include=artists%2Ccover
     {
       "id": "3887727",
       "type": "artists",
-      "attributes": {"name": "Heartworms"}
+      "attributes": { "name": "Heartworms" }
     },
     {
       "id": "2xpmpI1s9DzeL3OrxSwxpU",
       "type": "artworks",
       "attributes": {
         "files": [
-          {"href": "https://resources.tidal.com/images/.../640x640.jpg", "meta": {"height": 640, "width": 640}},
-          {"href": "https://resources.tidal.com/images/.../320x320.jpg", "meta": {"height": 320, "width": 320}}
+          {
+            "href": "https://resources.tidal.com/images/.../640x640.jpg",
+            "meta": { "height": 640, "width": 640 }
+          },
+          {
+            "href": "https://resources.tidal.com/images/.../320x320.jpg",
+            "meta": { "height": 320, "width": 320 }
+          }
         ]
       }
     }
@@ -667,18 +723,19 @@ curl 'https://openapi.tidal.com/v2/albums?countryCode=US&include=artists%2Ccover
 
 ### Performance Comparison
 
-| Approach | Albums | API Calls | Time @ 2 req/s | Time @ 1 req/s |
-|----------|--------|-----------|----------------|----------------|
-| Current  | 10     | 20 + 1    | ~10.5s         | ~21s          |
-| Optimized| 10     | 3         | ~1.5s          | ~3s           |
-| Current  | 20     | 40 + 1    | ~20.5s         | ~41s          |
-| Optimized| 20     | 3         | ~1.5s          | ~3s           |
+| Approach  | Albums | API Calls | Time @ 2 req/s | Time @ 1 req/s |
+| --------- | ------ | --------- | -------------- | -------------- |
+| Current   | 10     | 20 + 1    | ~10.5s         | ~21s           |
+| Optimized | 10     | 3         | ~1.5s          | ~3s            |
+| Current   | 20     | 40 + 1    | ~20.5s         | ~41s           |
+| Optimized | 20     | 3         | ~1.5s          | ~3s            |
 
 **Improvement**: ~85% reduction in API calls, ~7x faster response times
 
 ### Implementation Details
 
 #### Data Flow
+
 1. **Search** → Get album IDs + track ISRCs
 2. **Extract ISRCs** from tracks (if any) → Batch tracks endpoint
 3. **Collect all album IDs** from search + track results
@@ -691,36 +748,41 @@ curl 'https://openapi.tidal.com/v2/albums?countryCode=US&include=artists%2Ccover
 #### Key Considerations
 
 **URL Length Limits**:
+
 - Most servers support ~2000 character URLs
 - Album ID: ~9 chars, ISRC: ~12 chars
 - Safe batch size: ~100 IDs or ~80 ISRCs per request
 - For larger result sets, may need to batch in groups
 
 **Filter Syntax**:
+
 - `filter[id]=271026774,392171595` (comma-separated)
 - URL-encoded: `filter%5Bid%5D=271026774%2C392171595`
 - Similarly for `filter[isrc]`
 
 **Response Parsing**:
+
 ```typescript
 // 1. Build lookup maps
 const artistMap = new Map<string, string>(); // artistId → name
 const artworkMap = new Map<string, string>(); // artworkId → URL
 
-included.forEach(resource => {
-  if (resource.type === 'artists') {
+included.forEach((resource) => {
+  if (resource.type === "artists") {
     artistMap.set(resource.id, resource.attributes.name);
   }
-  if (resource.type === 'artworks') {
-    const url = resource.attributes.files.find(f => f.meta.width === 640)?.href;
+  if (resource.type === "artworks") {
+    const url = resource.attributes.files.find(
+      (f) => f.meta.width === 640,
+    )?.href;
     artworkMap.set(resource.id, url);
   }
 });
 
 // 2. Enrich album data
-albums.forEach(album => {
-  const artistIds = album.relationships?.artists?.data?.map(a => a.id) || [];
-  album.artistNames = artistIds.map(id => artistMap.get(id) || 'Unknown');
+albums.forEach((album) => {
+  const artistIds = album.relationships?.artists?.data?.map((a) => a.id) || [];
+  album.artistNames = artistIds.map((id) => artistMap.get(id) || "Unknown");
 
   const artworkId = album.relationships?.coverArt?.data?.[0]?.id;
   album.artworkUrl = artworkMap.get(artworkId) || placeholderUrl;
@@ -730,6 +792,7 @@ albums.forEach(album => {
 ### Rate Limiting Benefits
 
 With batch approach:
+
 - **Old**: 20 requests/search (hit rate limit frequently)
 - **New**: 3 requests/search (rarely hit rate limit)
 - Can safely use higher rate limit (3-5 req/s) without issues
@@ -759,16 +822,19 @@ With batch approach:
 ### Testing Strategy
 
 **Unit Tests**:
+
 - Test batch URL construction (comma-separated IDs)
 - Test response parsing with `included` arrays
 - Test artist/artwork mapping logic
 
 **Integration Tests**:
+
 - Verify 3 API calls per search (not 2N+1)
 - Verify artist names populated correctly
 - Verify cover art URLs extracted correctly
 
 **Edge Cases**:
+
 - Handle albums with no artists (fallback to "Unknown")
 - Handle albums with no cover art (fallback to placeholder)
 - Handle tracks with no ISRC (skip batch fetch)

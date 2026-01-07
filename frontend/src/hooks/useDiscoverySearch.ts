@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { useLazyQuery } from '@apollo/client';
+import { useState, useCallback } from "react";
+import { useLazyQuery } from "@apollo/client";
 import {
   DISCOVER_TRACKS,
   DiscoverTracksData,
@@ -8,7 +8,7 @@ import {
   DiscoveryResult,
   isDiscoverySearchError,
   isDiscoverySearchResponse,
-} from '../graphql/discovery';
+} from "../graphql/discovery";
 
 /**
  * Hook for semantic discovery search
@@ -51,20 +51,24 @@ interface UseDiscoverySearchReturn {
 
 export function useDiscoverySearch(): UseDiscoverySearchReturn {
   // State for accumulated results (for pagination)
-  const [accumulatedResults, setAccumulatedResults] = useState<DiscoveryResult[]>([]);
+  const [accumulatedResults, setAccumulatedResults] = useState<
+    DiscoveryResult[]
+  >([]);
   const [expandedQueries, setExpandedQueries] = useState<string[]>([]);
-  const [currentQuery, setCurrentQuery] = useState('');
+  const [currentQuery, setCurrentQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [totalResults, setTotalResults] = useState(0);
-  const [searchError, setSearchError] = useState<DiscoverySearchError | null>(null);
+  const [searchError, setSearchError] = useState<DiscoverySearchError | null>(
+    null,
+  );
 
   // GraphQL lazy query
   const [executeSearch, { loading }] = useLazyQuery<
     DiscoverTracksData,
     DiscoverTracksVars
   >(DISCOVER_TRACKS, {
-    fetchPolicy: 'network-only', // Always fetch fresh results
+    fetchPolicy: "network-only", // Always fetch fresh results
     onCompleted: (data) => {
       const result = data.discoverTracks;
 
@@ -91,8 +95,8 @@ export function useDiscoverySearch(): UseDiscoverySearchReturn {
     },
     onError: (error) => {
       setSearchError({
-        message: error.message || 'An unexpected error occurred',
-        code: 'INTERNAL_ERROR',
+        message: error.message || "An unexpected error occurred",
+        code: "INTERNAL_ERROR",
         retryable: true,
       });
     },
@@ -104,8 +108,8 @@ export function useDiscoverySearch(): UseDiscoverySearchReturn {
       const trimmedQuery = query.trim();
       if (!trimmedQuery) {
         setSearchError({
-          message: 'Please enter a search term',
-          code: 'EMPTY_QUERY',
+          message: "Please enter a search term",
+          code: "EMPTY_QUERY",
           retryable: false,
         });
         return;
@@ -130,7 +134,7 @@ export function useDiscoverySearch(): UseDiscoverySearchReturn {
         },
       });
     },
-    [executeSearch]
+    [executeSearch],
   );
 
   // Load more results
@@ -167,7 +171,7 @@ export function useDiscoverySearch(): UseDiscoverySearchReturn {
 
   // Clear search results
   const clear = useCallback(() => {
-    setCurrentQuery('');
+    setCurrentQuery("");
     setAccumulatedResults([]);
     setExpandedQueries([]);
     setCurrentPage(0);

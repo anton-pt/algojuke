@@ -1,4 +1,4 @@
-import './NoResultsMessage.css';
+import "./NoResultsMessage.css";
 
 interface NoResultsMessageProps {
   query: string;

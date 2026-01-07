@@ -13,9 +13,19 @@
  */
 
 import { inngest } from "../client.js";
-import { createReccoBeatsClient, type AudioFeatures } from "../../clients/reccobeats.js";
-import { createMusixmatchClient, type LyricsContent } from "../../clients/musixmatch.js";
-import { createAnthropicClient, type InterpretationResult, CLAUDE_MODEL } from "../../clients/anthropic.js";
+import {
+  createReccoBeatsClient,
+  type AudioFeatures,
+} from "../../clients/reccobeats.js";
+import {
+  createMusixmatchClient,
+  type LyricsContent,
+} from "../../clients/musixmatch.js";
+import {
+  createAnthropicClient,
+  type InterpretationResult,
+  CLAUDE_MODEL,
+} from "../../clients/anthropic.js";
 import {
   createTEIClient,
   createZeroVector,
@@ -158,91 +168,118 @@ export const trackIngestion = inngest.createFunction(
     });
 
     // Step 3: Generate interpretation (skip if no lyrics)
-    const interpretation = await step.run("generate-interpretation", async () => {
-      if (!lyrics || !lyrics.lyrics_body) {
-        // Instrumental track - no interpretation needed
-        return null;
-      }
+    const interpretation = await step.run(
+      "generate-interpretation",
+      async () => {
+        if (!lyrics || !lyrics.lyrics_body) {
+          // Instrumental track - no interpretation needed
+          return null;
+        }
 
-      const prompt = buildInterpretationPrompt(title, artist, album, lyrics.lyrics_body);
-      const generationSpan = createGenerationSpan(trace, {
-        name: "llm-interpretation",
-        model: CLAUDE_MODEL,
-        prompt,
-        metadata: { isrc, title, artist },
-      });
-
-      try {
-        const client = createAnthropicClient();
-        const result = await client.generateInterpretation(
+        const prompt = buildInterpretationPrompt(
           title,
           artist,
           album,
-          lyrics.lyrics_body
+          lyrics.lyrics_body,
         );
-        generationSpan.end({
-          completion: result.text,
-          inputTokens: result.inputTokens,
-          outputTokens: result.outputTokens,
+        const generationSpan = createGenerationSpan(trace, {
+          name: "llm-interpretation",
+          model: CLAUDE_MODEL,
+          prompt,
+          metadata: { isrc, title, artist },
         });
-        return result;
-      } catch (error) {
-        generationSpan.end({
-          completion: "",
-          inputTokens: 0,
-          outputTokens: 0,
-        });
-        throw error;
-      }
-    });
 
-    // Step 4: Generate short description via Haiku (graceful failure)
-    const shortDescription = await step.run("generate-short-description", async () => {
-      const generationSpan = createGenerationSpan(trace, {
-        name: "llm-short-description",
-        model: "claude-haiku-4-5-20251001",
-        prompt: "", // Will be set below
-        metadata: { isrc, title, artist, hasInterpretation: !!interpretation?.text },
-      });
-
-      try {
-        const client = createAnthropicClient();
-        let prompt: string;
-
-        if (interpretation?.text) {
-          // Has interpretation - use it for the short description
-          prompt = buildShortDescriptionPrompt(title, artist, interpretation.text);
-        } else if (audioFeatures) {
-          // Instrumental track with audio features
-          prompt = buildInstrumentalShortDescriptionPrompt(
+        try {
+          const client = createAnthropicClient();
+          const result = await client.generateInterpretation(
             title,
             artist,
             album,
-            audioFeatures
+            lyrics.lyrics_body,
           );
-        } else {
-          // Fallback to metadata only
-          prompt = buildMetadataOnlyShortDescriptionPrompt(title, artist, album);
+          generationSpan.end({
+            completion: result.text,
+            inputTokens: result.inputTokens,
+            outputTokens: result.outputTokens,
+          });
+          return result;
+        } catch (error) {
+          generationSpan.end({
+            completion: "",
+            inputTokens: 0,
+            outputTokens: 0,
+          });
+          throw error;
         }
+      },
+    );
 
-        const result = await client.generateShortDescription(prompt);
-        generationSpan.end({
-          completion: result.text,
-          inputTokens: result.inputTokens,
-          outputTokens: result.outputTokens,
+    // Step 4: Generate short description via Haiku (graceful failure)
+    const shortDescription = await step.run(
+      "generate-short-description",
+      async () => {
+        const generationSpan = createGenerationSpan(trace, {
+          name: "llm-short-description",
+          model: "claude-haiku-4-5-20251001",
+          prompt: "", // Will be set below
+          metadata: {
+            isrc,
+            title,
+            artist,
+            hasInterpretation: !!interpretation?.text,
+          },
         });
-        return result.text;
-      } catch (error) {
-        // Graceful failure - log and return null, don't block pipeline
-        generationSpan.end({
-          completion: "",
-          inputTokens: 0,
-          outputTokens: 0,
-        });
-        console.error(`Short description generation failed for ${isrc}:`, error);
-        return null;
-      }
-    });
+
+        try {
+          const client = createAnthropicClient();
+          let prompt: string;
+
+          if (interpretation?.text) {
+            // Has interpretation - use it for the short description
+            prompt = buildShortDescriptionPrompt(
+              title,
+              artist,
+              interpretation.text,
+            );
+          } else if (audioFeatures) {
+            // Instrumental track with audio features
+            prompt = buildInstrumentalShortDescriptionPrompt(
+              title,
+              artist,
+              album,
+              audioFeatures,
+            );
+          } else {
+            // Fallback to metadata only
+            prompt = buildMetadataOnlyShortDescriptionPrompt(
+              title,
+              artist,
+              album,
+            );
+          }
+
+          const result = await client.generateShortDescription(prompt);
+          generationSpan.end({
+            completion: result.text,
+            inputTokens: result.inputTokens,
+            outputTokens: result.outputTokens,
+          });
+          return result.text;
+        } catch (error) {
+          // Graceful failure - log and return null, don't block pipeline
+          generationSpan.end({
+            completion: "",
+            inputTokens: 0,
+            outputTokens: 0,
+          });
+          console.error(
+            `Short description generation failed for ${isrc}:`,
+            error,
+          );
+          return null;
+        }
+      },
+    );
 
     // Step 5: Generate embedding (zero vector if no interpretation)
     const embedding = await step.run("embed-interpretation", async () => {
@@ -388,5 +425,5 @@ export const trackIngestion = inngest.createFunction(
     });
 
     return completionResult;
-  }
+  },
 );

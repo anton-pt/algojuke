@@ -3,6 +3,7 @@
 Auto-generated from all feature plans. Last updated: 2025-12-27
 
 ## Active Technologies
+
 - TypeScript 5.3.3 / Node.js 20.x (backend), TypeScript 5.3.3 / React 18.2.0 (frontend) (001-tidal-search)
 - In-memory caching (Map-based, 1-hour TTL) (001-tidal-search)
 - TypeScript 5.3.3 / Node.js 20.x (backend), TypeScript 5.3.3 / React 18.2.0 (frontend) + Apollo Server 4.x + Apollo Client 3.x (GraphQL), axios 1.6+ (HTTP), Vitest 1.x (testing) (001-tidal-search)
@@ -169,6 +170,7 @@ docker compose up -d     # Start all services including Langfuse
 ### Langfuse Dashboard
 
 Access at http://localhost:3000 when Langfuse is running.
+
 - **Login**: `admin@localhost.dev` / `adminadmin`
 - **Projects**:
   - `algojuke` - Application backend operations
@@ -184,55 +186,55 @@ Access at http://localhost:3000 when Langfuse is running.
 
 ### Backend Service
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `PORT` | No | `4000` | GraphQL API server port |
-| `NODE_ENV` | No | `development` | Runtime environment |
-| `DATABASE_URL` | Yes | - | PostgreSQL connection string |
-| `TIDAL_CLIENT_ID` | Yes | - | Tidal API client ID |
-| `TIDAL_CLIENT_SECRET` | Yes | - | Tidal API client secret |
-| `SEARCH_CACHE_TTL` | No | `3600` | Search cache TTL in seconds |
+| Variable              | Required | Default       | Description                  |
+| --------------------- | -------- | ------------- | ---------------------------- |
+| `PORT`                | No       | `4000`        | GraphQL API server port      |
+| `NODE_ENV`            | No       | `development` | Runtime environment          |
+| `DATABASE_URL`        | Yes      | -             | PostgreSQL connection string |
+| `TIDAL_CLIENT_ID`     | Yes      | -             | Tidal API client ID          |
+| `TIDAL_CLIENT_SECRET` | Yes      | -             | Tidal API client secret      |
+| `SEARCH_CACHE_TTL`    | No       | `3600`        | Search cache TTL in seconds  |
 
 ### Ingestion Scheduling (007)
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `QDRANT_URL` | No | `http://localhost:6333` | Qdrant server URL |
-| `QDRANT_COLLECTION` | No | `tracks` | Qdrant collection name |
-| `INNGEST_EVENT_KEY` | Prod only | - | Inngest event key (required in production) |
-| `INNGEST_APP_ID` | No | `algojuke-backend` | Inngest application ID |
-| `INGESTION_CONCURRENCY` | No | `10` | Max parallel scheduling operations |
-| `INGESTION_SLA_MS` | No | `5000` | SLA threshold for scheduling (ms) |
+| Variable                | Required  | Default                 | Description                                |
+| ----------------------- | --------- | ----------------------- | ------------------------------------------ |
+| `QDRANT_URL`            | No        | `http://localhost:6333` | Qdrant server URL                          |
+| `QDRANT_COLLECTION`     | No        | `tracks`                | Qdrant collection name                     |
+| `INNGEST_EVENT_KEY`     | Prod only | -                       | Inngest event key (required in production) |
+| `INNGEST_APP_ID`        | No        | `algojuke-backend`      | Inngest application ID                     |
+| `INGESTION_CONCURRENCY` | No        | `10`                    | Max parallel scheduling operations         |
+| `INGESTION_SLA_MS`      | No        | `5000`                  | SLA threshold for scheduling (ms)          |
 
 ### Worker Service
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `INNGEST_DEV` | Dev only | `1` | Enable Inngest dev mode |
-| `ANTHROPIC_API_KEY` | Yes | - | Anthropic API key for LLM |
-| `MUSIXMATCH_API_KEY` | Yes | - | Musixmatch API key for lyrics |
-| `RECCOBEATS_API_KEY` | Yes | - | ReccoBeats API key for audio features |
+| Variable             | Required | Default | Description                           |
+| -------------------- | -------- | ------- | ------------------------------------- |
+| `INNGEST_DEV`        | Dev only | `1`     | Enable Inngest dev mode               |
+| `ANTHROPIC_API_KEY`  | Yes      | -       | Anthropic API key for LLM             |
+| `MUSIXMATCH_API_KEY` | Yes      | -       | Musixmatch API key for lyrics         |
+| `RECCOBEATS_API_KEY` | Yes      | -       | ReccoBeats API key for audio features |
 
 ### Observability (Langfuse)
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `LANGFUSE_PUBLIC_KEY` | Yes | - | Langfuse public key |
-| `LANGFUSE_SECRET_KEY` | Yes | - | Langfuse secret key |
-| `LANGFUSE_BASEURL` | No | `http://localhost:3000` | Langfuse server URL |
+| Variable              | Required | Default                 | Description         |
+| --------------------- | -------- | ----------------------- | ------------------- |
+| `LANGFUSE_PUBLIC_KEY` | Yes      | -                       | Langfuse public key |
+| `LANGFUSE_SECRET_KEY` | Yes      | -                       | Langfuse secret key |
+| `LANGFUSE_BASEURL`    | No       | `http://localhost:3000` | Langfuse server URL |
 
 ### Chat Service (Discover Chat)
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `CHAT_MODEL` | No | `claude-haiku-4-5-20251001` | Claude model for chat (haiku/sonnet/opus) |
-| `CHAT_MAX_TOKENS` | No | `4096` | Maximum tokens for chat responses |
+| Variable          | Required | Default                     | Description                               |
+| ----------------- | -------- | --------------------------- | ----------------------------------------- |
+| `CHAT_MODEL`      | No       | `claude-haiku-4-5-20251001` | Claude model for chat (haiku/sonnet/opus) |
+| `CHAT_MAX_TOKENS` | No       | `4096`                      | Maximum tokens for chat responses         |
 
 ## Recent Changes
+
 - 018-per-user-library: Added TypeScript 5.3.3 / Node.js 20.x (backend), TypeScript 5.3.3 / React 18.2.0 (frontend) + TypeORM, Apollo Server 4.x, Apollo Client 3.x, Clerk SDK, Vercel AI SDK
 - 017-tidal-playlist-export: Added TypeScript 5.3.3 / Node.js 20.x (backend), TypeScript 5.3.3 / React 18.2.0 (frontend) + axios 1.6+ (HTTP), Zod 3.x (validation), Clerk SDK (auth tokens), existing TidalService patterns
 - 016-clerk-tidal-auth: Added TypeScript 5.3.3 / Node.js 20.x (backend), TypeScript 5.3.3 / React 18.2.0 (frontend)
-
 
 <!-- MANUAL ADDITIONS START -->
 
@@ -242,12 +244,12 @@ The Discover Chat agent has access to the following tools for music discovery:
 
 ### Available Tools
 
-| Tool | Description | Use Case |
-|------|-------------|----------|
-| `semanticSearch` | Search indexed library by mood/theme | "Find melancholic songs about loss" |
-| `tidalSearch` | Search Tidal catalogue | "What albums does Radiohead have?" |
-| `albumTracks` | Get tracks from a Tidal album | After finding an album, see its tracks |
-| `batchMetadata` | Get full metadata for ISRCs | Enrich search results with lyrics/features |
+| Tool              | Description                           | Use Case                                   |
+| ----------------- | ------------------------------------- | ------------------------------------------ |
+| `semanticSearch`  | Search indexed library by mood/theme  | "Find melancholic songs about loss"        |
+| `tidalSearch`     | Search Tidal catalogue                | "What albums does Radiohead have?"         |
+| `albumTracks`     | Get tracks from a Tidal album         | After finding an album, see its tracks     |
+| `batchMetadata`   | Get full metadata for ISRCs           | Enrich search results with lyrics/features |
 | `suggestPlaylist` | Present curated playlist with artwork | Display finalized track selection visually |
 
 ### Agent Architecture
@@ -293,16 +295,16 @@ Tool invocations are streamed via SSE and displayed inline in chat messages usin
 
 ### Slash Commands
 
-| Command | Description |
-|---------|-------------|
-| `/spec <description>` | Create a feature specification and GitHub issue |
+| Command                | Description                                                      |
+| ---------------------- | ---------------------------------------------------------------- |
+| `/spec <description>`  | Create a feature specification and GitHub issue                  |
 | `/research [guidance]` | Document technical decisions (optional: implementation guidance) |
-| `/implement` | Implement the feature on the current branch |
-| `/develop` | Parallel implementation + testing via subagents (single tab) |
-| `/test` | Write tests for recent spec commits |
-| `/verify` | Run type-check and all tests |
-| `/commit-pr` | Create PR with verification |
-| `/review` | Code simplification pass |
+| `/implement`           | Implement the feature on the current branch                      |
+| `/develop`             | Parallel implementation + testing via subagents (single tab)     |
+| `/test`                | Write tests for recent spec commits                              |
+| `/verify`              | Run type-check and all tests                                     |
+| `/commit-pr`           | Create PR with verification                                      |
+| `/review`              | Code simplification pass                                         |
 
 ### Feature Workflow
 
@@ -347,6 +349,7 @@ specs/
 ### Hooks
 
 Configured in `.claude/settings.json`:
+
 - **Notification hooks**: macOS notifications for idle/permission prompts
 - **Stop hook**: Notification when response completes
 - **PostToolUse hook**: Auto-format with Prettier on Write/Edit

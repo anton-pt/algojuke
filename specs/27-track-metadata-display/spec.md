@@ -12,7 +12,7 @@
 - Q: What is the trigger mechanism for viewing track details? → A: Accordion-style UI - clicking on track row expands details below; maximum one track expanded at a time.
 - Q: When should indexed status be fetched for visual indicators? → A: Fetch indexed status for all visible tracks when loading the view.
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - View Indexed Track Details from Library (Priority: P1)
 
@@ -89,7 +89,7 @@ As a music listener browsing my library, I want to see a visual indicator on tra
 - What happens when a track is indexed while the user is viewing the library? The indexed status should update on the next page load or refresh; real-time updates are out of scope.
 - What happens when audio features contain extreme values (e.g., tempo of 0 or 300)? Display values as-is; the data comes from the ingestion pipeline and should be trusted.
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -120,7 +120,7 @@ As a music listener browsing my library, I want to see a visual indicator on tra
 - **Indexed Status**: A flag indicating whether a track has been processed by the ingestion pipeline and exists in the vector search index; used to show visual indicators and determine if extended metadata can be fetched
 - **Track Accordion**: A UI component that expands below the track row to display extended track metadata inline within the list, triggered by clicking on a track row; only one accordion can be expanded at a time
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 

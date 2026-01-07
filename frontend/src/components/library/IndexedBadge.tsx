@@ -1,10 +1,10 @@
-import './IndexedBadge.css';
+import "./IndexedBadge.css";
 
 interface IndexedBadgeProps {
   /** Whether the track is indexed */
   isIndexed: boolean | undefined;
   /** Size variant */
-  size?: 'small' | 'default';
+  size?: "small" | "default";
 }
 
 /**
@@ -14,7 +14,10 @@ interface IndexedBadgeProps {
  * Fail-open behavior: If isIndexed is undefined (Qdrant unavailable),
  * the badge is hidden rather than showing a false negative.
  */
-export function IndexedBadge({ isIndexed, size = 'default' }: IndexedBadgeProps) {
+export function IndexedBadge({
+  isIndexed,
+  size = "default",
+}: IndexedBadgeProps) {
   // Fail-open: hide badge when status is unknown or not indexed
   if (isIndexed !== true) {
     return null;

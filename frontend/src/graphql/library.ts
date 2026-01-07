@@ -1,4 +1,4 @@
-import { gql } from '@apollo/client';
+import { gql } from "@apollo/client";
 
 export const ADD_ALBUM_TO_LIBRARY = gql`
   mutation AddAlbumToLibrary($input: AddAlbumToLibraryInput!) {

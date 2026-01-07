@@ -3,8 +3,8 @@
  * Based on pattern: https://images.tidal.com/im/im?uuid={UUID}&w={width}&h={height}&q={quality}
  */
 
-const TIDAL_IMAGE_BASE_URL = 'https://images.tidal.com/im/im';
-const PLACEHOLDER_URL = '/images/placeholder-album.svg';
+const TIDAL_IMAGE_BASE_URL = "https://images.tidal.com/im/im";
+const PLACEHOLDER_URL = "/images/placeholder-album.svg";
 
 export interface ImageUrls {
   artworkUrl: string;
@@ -24,7 +24,7 @@ export function getTidalImageUrl(
   coverUuid: string | null | undefined,
   width: number = 320,
   height: number = 320,
-  quality: number = 80
+  quality: number = 80,
 ): string {
   if (!coverUuid) {
     return PLACEHOLDER_URL;
@@ -39,7 +39,9 @@ export function getTidalImageUrl(
  * @param coverUuid - Cover UUID from Tidal API
  * @returns Object with artworkUrl (640x640) and artworkThumbUrl (320x320)
  */
-export function buildImageUrls(coverUuid: string | null | undefined): ImageUrls {
+export function buildImageUrls(
+  coverUuid: string | null | undefined,
+): ImageUrls {
   return {
     artworkUrl: getTidalImageUrl(coverUuid, 640, 640, 80),
     artworkThumbUrl: getTidalImageUrl(coverUuid, 320, 320, 80),

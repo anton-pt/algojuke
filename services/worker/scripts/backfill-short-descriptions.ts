@@ -113,7 +113,10 @@ function extractAudioFeatures(payload: TrackPayload): AudioFeatures | null {
     features.energy = payload.energy;
     hasFeatures = true;
   }
-  if (payload.instrumentalness !== null && payload.instrumentalness !== undefined) {
+  if (
+    payload.instrumentalness !== null &&
+    payload.instrumentalness !== undefined
+  ) {
     features.instrumentalness = payload.instrumentalness;
     hasFeatures = true;
   }
@@ -192,7 +195,9 @@ async function main(): Promise<void> {
 
   // Load or create progress
   let progress = loadProgress();
-  console.log(`Resuming from: ${progress.processedCount} processed, ${progress.successCount} success, ${progress.errorCount} errors, ${progress.skippedCount} skipped`);
+  console.log(
+    `Resuming from: ${progress.processedCount} processed, ${progress.successCount} success, ${progress.errorCount} errors, ${progress.skippedCount} skipped`,
+  );
 
   // Create observability trace for this backfill run
   const runId = `backfill-${Date.now()}`;
@@ -251,14 +256,19 @@ async function main(): Promise<void> {
 
       const remaining = totalPoints - progress.processedCount;
       const eta = formatETA(remaining);
-      console.log(`[${progress.processedCount + 1}/${totalPoints}] Processing: ${payload.title} by ${payload.artist} (ETA: ${eta})`);
+      console.log(
+        `[${progress.processedCount + 1}/${totalPoints}] Processing: ${payload.title} by ${payload.artist} (ETA: ${eta})`,
+      );
 
       // Generate short description
       const generationSpan = createGenerationSpan(trace, {
         name: "llm-short-description-backfill",
         model: "claude-haiku-4-5-20251001",
         prompt: "",
-        metadata: { isrc: payload.isrc, hasInterpretation: !!payload.interpretation },
+        metadata: {
+          isrc: payload.isrc,
+          hasInterpretation: !!payload.interpretation,
+        },
       });
 
       try {
@@ -269,20 +279,20 @@ async function main(): Promise<void> {
           prompt = buildShortDescriptionPrompt(
             payload.title,
             payload.artist,
-            payload.interpretation
+            payload.interpretation,
           );
         } else if (audioFeatures) {
           prompt = buildInstrumentalShortDescriptionPrompt(
             payload.title,
             payload.artist,
             payload.album,
-            audioFeatures
+            audioFeatures,
           );
         } else {
           prompt = buildMetadataOnlyShortDescriptionPrompt(
             payload.title,
             payload.artist,
-            payload.album
+            payload.album,
           );
         }
 
@@ -311,7 +321,9 @@ async function main(): Promise<void> {
           outputTokens: 0,
         });
 
-        console.error(`  -> Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+        console.error(
+          `  -> Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+        );
         progress.errorCount++;
       }
 

@@ -5,11 +5,18 @@
  * Streaming chat is handled via REST+SSE (see chatRoutes.ts).
  */
 
-import { ChatService, ConversationWithComputed } from '../services/chatService.js';
-import { Message, ContentBlock } from '../entities/Message.js';
-import { logger } from '../utils/logger.js';
-import { isTextBlock, isToolUseBlock, isToolResultBlock } from '../schemas/chat.js';
-import { requireAuth, type GraphQLContext } from '../middleware/authGuard.js';
+import {
+  ChatService,
+  ConversationWithComputed,
+} from "../services/chatService.js";
+import { Message, ContentBlock } from "../entities/Message.js";
+import { logger } from "../utils/logger.js";
+import {
+  isTextBlock,
+  isToolUseBlock,
+  isToolResultBlock,
+} from "../schemas/chat.js";
+import { requireAuth, type GraphQLContext } from "../middleware/authGuard.js";
 
 /**
  * GraphQL context with chat service
@@ -22,17 +29,17 @@ interface ChatContext extends GraphQLContext {
  * Error codes for chat operations
  */
 type ChatErrorCode =
-  | 'NOT_FOUND'
-  | 'OPERATION_IN_PROGRESS'
-  | 'DATABASE_ERROR'
-  | 'VALIDATION_ERROR'
-  | 'INTERNAL_ERROR';
+  | "NOT_FOUND"
+  | "OPERATION_IN_PROGRESS"
+  | "DATABASE_ERROR"
+  | "VALIDATION_ERROR"
+  | "INTERNAL_ERROR";
 
 /**
  * Chat error type for GraphQL
  */
 interface ChatError {
-  __typename: 'ChatError';
+  __typename: "ChatError";
   message: string;
   code: ChatErrorCode;
   retryable: boolean;
@@ -54,7 +61,7 @@ interface GraphQLConversation {
  */
 interface GraphQLMessage {
   id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: GraphQLContentBlock[];
   createdAt: string;
 }
@@ -75,7 +82,7 @@ interface GraphQLContentBlock {
  * Conversation list result
  */
 interface ConversationsList {
-  __typename: 'ConversationsList';
+  __typename: "ConversationsList";
   conversations: GraphQLConversation[];
   totalCount: number;
 }
@@ -84,7 +91,7 @@ interface ConversationsList {
  * Conversation with messages result
  */
 interface ConversationWithMessages {
-  __typename: 'ConversationWithMessages';
+  __typename: "ConversationWithMessages";
   conversation: GraphQLConversation;
   messages: GraphQLMessage[];
 }
@@ -93,7 +100,7 @@ interface ConversationWithMessages {
  * Delete success result
  */
 interface DeleteSuccess {
-  __typename: 'DeleteSuccess';
+  __typename: "DeleteSuccess";
   deletedId: string;
   message: string;
 }
@@ -101,7 +108,9 @@ interface DeleteSuccess {
 /**
  * Transform Conversation entity for GraphQL response
  */
-function toGraphQLConversation(conv: ConversationWithComputed): GraphQLConversation {
+function toGraphQLConversation(
+  conv: ConversationWithComputed,
+): GraphQLConversation {
   return {
     id: conv.id,
     preview: conv.preview,
@@ -129,7 +138,7 @@ function toGraphQLMessage(msg: Message): GraphQLMessage {
 function toGraphQLContentBlock(block: ContentBlock): GraphQLContentBlock {
   if (isTextBlock(block)) {
     return {
-      type: 'text',
+      type: "text",
       text: block.text,
       toolId: null,
       toolName: null,
@@ -138,7 +147,7 @@ function toGraphQLContentBlock(block: ContentBlock): GraphQLContentBlock {
     };
   } else if (isToolUseBlock(block)) {
     return {
-      type: 'tool_use',
+      type: "tool_use",
       text: null,
       toolId: block.id,
       toolName: block.name,
@@ -147,7 +156,7 @@ function toGraphQLContentBlock(block: ContentBlock): GraphQLContentBlock {
     };
   } else if (isToolResultBlock(block)) {
     return {
-      type: 'tool_result',
+      type: "tool_result",
       text: null,
       toolId: block.tool_use_id,
       toolName: null,
@@ -157,7 +166,7 @@ function toGraphQLContentBlock(block: ContentBlock): GraphQLContentBlock {
   }
   // Fallback for unknown types (shouldn't happen with proper validation)
   return {
-    type: 'unknown',
+    type: "unknown",
     text: null,
     toolId: null,
     toolName: null,
@@ -169,9 +178,13 @@ function toGraphQLContentBlock(block: ContentBlock): GraphQLContentBlock {
 /**
  * Create error response
  */
-function createError(message: string, code: ChatErrorCode, retryable: boolean): ChatError {
+function createError(
+  message: string,
+  code: ChatErrorCode,
+  retryable: boolean,
+): ChatError {
   return {
-    __typename: 'ChatError',
+    __typename: "ChatError",
     message,
     code,
     retryable,
@@ -186,26 +199,28 @@ export const chatResolvers = {
     conversations: async (
       _: unknown,
       __: unknown,
-      context: ChatContext
+      context: ChatContext,
     ): Promise<ConversationsList | ChatError> => {
-      requireAuth(context, 'conversations');
+      requireAuth(context, "conversations");
       try {
-        const conversations = await context.chatService.getConversations(context.userId);
+        const conversations = await context.chatService.getConversations(
+          context.userId,
+        );
 
         return {
-          __typename: 'ConversationsList',
+          __typename: "ConversationsList",
           conversations: conversations.map(toGraphQLConversation),
           totalCount: conversations.length,
         };
       } catch (error) {
-        logger.error('chat_list_conversations_error', {
+        logger.error("chat_list_conversations_error", {
           error: error instanceof Error ? error.message : String(error),
         });
 
         return createError(
-          'Failed to load conversations. Please try again.',
-          'DATABASE_ERROR',
-          true
+          "Failed to load conversations. Please try again.",
+          "DATABASE_ERROR",
+          true,
         );
       }
     },
@@ -216,35 +231,34 @@ export const chatResolvers = {
     conversation: async (
       _: unknown,
       { id }: { id: string },
-      context: ChatContext
+      context: ChatContext,
     ): Promise<ConversationWithMessages | ChatError> => {
-      requireAuth(context, 'conversation');
+      requireAuth(context, "conversation");
       try {
-        const result = await context.chatService.getConversation(id, context.userId);
+        const result = await context.chatService.getConversation(
+          id,
+          context.userId,
+        );
 
         if (!result) {
-          return createError(
-            'Conversation not found',
-            'NOT_FOUND',
-            false
-          );
+          return createError("Conversation not found", "NOT_FOUND", false);
         }
 
         return {
-          __typename: 'ConversationWithMessages',
+          __typename: "ConversationWithMessages",
           conversation: toGraphQLConversation(result.conversation),
           messages: result.messages.map(toGraphQLMessage),
         };
       } catch (error) {
-        logger.error('chat_get_conversation_error', {
+        logger.error("chat_get_conversation_error", {
           conversationId: id,
           error: error instanceof Error ? error.message : String(error),
         });
 
         return createError(
-          'Failed to load conversation. Please try again.',
-          'DATABASE_ERROR',
-          true
+          "Failed to load conversation. Please try again.",
+          "DATABASE_ERROR",
+          true,
         );
       }
     },
@@ -257,47 +271,49 @@ export const chatResolvers = {
     deleteConversation: async (
       _: unknown,
       { id }: { id: string },
-      context: ChatContext
+      context: ChatContext,
     ): Promise<DeleteSuccess | ChatError> => {
-      requireAuth(context, 'deleteConversation');
+      requireAuth(context, "deleteConversation");
       try {
         // Check if conversation exists and belongs to user
-        const exists = await context.chatService.conversationExists(id, context.userId);
+        const exists = await context.chatService.conversationExists(
+          id,
+          context.userId,
+        );
         if (!exists) {
-          return createError(
-            'Conversation not found',
-            'NOT_FOUND',
-            false
-          );
+          return createError("Conversation not found", "NOT_FOUND", false);
         }
 
-        const deleted = await context.chatService.deleteConversation(id, context.userId);
+        const deleted = await context.chatService.deleteConversation(
+          id,
+          context.userId,
+        );
 
         if (!deleted) {
           return createError(
-            'Failed to delete conversation',
-            'DATABASE_ERROR',
-            true
+            "Failed to delete conversation",
+            "DATABASE_ERROR",
+            true,
           );
         }
 
-        logger.info('chat_conversation_deleted', { conversationId: id });
+        logger.info("chat_conversation_deleted", { conversationId: id });
 
         return {
-          __typename: 'DeleteSuccess',
+          __typename: "DeleteSuccess",
           deletedId: id,
-          message: 'Conversation deleted successfully',
+          message: "Conversation deleted successfully",
         };
       } catch (error) {
-        logger.error('chat_delete_conversation_error', {
+        logger.error("chat_delete_conversation_error", {
           conversationId: id,
           error: error instanceof Error ? error.message : String(error),
         });
 
         return createError(
-          'Failed to delete conversation. Please try again.',
-          'DATABASE_ERROR',
-          true
+          "Failed to delete conversation. Please try again.",
+          "DATABASE_ERROR",
+          true,
         );
       }
     },
@@ -308,28 +324,32 @@ export const chatResolvers = {
     createConversation: async (
       _: unknown,
       __: unknown,
-      context: ChatContext
+      context: ChatContext,
     ): Promise<ConversationWithMessages | ChatError> => {
-      requireAuth(context, 'createConversation');
+      requireAuth(context, "createConversation");
       try {
-        const conversation = await context.chatService.createConversation(context.userId);
+        const conversation = await context.chatService.createConversation(
+          context.userId,
+        );
 
-        logger.info('chat_conversation_created', { conversationId: conversation.id });
+        logger.info("chat_conversation_created", {
+          conversationId: conversation.id,
+        });
 
         return {
-          __typename: 'ConversationWithMessages',
+          __typename: "ConversationWithMessages",
           conversation: toGraphQLConversation(conversation),
           messages: [],
         };
       } catch (error) {
-        logger.error('chat_create_conversation_error', {
+        logger.error("chat_create_conversation_error", {
           error: error instanceof Error ? error.message : String(error),
         });
 
         return createError(
-          'Failed to create conversation. Please try again.',
-          'DATABASE_ERROR',
-          true
+          "Failed to create conversation. Please try again.",
+          "DATABASE_ERROR",
+          true,
         );
       }
     },

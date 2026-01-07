@@ -6,14 +6,14 @@
  * tokens to the backend for server-side API calls.
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@clerk/clerk-react';
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@clerk/clerk-react";
 import {
   init,
   initializeLogin,
   finalizeLogin,
   credentialsProvider,
-} from '@tidal-music/auth';
+} from "@tidal-music/auth";
 
 // Tidal OAuth configuration
 const TIDAL_CLIENT_ID = import.meta.env.VITE_TIDAL_CLIENT_ID;
@@ -21,12 +21,12 @@ const TIDAL_REDIRECT_URI = import.meta.env.VITE_TIDAL_REDIRECT_URI;
 
 // Required scopes for AlgoJuke
 const TIDAL_SCOPES = [
-  'user.read',
-  'collection.read',
-  'playlists.read',
-  'playlists.write',
-  'recommendations.read',
-  'search.read',
+  "user.read",
+  "collection.read",
+  "playlists.read",
+  "playlists.write",
+  "recommendations.read",
+  "search.read",
 ];
 
 export interface TidalAuthState {
@@ -60,7 +60,7 @@ export function useTidalAuth(): UseTidalAuthReturn {
     if (!TIDAL_CLIENT_ID) {
       setState((prev) => ({
         ...prev,
-        error: 'Missing VITE_TIDAL_CLIENT_ID environment variable',
+        error: "Missing VITE_TIDAL_CLIENT_ID environment variable",
       }));
       return;
     }
@@ -69,7 +69,7 @@ export function useTidalAuth(): UseTidalAuthReturn {
       try {
         await init({
           clientId: TIDAL_CLIENT_ID,
-          credentialsStorageKey: 'algojuke-tidal-auth',
+          credentialsStorageKey: "algojuke-tidal-auth",
           scopes: TIDAL_SCOPES,
         });
         setState((prev) => ({ ...prev, isInitialized: true }));
@@ -90,7 +90,7 @@ export function useTidalAuth(): UseTidalAuthReturn {
   const checkConnection = useCallback(async (): Promise<boolean> => {
     try {
       const token = await getToken();
-      const response = await fetch('/api/auth/status', {
+      const response = await fetch("/api/auth/status", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -116,7 +116,7 @@ export function useTidalAuth(): UseTidalAuthReturn {
     if (!state.isInitialized) {
       setState((prev) => ({
         ...prev,
-        error: 'Tidal SDK not initialized',
+        error: "Tidal SDK not initialized",
       }));
       return;
     }
@@ -124,7 +124,7 @@ export function useTidalAuth(): UseTidalAuthReturn {
     if (!TIDAL_REDIRECT_URI) {
       setState((prev) => ({
         ...prev,
-        error: 'Missing VITE_TIDAL_REDIRECT_URI environment variable',
+        error: "Missing VITE_TIDAL_REDIRECT_URI environment variable",
       }));
       return;
     }
@@ -152,7 +152,11 @@ export function useTidalAuth(): UseTidalAuthReturn {
    * The SDK automatically refreshes tokens when getCredentials() is called.
    */
   const syncTokensToBackend = useCallback(
-    async (credentials: { token?: string; expires?: number; grantedScopes?: string[] }): Promise<boolean> => {
+    async (credentials: {
+      token?: string;
+      expires?: number;
+      grantedScopes?: string[];
+    }): Promise<boolean> => {
       if (!credentials.token) {
         return false;
       }
@@ -162,10 +166,10 @@ export function useTidalAuth(): UseTidalAuthReturn {
         ? credentials.expires
         : Date.now() + 3600000; // Default 1h if not provided
 
-      const response = await fetch('/api/auth/tidal/tokens', {
-        method: 'POST',
+      const response = await fetch("/api/auth/tidal/tokens", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           Authorization: `Bearer ${clerkToken}`,
         },
         body: JSON.stringify({
@@ -180,7 +184,7 @@ export function useTidalAuth(): UseTidalAuthReturn {
 
       return response.ok;
     },
-    [getToken]
+    [getToken],
   );
 
   /**
@@ -200,7 +204,7 @@ export function useTidalAuth(): UseTidalAuthReturn {
         setState((prev) => ({
           ...prev,
           isConnected: false,
-          error: 'Tidal session expired. Please reconnect.',
+          error: "Tidal session expired. Please reconnect.",
         }));
         return false;
       }
@@ -217,7 +221,7 @@ export function useTidalAuth(): UseTidalAuthReturn {
       setState((prev) => ({
         ...prev,
         isConnected: false,
-        error: 'Failed to refresh Tidal token. Please reconnect.',
+        error: "Failed to refresh Tidal token. Please reconnect.",
       }));
       return false;
     }
@@ -238,14 +242,14 @@ export function useTidalAuth(): UseTidalAuthReturn {
         const credentials = await credentialsProvider.getCredentials();
 
         if (!credentials || !credentials.token) {
-          throw new Error('Failed to get credentials from Tidal SDK');
+          throw new Error("Failed to get credentials from Tidal SDK");
         }
 
         // Sync tokens to backend
         const success = await syncTokensToBackend(credentials);
 
         if (!success) {
-          throw new Error('Failed to store tokens on server');
+          throw new Error("Failed to store tokens on server");
         }
 
         setState((prev) => ({
@@ -265,7 +269,7 @@ export function useTidalAuth(): UseTidalAuthReturn {
         return false;
       }
     },
-    [syncTokensToBackend]
+    [syncTokensToBackend],
   );
 
   return {

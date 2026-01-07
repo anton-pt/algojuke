@@ -1,8 +1,13 @@
-import { GraphQLError } from 'graphql';
-import { LibraryService } from '../services/libraryService.js';
-import { LibraryError, DuplicateItemError, TidalApiError, ErrorType } from '../utils/errors.js';
-import { logger } from '../utils/logger.js';
-import { requireAuth, type GraphQLContext } from '../middleware/authGuard.js';
+import { GraphQLError } from "graphql";
+import { LibraryService } from "../services/libraryService.js";
+import {
+  LibraryError,
+  DuplicateItemError,
+  TidalApiError,
+  ErrorType,
+} from "../utils/errors.js";
+import { logger } from "../utils/logger.js";
+import { requireAuth, type GraphQLContext } from "../middleware/authGuard.js";
 
 /**
  * Context type for library resolvers
@@ -22,15 +27,17 @@ export const libraryResolvers = {
     getLibraryAlbums: async (
       _parent: unknown,
       _args: unknown,
-      context: LibraryContext
+      context: LibraryContext,
     ) => {
-      requireAuth(context, 'getLibraryAlbums');
+      requireAuth(context, "getLibraryAlbums");
       try {
         return await context.libraryService.getLibraryAlbums(context.userId);
       } catch (error) {
-        logger.error('get_library_albums_resolver_error', { error: String(error) });
-        throw new GraphQLError('Failed to fetch library albums', {
-          extensions: { code: 'INTERNAL_SERVER_ERROR' },
+        logger.error("get_library_albums_resolver_error", {
+          error: String(error),
+        });
+        throw new GraphQLError("Failed to fetch library albums", {
+          extensions: { code: "INTERNAL_SERVER_ERROR" },
         });
       }
     },
@@ -41,15 +48,17 @@ export const libraryResolvers = {
     getLibraryTracks: async (
       _parent: unknown,
       _args: unknown,
-      context: LibraryContext
+      context: LibraryContext,
     ) => {
-      requireAuth(context, 'getLibraryTracks');
+      requireAuth(context, "getLibraryTracks");
       try {
         return await context.libraryService.getLibraryTracks(context.userId);
       } catch (error) {
-        logger.error('get_library_tracks_resolver_error', { error: String(error) });
-        throw new GraphQLError('Failed to fetch library tracks', {
-          extensions: { code: 'INTERNAL_SERVER_ERROR' },
+        logger.error("get_library_tracks_resolver_error", {
+          error: String(error),
+        });
+        throw new GraphQLError("Failed to fetch library tracks", {
+          extensions: { code: "INTERNAL_SERVER_ERROR" },
         });
       }
     },
@@ -60,15 +69,21 @@ export const libraryResolvers = {
     getLibraryAlbum: async (
       _parent: unknown,
       args: { id: string },
-      context: LibraryContext
+      context: LibraryContext,
     ) => {
-      requireAuth(context, 'getLibraryAlbum');
+      requireAuth(context, "getLibraryAlbum");
       try {
-        return await context.libraryService.getLibraryAlbum(args.id, context.userId);
+        return await context.libraryService.getLibraryAlbum(
+          args.id,
+          context.userId,
+        );
       } catch (error) {
-        logger.error('get_library_album_resolver_error', { id: args.id, error: String(error) });
-        throw new GraphQLError('Failed to fetch library album', {
-          extensions: { code: 'INTERNAL_SERVER_ERROR' },
+        logger.error("get_library_album_resolver_error", {
+          id: args.id,
+          error: String(error),
+        });
+        throw new GraphQLError("Failed to fetch library album", {
+          extensions: { code: "INTERNAL_SERVER_ERROR" },
         });
       }
     },
@@ -79,15 +94,21 @@ export const libraryResolvers = {
     getLibraryTrack: async (
       _parent: unknown,
       args: { id: string },
-      context: LibraryContext
+      context: LibraryContext,
     ) => {
-      requireAuth(context, 'getLibraryTrack');
+      requireAuth(context, "getLibraryTrack");
       try {
-        return await context.libraryService.getLibraryTrack(args.id, context.userId);
+        return await context.libraryService.getLibraryTrack(
+          args.id,
+          context.userId,
+        );
       } catch (error) {
-        logger.error('get_library_track_resolver_error', { id: args.id, error: String(error) });
-        throw new GraphQLError('Failed to fetch library track', {
-          extensions: { code: 'INTERNAL_SERVER_ERROR' },
+        logger.error("get_library_track_resolver_error", {
+          id: args.id,
+          error: String(error),
+        });
+        throw new GraphQLError("Failed to fetch library track", {
+          extensions: { code: "INTERNAL_SERVER_ERROR" },
         });
       }
     },
@@ -101,21 +122,24 @@ export const libraryResolvers = {
     addAlbumToLibrary: async (
       _parent: unknown,
       args: { input: { tidalAlbumId: string } },
-      context: LibraryContext
+      context: LibraryContext,
     ) => {
-      requireAuth(context, 'addAlbumToLibrary');
+      requireAuth(context, "addAlbumToLibrary");
       const { tidalAlbumId } = args.input;
 
       try {
-        const album = await context.libraryService.addAlbumToLibrary(tidalAlbumId, context.userId);
+        const album = await context.libraryService.addAlbumToLibrary(
+          tidalAlbumId,
+          context.userId,
+        );
         return {
-          __typename: 'LibraryAlbum',
+          __typename: "LibraryAlbum",
           ...album,
         };
       } catch (error) {
         if (error instanceof DuplicateItemError) {
           return {
-            __typename: 'DuplicateLibraryItemError',
+            __typename: "DuplicateLibraryItemError",
             message: error.message,
             existingItemId: error.existingItemId,
           };
@@ -123,21 +147,21 @@ export const libraryResolvers = {
 
         if (error instanceof TidalApiError) {
           return {
-            __typename: 'TidalApiUnavailableError',
+            __typename: "TidalApiUnavailableError",
             message: error.message,
             retryable: error.retryable,
           };
         }
 
-        logger.error('add_album_to_library_resolver_error', {
+        logger.error("add_album_to_library_resolver_error", {
           tidalAlbumId,
           error: String(error),
         });
 
         // Generic error - return as TidalApiUnavailableError with retryable: false
         return {
-          __typename: 'TidalApiUnavailableError',
-          message: 'An unexpected error occurred while adding album to library',
+          __typename: "TidalApiUnavailableError",
+          message: "An unexpected error occurred while adding album to library",
           retryable: false,
         };
       }
@@ -150,21 +174,24 @@ export const libraryResolvers = {
     addTrackToLibrary: async (
       _parent: unknown,
       args: { input: { tidalTrackId: string } },
-      context: LibraryContext
+      context: LibraryContext,
     ) => {
-      requireAuth(context, 'addTrackToLibrary');
+      requireAuth(context, "addTrackToLibrary");
       const { tidalTrackId } = args.input;
 
       try {
-        const track = await context.libraryService.addTrackToLibrary(tidalTrackId, context.userId);
+        const track = await context.libraryService.addTrackToLibrary(
+          tidalTrackId,
+          context.userId,
+        );
         return {
-          __typename: 'LibraryTrack',
+          __typename: "LibraryTrack",
           ...track,
         };
       } catch (error) {
         if (error instanceof DuplicateItemError) {
           return {
-            __typename: 'DuplicateLibraryItemError',
+            __typename: "DuplicateLibraryItemError",
             message: error.message,
             existingItemId: error.existingItemId,
           };
@@ -172,21 +199,21 @@ export const libraryResolvers = {
 
         if (error instanceof TidalApiError) {
           return {
-            __typename: 'TidalApiUnavailableError',
+            __typename: "TidalApiUnavailableError",
             message: error.message,
             retryable: error.retryable,
           };
         }
 
-        logger.error('add_track_to_library_resolver_error', {
+        logger.error("add_track_to_library_resolver_error", {
           tidalTrackId,
           error: String(error),
         });
 
         // Generic error - return as TidalApiUnavailableError with retryable: false
         return {
-          __typename: 'TidalApiUnavailableError',
-          message: 'An unexpected error occurred while adding track to library',
+          __typename: "TidalApiUnavailableError",
+          message: "An unexpected error occurred while adding track to library",
           retryable: false,
         };
       }
@@ -199,25 +226,31 @@ export const libraryResolvers = {
     removeAlbumFromLibrary: async (
       _parent: unknown,
       args: { id: string },
-      context: LibraryContext
+      context: LibraryContext,
     ) => {
-      requireAuth(context, 'removeAlbumFromLibrary');
+      requireAuth(context, "removeAlbumFromLibrary");
       try {
-        return await context.libraryService.removeAlbumFromLibrary(args.id, context.userId);
+        return await context.libraryService.removeAlbumFromLibrary(
+          args.id,
+          context.userId,
+        );
       } catch (error) {
-        if (error instanceof LibraryError && error.type === ErrorType.NOT_FOUND) {
-          throw new GraphQLError('Album not found in library', {
-            extensions: { code: 'NOT_FOUND' },
+        if (
+          error instanceof LibraryError &&
+          error.type === ErrorType.NOT_FOUND
+        ) {
+          throw new GraphQLError("Album not found in library", {
+            extensions: { code: "NOT_FOUND" },
           });
         }
 
-        logger.error('remove_album_from_library_resolver_error', {
+        logger.error("remove_album_from_library_resolver_error", {
           id: args.id,
           error: String(error),
         });
 
-        throw new GraphQLError('Failed to remove album from library', {
-          extensions: { code: 'INTERNAL_SERVER_ERROR' },
+        throw new GraphQLError("Failed to remove album from library", {
+          extensions: { code: "INTERNAL_SERVER_ERROR" },
         });
       }
     },
@@ -229,25 +262,31 @@ export const libraryResolvers = {
     removeTrackFromLibrary: async (
       _parent: unknown,
       args: { id: string },
-      context: LibraryContext
+      context: LibraryContext,
     ) => {
-      requireAuth(context, 'removeTrackFromLibrary');
+      requireAuth(context, "removeTrackFromLibrary");
       try {
-        return await context.libraryService.removeTrackFromLibrary(args.id, context.userId);
+        return await context.libraryService.removeTrackFromLibrary(
+          args.id,
+          context.userId,
+        );
       } catch (error) {
-        if (error instanceof LibraryError && error.type === ErrorType.NOT_FOUND) {
-          throw new GraphQLError('Track not found in library', {
-            extensions: { code: 'NOT_FOUND' },
+        if (
+          error instanceof LibraryError &&
+          error.type === ErrorType.NOT_FOUND
+        ) {
+          throw new GraphQLError("Track not found in library", {
+            extensions: { code: "NOT_FOUND" },
           });
         }
 
-        logger.error('remove_track_from_library_resolver_error', {
+        logger.error("remove_track_from_library_resolver_error", {
           id: args.id,
           error: String(error),
         });
 
-        throw new GraphQLError('Failed to remove track from library', {
-          extensions: { code: 'INTERNAL_SERVER_ERROR' },
+        throw new GraphQLError("Failed to remove track from library", {
+          extensions: { code: "INTERNAL_SERVER_ERROR" },
         });
       }
     },
@@ -287,11 +326,11 @@ export const libraryResolvers = {
     releaseDate: (parent: any) => {
       if (!parent.releaseDate) return null;
       if (parent.releaseDate instanceof Date) {
-        return parent.releaseDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+        return parent.releaseDate.toISOString().split("T")[0]; // YYYY-MM-DD format
       }
       // If it's already a string (from database), return as-is or format it
-      if (typeof parent.releaseDate === 'string') {
-        return parent.releaseDate.split('T')[0];
+      if (typeof parent.releaseDate === "string") {
+        return parent.releaseDate.split("T")[0];
       }
       return null;
     },
@@ -303,12 +342,12 @@ export const libraryResolvers = {
       return parent.trackListing.map((track: any) => {
         let duration = track.duration;
         // If duration is an ISO 8601 string, parse it
-        if (typeof duration === 'string' && duration.startsWith('PT')) {
+        if (typeof duration === "string" && duration.startsWith("PT")) {
           const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
           if (match) {
-            const hours = parseInt(match[1] || '0');
-            const minutes = parseInt(match[2] || '0');
-            const seconds = parseInt(match[3] || '0');
+            const hours = parseInt(match[1] || "0");
+            const minutes = parseInt(match[2] || "0");
+            const seconds = parseInt(match[3] || "0");
             duration = hours * 3600 + minutes * 60 + seconds;
           } else {
             duration = 0;
@@ -316,7 +355,7 @@ export const libraryResolvers = {
         }
         return {
           ...track,
-          duration: typeof duration === 'number' ? duration : 0,
+          duration: typeof duration === "number" ? duration : 0,
         };
       });
     },

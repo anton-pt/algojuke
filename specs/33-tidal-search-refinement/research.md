@@ -28,11 +28,11 @@ Research from Anthropic's tool use documentation and OpenAI's function calling b
 
 ### Alternatives Considered
 
-| Alternative | Rejected Because |
-|-------------|------------------|
-| Longer prose descriptions | Increases token usage, harder for agent to parse |
-| Separate guidance document | Agent can't access external docs during tool selection |
-| Rename tools (e.g., `tidalKeywordSearch`) | Breaking change, requires schema updates |
+| Alternative                               | Rejected Because                                       |
+| ----------------------------------------- | ------------------------------------------------------ |
+| Longer prose descriptions                 | Increases token usage, harder for agent to parse       |
+| Separate guidance document                | Agent can't access external docs during tool selection |
+| Rename tools (e.g., `tidalKeywordSearch`) | Breaking change, requires schema updates               |
 
 ---
 
@@ -49,17 +49,18 @@ The system prompt is the most reliable place to encode behavioral guidance becau
 3. **Structured format**: Using headers and examples improves comprehension
 
 Key patterns from effective agent prompts:
+
 - **Decision trees**: "If X, then use tool Y"
 - **Worked examples**: Show the reasoning process, not just the answer
 - **Explicit knowledge invocation**: "Use YOUR music knowledge to..."
 
 ### Alternatives Considered
 
-| Alternative | Rejected Because |
-|-------------|------------------|
-| Fine-tuning | Not available for Claude, overkill for this use case |
-| Few-shot examples in conversation | Increases token cost per request |
-| Tool-level system prompts | Not supported by Vercel AI SDK |
+| Alternative                       | Rejected Because                                     |
+| --------------------------------- | ---------------------------------------------------- |
+| Fine-tuning                       | Not available for Claude, overkill for this use case |
+| Few-shot examples in conversation | Increases token cost per request                     |
+| Tool-level system prompts         | Not supported by Vercel AI SDK                       |
 
 ---
 
@@ -72,37 +73,41 @@ Key patterns from effective agent prompts:
 Current implementation is well-structured:
 
 **chatStreamService.ts**:
+
 - Tool definitions use Vercel AI SDK `tool()` helper
 - Each tool has a `description` field that can be updated
 - No structural changes needed
 
 **chatSystemPrompt.ts**:
+
 - Single exported constant `CHAT_SYSTEM_PROMPT`
 - Already has sections for tool descriptions and workflow guidelines
 - Can add new "Tool Selection Strategy" section without restructuring
 
 **Key insight from code review**:
+
 - Tidal search tool description (line 324) is generic: "Search the Tidal music catalogue for tracks, albums, or artists"
 - This doesn't communicate the text-only constraint
 - Agent may incorrectly pass mood queries to this tool
 
 **Semantic search description** (line 230):
+
 - Describes mood/theme capability but doesn't emphasize library-only scope
 - Agent may not realize it can't discover new tracks
 
 ### Files to Modify
 
-| File | Change Type | Description |
-|------|-------------|-------------|
-| `chatStreamService.ts` | UPDATE | Lines 230, 324 - tool descriptions |
-| `chatSystemPrompt.ts` | UPDATE | Add Tool Selection Strategy section |
+| File                   | Change Type | Description                         |
+| ---------------------- | ----------- | ----------------------------------- |
+| `chatStreamService.ts` | UPDATE      | Lines 230, 324 - tool descriptions  |
+| `chatSystemPrompt.ts`  | UPDATE      | Add Tool Selection Strategy section |
 
 ### New Test Files
 
-| File | Purpose |
-|------|---------|
-| `tests/contract/toolDescriptions.test.ts` | Verify tool description content |
-| `tests/integration/agentToolSelection.test.ts` | Verify agent behavior (mocked) |
+| File                                           | Purpose                         |
+| ---------------------------------------------- | ------------------------------- |
+| `tests/contract/toolDescriptions.test.ts`      | Verify tool description content |
+| `tests/integration/agentToolSelection.test.ts` | Verify agent behavior (mocked)  |
 
 ---
 
@@ -129,15 +134,18 @@ This is a key behavioral requirement that differs from typical search patterns w
 ### Rationale
 
 The semantic search uses:
+
 - **Embedding vectors** from the AI-generated lyrics interpretation
 - **BM25 keyword search** on the interpretation text
 
 This means semantic search matches **thematic/lyrical content**, NOT:
+
 - Musical style (ambient, jazz, rock)
 - Audio features (tempo, energy, acousticness)
 - Genre classifications
 
 **Example impact**:
+
 - Query "ambient music" → Will find tracks with lyrics interpreted as atmospheric/ambient themes, NOT necessarily ambient-sounding music
 - Query "songs about loss" → Will correctly find tracks with loss themes in lyrics
 

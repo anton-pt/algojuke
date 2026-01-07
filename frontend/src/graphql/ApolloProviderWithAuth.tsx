@@ -8,8 +8,8 @@
  * Feature: 018-per-user-library
  */
 
-import { useMemo, type ReactNode } from 'react';
-import { useAuth, useClerk } from '@clerk/clerk-react';
+import { useMemo, type ReactNode } from "react";
+import { useAuth, useClerk } from "@clerk/clerk-react";
 import {
   ApolloClient,
   ApolloProvider,
@@ -17,9 +17,9 @@ import {
   HttpLink,
   from,
   type ApolloLink,
-} from '@apollo/client';
-import { setContext } from '@apollo/client/link/context';
-import { onError } from '@apollo/client/link/error';
+} from "@apollo/client";
+import { setContext } from "@apollo/client/link/context";
+import { onError } from "@apollo/client/link/error";
 
 interface ApolloProviderWithAuthProps {
   children: ReactNode;
@@ -27,7 +27,7 @@ interface ApolloProviderWithAuthProps {
 
 // Use relative path to go through Vite proxy (which handles CORS)
 // In production, VITE_GRAPHQL_ENDPOINT should be set to the API server URL
-const graphqlEndpoint = import.meta.env.VITE_GRAPHQL_ENDPOINT || '/graphql';
+const graphqlEndpoint = import.meta.env.VITE_GRAPHQL_ENDPOINT || "/graphql";
 
 /**
  * Apollo Provider that injects Clerk JWT tokens and handles auth errors
@@ -36,7 +36,9 @@ const graphqlEndpoint = import.meta.env.VITE_GRAPHQL_ENDPOINT || '/graphql';
  * useAuth and useClerk hooks return stable function references that don't change
  * between renders. This ensures the Apollo client is not recreated unnecessarily.
  */
-export function ApolloProviderWithAuth({ children }: ApolloProviderWithAuthProps) {
+export function ApolloProviderWithAuth({
+  children,
+}: ApolloProviderWithAuthProps) {
   const { getToken } = useAuth();
   const { signOut } = useClerk();
 
@@ -44,7 +46,7 @@ export function ApolloProviderWithAuth({ children }: ApolloProviderWithAuthProps
     // HTTP link for GraphQL endpoint
     const httpLink = new HttpLink({
       uri: graphqlEndpoint,
-      credentials: 'include',
+      credentials: "include",
     });
 
     // Auth context link - adds JWT to every request (T031)
@@ -70,9 +72,9 @@ export function ApolloProviderWithAuth({ children }: ApolloProviderWithAuthProps
     const errorLink = onError(({ graphQLErrors, networkError }) => {
       if (graphQLErrors) {
         for (const error of graphQLErrors) {
-          if (error.extensions?.code === 'UNAUTHENTICATED') {
+          if (error.extensions?.code === "UNAUTHENTICATED") {
             // Sign out and redirect to landing page
-            signOut({ redirectUrl: '/' });
+            signOut({ redirectUrl: "/" });
             return;
           }
         }
@@ -80,7 +82,7 @@ export function ApolloProviderWithAuth({ children }: ApolloProviderWithAuthProps
 
       // Log network errors for debugging
       if (networkError) {
-        console.error('[Apollo Network Error]:', networkError);
+        console.error("[Apollo Network Error]:", networkError);
       }
     });
 
@@ -92,11 +94,11 @@ export function ApolloProviderWithAuth({ children }: ApolloProviderWithAuthProps
       cache: new InMemoryCache(),
       defaultOptions: {
         watchQuery: {
-          fetchPolicy: 'cache-and-network',
+          fetchPolicy: "cache-and-network",
         },
         query: {
-          fetchPolicy: 'cache-first',
-          errorPolicy: 'all',
+          fetchPolicy: "cache-first",
+          errorPolicy: "all",
         },
       },
     });

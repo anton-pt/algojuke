@@ -90,7 +90,10 @@ describe("LLMGenerationMetadataSchema", () => {
     const result = LLMGenerationMetadataSchema.safeParse(metadata);
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.modelParameters?.stopSequences).toEqual(["END", "STOP"]);
+      expect(result.data.modelParameters?.stopSequences).toEqual([
+        "END",
+        "STOP",
+      ]);
     }
   });
 });

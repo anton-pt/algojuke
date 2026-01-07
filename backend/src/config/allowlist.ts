@@ -9,9 +9,7 @@
  * List of approved Google email addresses for private beta access.
  * Emails are stored in lowercase for case-insensitive comparison.
  */
-export const APPROVED_EMAILS = [
-  'anton.tcholakov@gmail.com',
-] as const;
+export const APPROVED_EMAILS = ["anton.tcholakov@gmail.com"] as const;
 
 export type ApprovedEmail = (typeof APPROVED_EMAILS)[number];
 
@@ -22,7 +20,5 @@ export type ApprovedEmail = (typeof APPROVED_EMAILS)[number];
  * @returns true if user is approved for beta access
  */
 export function isApprovedUser(email: string): boolean {
-  return APPROVED_EMAILS.includes(
-    email.toLowerCase() as ApprovedEmail
-  );
+  return APPROVED_EMAILS.includes(email.toLowerCase() as ApprovedEmail);
 }

@@ -5,7 +5,7 @@
 **Status**: Draft
 **Input**: User description: "Optimisation of the agent tools introduced in @specs/011-agent-tools/spec.md leveraging the short description of the track's interpretation added in @specs/012-track-short-description/spec.md. Specifically, the agent should only receive the short description of the track in the library search tool (rather than the full interpretation and lyrics). If the agent needs the full interpretation of a track, it should request it via the batch metadata tool using the ISRC instead. This should be used sparingly for songs which are critical to the playlist being generated to avoid using excessive input tokens."
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - Efficient Semantic Search Results (Priority: P1)
 
@@ -81,7 +81,7 @@ As a developer debugging agent behavior, I need to see in observability traces h
 - What happens when semantic search returns no results? Empty result set is returned; agent behavior is unchanged from current implementation.
 - What happens when full metadata retrieval fails for some ISRCs in a batch? Partial results are returned with found tracks; missing ISRCs are listed separately.
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -102,7 +102,7 @@ As a developer debugging agent behavior, I need to see in observability traces h
 #### Agent Guidance
 
 - **FR-009**: System documentation MUST guide the agent to use batch metadata retrieval sparingly for high-value tracks only
-- **FR-010**: System MUST provide the agent with sufficient context in short descriptions to make initial filtering decisions without full metadata *(satisfied by short_description field design in feature 012)*
+- **FR-010**: System MUST provide the agent with sufficient context in short descriptions to make initial filtering decisions without full metadata _(satisfied by short_description field design in feature 012)_
 
 #### Observability
 
@@ -115,7 +115,7 @@ As a developer debugging agent behavior, I need to see in observability traces h
 - **Full Track Metadata**: Complete track information including interpretation and lyrics. Retrieved on-demand via batch metadata tool for tracks requiring detailed analysis.
 - **Short Description**: Single-sentence summary (max 50 words / ~300 characters, with 500-character schema limit) from feature 012, now the primary context field returned in search results.
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 
@@ -123,7 +123,7 @@ As a developer debugging agent behavior, I need to see in observability traces h
 - **SC-002**: Agent can process 20 search results and make playlist decisions within the same response time as before optimization
 - **SC-003**: Agent typically fetches full metadata for no more than 5 tracks per playlist generation request
 - **SC-004**: 100% of semantic search results include short descriptions for tracks that have them
-- **SC-005**: Agent maintains recommendation quality (recommendations remain relevant to user requests) *(subjective measure; validated via manual testing)*
+- **SC-005**: Agent maintains recommendation quality (recommendations remain relevant to user requests) _(subjective measure; validated via manual testing)_
 - **SC-006**: All search and metadata retrieval operations are traced with accurate payload sizes
 - **SC-007**: Agent successfully builds playlists using the two-tier approach (short descriptions for scanning, full metadata for key tracks)
 

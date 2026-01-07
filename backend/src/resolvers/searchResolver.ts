@@ -1,9 +1,14 @@
-import { validateQuery, validateLimit, validateOffset, validateCountryCode } from '../utils/validation.js';
-import { logger } from '../utils/logger.js';
-import { requireAuth, type GraphQLContext } from '../middleware/authGuard.js';
-import type { SearchArgs, SearchResults } from '../types/graphql.js';
-import type { TidalService } from '../services/tidalService.js';
-import type { CacheService } from '../services/cacheService.js';
+import {
+  validateQuery,
+  validateLimit,
+  validateOffset,
+  validateCountryCode,
+} from "../utils/validation.js";
+import { logger } from "../utils/logger.js";
+import { requireAuth, type GraphQLContext } from "../middleware/authGuard.js";
+import type { SearchArgs, SearchResults } from "../types/graphql.js";
+import type { TidalService } from "../services/tidalService.js";
+import type { CacheService } from "../services/cacheService.js";
 
 export interface ResolverContext extends GraphQLContext {
   tidalService: TidalService;
@@ -18,9 +23,9 @@ export const searchResolver = {
     search: async (
       _parent: unknown,
       args: SearchArgs,
-      context: ResolverContext
+      context: ResolverContext,
     ): Promise<SearchResults> => {
-      requireAuth(context, 'search');
+      requireAuth(context, "search");
       // Validate inputs
       const query = validateQuery(args.query);
       const limit = validateLimit(args.limit);
@@ -39,7 +44,7 @@ export const searchResolver = {
           query,
           cachedResult.albums.length,
           cachedResult.tracks.length,
-          true
+          true,
         );
         return {
           ...cachedResult,
@@ -48,17 +53,22 @@ export const searchResolver = {
       }
 
       // Fetch from Tidal API
-      const results = await context.tidalService.search(query, limit, offset, countryCode);
+      const results = await context.tidalService.search(
+        query,
+        limit,
+        offset,
+        countryCode,
+      );
 
       // Cache the results (TTL from environment or default 3600 seconds)
-      const cacheTTL = parseInt(process.env.SEARCH_CACHE_TTL || '3600');
+      const cacheTTL = parseInt(process.env.SEARCH_CACHE_TTL || "3600");
       context.cache.set(cacheKey, results, cacheTTL);
 
       logger.searchResponse(
         query,
         results.albums.length,
         results.tracks.length,
-        false
+        false,
       );
 
       return {

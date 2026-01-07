@@ -1,12 +1,12 @@
-import { describe, test, expect } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { MockedProvider } from '@apollo/client/testing';
-import { SearchPage } from '../../src/pages/SearchPage';
-import { SEARCH_QUERY } from '../../src/graphql/queries';
+import { describe, test, expect } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { MockedProvider } from "@apollo/client/testing";
+import { SearchPage } from "../../src/pages/SearchPage";
+import { SEARCH_QUERY } from "../../src/graphql/queries";
 
-describe('No Results Flow Integration Tests', () => {
-  test('displays no results message for non-existent query', async () => {
+describe("No Results Flow Integration Tests", () => {
+  test("displays no results message for non-existent query", async () => {
     const user = userEvent.setup();
 
     const emptyMocks = [
@@ -14,7 +14,7 @@ describe('No Results Flow Integration Tests', () => {
         request: {
           query: SEARCH_QUERY,
           variables: {
-            query: 'xyznotarealband123',
+            query: "xyznotarealband123",
             limit: 20,
           },
         },
@@ -24,7 +24,7 @@ describe('No Results Flow Integration Tests', () => {
               albums: [],
               tracks: [],
               total: { albums: 0, tracks: 0 },
-              query: 'xyznotarealband123',
+              query: "xyznotarealband123",
               cached: false,
               timestamp: Date.now(),
             },
@@ -36,14 +36,14 @@ describe('No Results Flow Integration Tests', () => {
     render(
       <MockedProvider mocks={emptyMocks} addTypename={false}>
         <SearchPage />
-      </MockedProvider>
+      </MockedProvider>,
     );
 
     // User enters a search query that won't return results
     const searchInput = screen.getByPlaceholderText(/search/i);
-    await user.type(searchInput, 'xyznotarealband123');
+    await user.type(searchInput, "xyznotarealband123");
 
-    const searchButton = screen.getByRole('button', { name: /search/i });
+    const searchButton = screen.getByRole("button", { name: /search/i });
     await user.click(searchButton);
 
     // User sees loading state
@@ -55,7 +55,7 @@ describe('No Results Flow Integration Tests', () => {
     });
   });
 
-  test('shows helpful suggestions when no results found', async () => {
+  test("shows helpful suggestions when no results found", async () => {
     const user = userEvent.setup();
 
     const emptyMocks = [
@@ -63,7 +63,7 @@ describe('No Results Flow Integration Tests', () => {
         request: {
           query: SEARCH_QUERY,
           variables: {
-            query: 'qwerty',
+            query: "qwerty",
             limit: 20,
           },
         },
@@ -73,7 +73,7 @@ describe('No Results Flow Integration Tests', () => {
               albums: [],
               tracks: [],
               total: { albums: 0, tracks: 0 },
-              query: 'qwerty',
+              query: "qwerty",
               cached: false,
               timestamp: Date.now(),
             },
@@ -85,21 +85,23 @@ describe('No Results Flow Integration Tests', () => {
     render(
       <MockedProvider mocks={emptyMocks} addTypename={false}>
         <SearchPage />
-      </MockedProvider>
+      </MockedProvider>,
     );
 
     const searchInput = screen.getByPlaceholderText(/search/i);
-    await user.type(searchInput, 'qwerty');
+    await user.type(searchInput, "qwerty");
 
-    const searchButton = screen.getByRole('button', { name: /search/i });
+    const searchButton = screen.getByRole("button", { name: /search/i });
     await user.click(searchButton);
 
     await waitFor(() => {
-      expect(screen.getByText(/try different search terms/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/try different search terms/i),
+      ).toBeInTheDocument();
     });
   });
 
-  test('does not show album or track sections when no results', async () => {
+  test("does not show album or track sections when no results", async () => {
     const user = userEvent.setup();
 
     const emptyMocks = [
@@ -107,7 +109,7 @@ describe('No Results Flow Integration Tests', () => {
         request: {
           query: SEARCH_QUERY,
           variables: {
-            query: 'empty',
+            query: "empty",
             limit: 20,
           },
         },
@@ -117,7 +119,7 @@ describe('No Results Flow Integration Tests', () => {
               albums: [],
               tracks: [],
               total: { albums: 0, tracks: 0 },
-              query: 'empty',
+              query: "empty",
               cached: false,
               timestamp: Date.now(),
             },
@@ -129,13 +131,13 @@ describe('No Results Flow Integration Tests', () => {
     render(
       <MockedProvider mocks={emptyMocks} addTypename={false}>
         <SearchPage />
-      </MockedProvider>
+      </MockedProvider>,
     );
 
     const searchInput = screen.getByPlaceholderText(/search/i);
-    await user.type(searchInput, 'empty');
+    await user.type(searchInput, "empty");
 
-    const searchButton = screen.getByRole('button', { name: /search/i });
+    const searchButton = screen.getByRole("button", { name: /search/i });
     await user.click(searchButton);
 
     await waitFor(() => {
@@ -147,7 +149,7 @@ describe('No Results Flow Integration Tests', () => {
     expect(screen.queryByText(/Tracks \(/i)).not.toBeInTheDocument();
   });
 
-  test('allows user to search again after no results', async () => {
+  test("allows user to search again after no results", async () => {
     const user = userEvent.setup();
 
     const mocks = [
@@ -155,7 +157,7 @@ describe('No Results Flow Integration Tests', () => {
         request: {
           query: SEARCH_QUERY,
           variables: {
-            query: 'noresults',
+            query: "noresults",
             limit: 20,
           },
         },
@@ -165,7 +167,7 @@ describe('No Results Flow Integration Tests', () => {
               albums: [],
               tracks: [],
               total: { albums: 0, tracks: 0 },
-              query: 'noresults',
+              query: "noresults",
               cached: false,
               timestamp: Date.now(),
             },
@@ -176,7 +178,7 @@ describe('No Results Flow Integration Tests', () => {
         request: {
           query: SEARCH_QUERY,
           variables: {
-            query: 'Beatles',
+            query: "Beatles",
             limit: 20,
           },
         },
@@ -185,23 +187,23 @@ describe('No Results Flow Integration Tests', () => {
             search: {
               albums: [
                 {
-                  id: '123',
-                  title: 'Abbey Road',
-                  artist: 'The Beatles',
-                  artists: ['The Beatles'],
-                  artworkUrl: 'https://test.com/art.jpg',
-                  artworkThumbUrl: 'https://test.com/thumb.jpg',
+                  id: "123",
+                  title: "Abbey Road",
+                  artist: "The Beatles",
+                  artists: ["The Beatles"],
+                  artworkUrl: "https://test.com/art.jpg",
+                  artworkThumbUrl: "https://test.com/thumb.jpg",
                   explicit: false,
                   trackCount: 17,
                   duration: 2800,
-                  releaseDate: '1969-09-26',
-                  externalUrl: 'https://tidal.com/album/123',
-                  source: 'tidal',
+                  releaseDate: "1969-09-26",
+                  externalUrl: "https://tidal.com/album/123",
+                  source: "tidal",
                 },
               ],
               tracks: [],
               total: { albums: 150, tracks: 0 },
-              query: 'Beatles',
+              query: "Beatles",
               cached: false,
               timestamp: Date.now(),
             },
@@ -213,14 +215,14 @@ describe('No Results Flow Integration Tests', () => {
     render(
       <MockedProvider mocks={mocks} addTypename={false}>
         <SearchPage />
-      </MockedProvider>
+      </MockedProvider>,
     );
 
     // First search with no results
     const searchInput = screen.getByPlaceholderText(/search/i);
     await user.clear(searchInput);
-    await user.type(searchInput, 'noresults');
-    await user.click(screen.getByRole('button', { name: /search/i }));
+    await user.type(searchInput, "noresults");
+    await user.click(screen.getByRole("button", { name: /search/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/no results found/i)).toBeInTheDocument();
@@ -228,18 +230,18 @@ describe('No Results Flow Integration Tests', () => {
 
     // Second search with results
     await user.clear(searchInput);
-    await user.type(searchInput, 'Beatles');
-    await user.click(screen.getByRole('button', { name: /search/i }));
+    await user.type(searchInput, "Beatles");
+    await user.click(screen.getByRole("button", { name: /search/i }));
 
     await waitFor(() => {
-      expect(screen.getByText('Abbey Road')).toBeInTheDocument();
+      expect(screen.getByText("Abbey Road")).toBeInTheDocument();
     });
 
     // No results message should be gone
     expect(screen.queryByText(/no results found/i)).not.toBeInTheDocument();
   });
 
-  test('displays query that returned no results', async () => {
+  test("displays query that returned no results", async () => {
     const user = userEvent.setup();
 
     const emptyMocks = [
@@ -247,7 +249,7 @@ describe('No Results Flow Integration Tests', () => {
         request: {
           query: SEARCH_QUERY,
           variables: {
-            query: 'specificquery',
+            query: "specificquery",
             limit: 20,
           },
         },
@@ -257,7 +259,7 @@ describe('No Results Flow Integration Tests', () => {
               albums: [],
               tracks: [],
               total: { albums: 0, tracks: 0 },
-              query: 'specificquery',
+              query: "specificquery",
               cached: false,
               timestamp: Date.now(),
             },
@@ -269,13 +271,13 @@ describe('No Results Flow Integration Tests', () => {
     render(
       <MockedProvider mocks={emptyMocks} addTypename={false}>
         <SearchPage />
-      </MockedProvider>
+      </MockedProvider>,
     );
 
     const searchInput = screen.getByPlaceholderText(/search/i);
-    await user.type(searchInput, 'specificquery');
+    await user.type(searchInput, "specificquery");
 
-    const searchButton = screen.getByRole('button', { name: /search/i });
+    const searchButton = screen.getByRole("button", { name: /search/i });
     await user.click(searchButton);
 
     await waitFor(() => {
@@ -283,7 +285,7 @@ describe('No Results Flow Integration Tests', () => {
     });
   });
 
-  test('no results message is accessible', async () => {
+  test("no results message is accessible", async () => {
     const user = userEvent.setup();
 
     const emptyMocks = [
@@ -291,7 +293,7 @@ describe('No Results Flow Integration Tests', () => {
         request: {
           query: SEARCH_QUERY,
           variables: {
-            query: 'test',
+            query: "test",
             limit: 20,
           },
         },
@@ -301,7 +303,7 @@ describe('No Results Flow Integration Tests', () => {
               albums: [],
               tracks: [],
               total: { albums: 0, tracks: 0 },
-              query: 'test',
+              query: "test",
               cached: false,
               timestamp: Date.now(),
             },
@@ -313,20 +315,20 @@ describe('No Results Flow Integration Tests', () => {
     render(
       <MockedProvider mocks={emptyMocks} addTypename={false}>
         <SearchPage />
-      </MockedProvider>
+      </MockedProvider>,
     );
 
     const searchInput = screen.getByPlaceholderText(/search/i);
-    await user.type(searchInput, 'test');
-    await user.click(screen.getByRole('button', { name: /search/i }));
+    await user.type(searchInput, "test");
+    await user.click(screen.getByRole("button", { name: /search/i }));
 
     await waitFor(() => {
-      const message = screen.getByRole('status');
+      const message = screen.getByRole("status");
       expect(message).toBeInTheDocument();
     });
   });
 
-  test('handles rapid searches with no results', async () => {
+  test("handles rapid searches with no results", async () => {
     const user = userEvent.setup();
 
     const emptyMocks = [
@@ -334,7 +336,7 @@ describe('No Results Flow Integration Tests', () => {
         request: {
           query: SEARCH_QUERY,
           variables: {
-            query: 'query1',
+            query: "query1",
             limit: 20,
           },
         },
@@ -344,7 +346,7 @@ describe('No Results Flow Integration Tests', () => {
               albums: [],
               tracks: [],
               total: { albums: 0, tracks: 0 },
-              query: 'query1',
+              query: "query1",
               cached: false,
               timestamp: Date.now(),
             },
@@ -355,7 +357,7 @@ describe('No Results Flow Integration Tests', () => {
         request: {
           query: SEARCH_QUERY,
           variables: {
-            query: 'query2',
+            query: "query2",
             limit: 20,
           },
         },
@@ -365,7 +367,7 @@ describe('No Results Flow Integration Tests', () => {
               albums: [],
               tracks: [],
               total: { albums: 0, tracks: 0 },
-              query: 'query2',
+              query: "query2",
               cached: false,
               timestamp: Date.now(),
             },
@@ -377,14 +379,14 @@ describe('No Results Flow Integration Tests', () => {
     render(
       <MockedProvider mocks={emptyMocks} addTypename={false}>
         <SearchPage />
-      </MockedProvider>
+      </MockedProvider>,
     );
 
     const searchInput = screen.getByPlaceholderText(/search/i);
 
     // First search
-    await user.type(searchInput, 'query1');
-    await user.click(screen.getByRole('button', { name: /search/i }));
+    await user.type(searchInput, "query1");
+    await user.click(screen.getByRole("button", { name: /search/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/no results found/i)).toBeInTheDocument();
@@ -392,8 +394,8 @@ describe('No Results Flow Integration Tests', () => {
 
     // Second search
     await user.clear(searchInput);
-    await user.type(searchInput, 'query2');
-    await user.click(screen.getByRole('button', { name: /search/i }));
+    await user.type(searchInput, "query2");
+    await user.click(screen.getByRole("button", { name: /search/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/no results found/i)).toBeInTheDocument();

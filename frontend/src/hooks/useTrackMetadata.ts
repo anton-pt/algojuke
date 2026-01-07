@@ -1,11 +1,11 @@
-import { useState, useCallback, useRef } from 'react';
-import { useLazyQuery } from '@apollo/client';
+import { useState, useCallback, useRef } from "react";
+import { useLazyQuery } from "@apollo/client";
 import {
   GET_EXTENDED_TRACK_METADATA,
   GetExtendedTrackMetadataData,
   GetExtendedTrackMetadataVars,
   ExtendedTrackMetadata,
-} from '../graphql/trackMetadata';
+} from "../graphql/trackMetadata";
 
 /**
  * Hook for managing accordion state and extended track metadata fetching
@@ -40,7 +40,7 @@ interface UseTrackMetadataReturn {
 }
 
 export function useTrackMetadata(
-  options: UseTrackMetadataOptions = {}
+  options: UseTrackMetadataOptions = {},
 ): UseTrackMetadataReturn {
   const { onExpandChange } = options;
 
@@ -58,7 +58,7 @@ export function useTrackMetadata(
     GetExtendedTrackMetadataData,
     GetExtendedTrackMetadataVars
   >(GET_EXTENDED_TRACK_METADATA, {
-    fetchPolicy: 'cache-first',
+    fetchPolicy: "cache-first",
   });
 
   // Toggle accordion for a track
@@ -94,13 +94,13 @@ export function useTrackMetadata(
         setCurrentIsrc(null);
       }
     },
-    [expandedTrackId, fetchMetadata, onExpandChange]
+    [expandedTrackId, fetchMetadata, onExpandChange],
   );
 
   // Check if a specific track is expanded
   const isExpanded = useCallback(
     (trackId: string) => expandedTrackId === trackId,
-    [expandedTrackId]
+    [expandedTrackId],
   );
 
   // Retry failed metadata fetch
@@ -117,7 +117,9 @@ export function useTrackMetadata(
   // This prevents showing stale data from a previous request
   const currentMetadata = data?.getExtendedTrackMetadata;
   const metadataMatchesCurrent =
-    currentMetadata && currentIsrc && currentMetadata.isrc === currentIsrc.toUpperCase();
+    currentMetadata &&
+    currentIsrc &&
+    currentMetadata.isrc === currentIsrc.toUpperCase();
 
   return {
     expandedTrackId,

@@ -63,7 +63,7 @@ export interface FullObservabilityConfig {
  * @throws ZodError if required environment variables are missing or invalid
  */
 export function loadConfig(
-  runtimeOptions?: Partial<ObservabilityConfig>
+  runtimeOptions?: Partial<ObservabilityConfig>,
 ): FullObservabilityConfig {
   // Parse environment configuration
   const envConfig = LangfuseEnvConfigSchema.parse({
@@ -90,7 +90,7 @@ export function loadConfig(
  * @returns Full observability configuration or null if invalid/missing
  */
 export function tryLoadConfig(
-  runtimeOptions?: Partial<ObservabilityConfig>
+  runtimeOptions?: Partial<ObservabilityConfig>,
 ): FullObservabilityConfig | null {
   try {
     return loadConfig(runtimeOptions);

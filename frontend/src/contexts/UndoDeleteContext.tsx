@@ -1,5 +1,13 @@
-import { createContext, useContext, useState, useCallback, useRef, useEffect, ReactNode } from 'react';
-import { toast } from 'sonner';
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+  ReactNode,
+} from "react";
+import { toast } from "sonner";
 
 interface PendingDeletion {
   timeoutId: ReturnType<typeof setTimeout>;
@@ -14,12 +22,14 @@ interface UndoDeleteContextValue {
     id: string,
     label: string,
     itemName: string,
-    onFinalize: () => Promise<void>
+    onFinalize: () => Promise<void>,
   ) => void;
   handleUndo: (id: string) => void;
 }
 
-const UndoDeleteContext = createContext<UndoDeleteContextValue | undefined>(undefined);
+const UndoDeleteContext = createContext<UndoDeleteContextValue | undefined>(
+  undefined,
+);
 
 export function UndoDeleteProvider({ children }: { children: ReactNode }) {
   // Global state for deleted IDs - persists across navigation
@@ -40,9 +50,12 @@ export function UndoDeleteProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Check if item is deleted
-  const isDeleted = useCallback((id: string): boolean => {
-    return deletedIds.has(id);
-  }, [deletedIds]);
+  const isDeleted = useCallback(
+    (id: string): boolean => {
+      return deletedIds.has(id);
+    },
+    [deletedIds],
+  );
 
   // Finalize deletion (call the deletion callback)
   const finalizeDelete = useCallback(async (id: string) => {
@@ -59,7 +72,7 @@ export function UndoDeleteProvider({ children }: { children: ReactNode }) {
       });
     } catch (error) {
       // If finalize fails, restore the item
-      console.error('Failed to finalize delete:', error);
+      console.error("Failed to finalize delete:", error);
       toast.error(`Failed to remove ${pending.itemName.toLowerCase()}`);
       pendingDeletionsRef.current.delete(id);
       setDeletedIds((prev) => {
@@ -76,7 +89,7 @@ export function UndoDeleteProvider({ children }: { children: ReactNode }) {
       id: string,
       label: string,
       itemName: string,
-      onFinalize: () => Promise<void>
+      onFinalize: () => Promise<void>,
     ) => {
       // Optimistic removal - hide immediately
       setDeletedIds((prev) => new Set(prev).add(id));
@@ -98,13 +111,13 @@ export function UndoDeleteProvider({ children }: { children: ReactNode }) {
       toast.success(`${itemName} removed`, {
         description: label,
         action: {
-          label: 'Undo',
+          label: "Undo",
           onClick: () => handleUndo(id),
         },
         duration: 10000,
       });
     },
-    [finalizeDelete]
+    [finalizeDelete],
   );
 
   // Handle undo
@@ -139,7 +152,9 @@ export function UndoDeleteProvider({ children }: { children: ReactNode }) {
 export function useUndoDeleteContext() {
   const context = useContext(UndoDeleteContext);
   if (!context) {
-    throw new Error('useUndoDeleteContext must be used within UndoDeleteProvider');
+    throw new Error(
+      "useUndoDeleteContext must be used within UndoDeleteProvider",
+    );
   }
   return context;
 }

@@ -18,11 +18,13 @@ This document captures research findings and technical decisions for implementin
 **Chosen Approach**: Add `isIndexed: Boolean` field to existing `LibraryTrack` and `TrackInfo` types with a field resolver that batch-loads indexed status from Qdrant. This allows the frontend to request the field when needed without a separate query.
 
 **Alternatives Considered**:
+
 - Separate `checkIndexedStatus(isrcs: [String!]!)` query → More API calls, cache coordination complexity
 - Store indexed status in PostgreSQL → Sync complexity, stale data risk
 - Pre-compute on library add → Timing issues if ingestion is async
 
 **Implementation Pattern**:
+
 ```graphql
 extend type LibraryTrack {
   isIndexed: Boolean!
@@ -44,6 +46,7 @@ Field resolvers use DataLoader pattern to batch ISRCs and query Qdrant once per 
 **Rationale**: Extended metadata (lyrics, interpretation, audio features) is fetched on-demand when the accordion expands. This avoids loading large text payloads for all tracks upfront.
 
 **Implementation Pattern**:
+
 ```graphql
 type ExtendedTrackMetadata {
   isrc: String!
@@ -72,6 +75,7 @@ type Query {
 ```
 
 **Alternatives Considered**:
+
 - Embedding metadata in library entities → Large payload, PostgreSQL sync issues
 - REST endpoint → Inconsistent with existing GraphQL architecture
 
@@ -84,6 +88,7 @@ type Query {
 **Rationale**: The existing client only checks existence. We need to retrieve the full payload (excluding vector) for display.
 
 **Implementation Pattern**:
+
 ```typescript
 async getTrackPayload(isrc: string): Promise<TrackPayload | null> {
   const uuid = hashIsrcToUuid(isrc);
@@ -107,12 +112,14 @@ async getTrackPayload(isrc: string): Promise<TrackPayload | null> {
 **Rationale**: User clarification specified accordion-style UI with single-expansion behavior.
 
 **Implementation Pattern**:
+
 - State: `expandedTrackId: string | null` in parent component
 - Click handler: Toggle expansion, cancel pending fetches
 - Loading: Skeleton loader in expanded panel
 - Error: Inline error with retry button
 
 **Component Structure**:
+
 ```
 TrackRow (existing) → enhanced with onClick, isIndexed badge
   └── TrackAccordion (new) → conditional render when expanded
@@ -146,9 +153,24 @@ TrackRow (existing) → enhanced with onClick, isIndexed badge
 | valence | Descriptive | "Uplifting" / "Melancholic" / "Neutral" |
 
 **Key Mapping** (pitch class → note):
+
 ```typescript
-const KEY_NAMES = ['C', 'C♯/D♭', 'D', 'D♯/E♭', 'E', 'F', 'F♯/G♭', 'G', 'G♯/A♭', 'A', 'A♯/B♭', 'B'];
-const keyName = key >= 0 ? `${KEY_NAMES[key]} ${mode === 1 ? 'major' : 'minor'}` : 'Unknown';
+const KEY_NAMES = [
+  "C",
+  "C♯/D♭",
+  "D",
+  "D♯/E♭",
+  "E",
+  "F",
+  "F♯/G♭",
+  "G",
+  "G♯/A♭",
+  "A",
+  "A♯/B♭",
+  "B",
+];
+const keyName =
+  key >= 0 ? `${KEY_NAMES[key]} ${mode === 1 ? "major" : "minor"}` : "Unknown";
 ```
 
 ---
@@ -160,6 +182,7 @@ const keyName = key >= 0 ? `${KEY_NAMES[key]} ${mode === 1 ? 'major' : 'minor'}`
 **Rationale**: User specified caching is optional. Apollo Client's normalized cache automatically caches query results by default. The `getExtendedTrackMetadata` query can be cached by ISRC.
 
 **Cache Policy**:
+
 - `isIndexed` field: Cache with library data (refetched on page load)
 - Extended metadata: Cache indefinitely (immutable after ingestion)
 
@@ -172,6 +195,7 @@ const keyName = key >= 0 ? `${KEY_NAMES[key]} ${mode === 1 ? 'major' : 'minor'}`
 **Rationale**: Constitution requires graceful degradation; spec requires error messages with retry.
 
 **Error States**:
+
 1. **Qdrant unavailable for indexed status**: Show all tracks without indexed badges (fail-open)
 2. **Qdrant unavailable for metadata fetch**: Show error in accordion panel with "Retry" button
 3. **Track not found in index**: Show "Metadata not available" message
@@ -181,22 +205,22 @@ const keyName = key >= 0 ? `${KEY_NAMES[key]} ${mode === 1 ? 'major' : 'minor'}`
 
 ## Dependencies Confirmed
 
-| Dependency | Version | Usage |
-|------------|---------|-------|
+| Dependency             | Version  | Usage                               |
+| ---------------------- | -------- | ----------------------------------- |
 | @qdrant/js-client-rest | existing | Payload retrieval from vector index |
-| Apollo Client | 3.x | GraphQL queries with caching |
-| Apollo Server | 4.x | GraphQL resolvers |
-| DataLoader | TBD | Batch loading indexed status |
+| Apollo Client          | 3.x      | GraphQL queries with caching        |
+| Apollo Server          | 4.x      | GraphQL resolvers                   |
+| DataLoader             | TBD      | Batch loading indexed status        |
 
 ---
 
 ## Risks and Mitigations
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Qdrant latency spikes | Slow accordion load | Timeout with user-friendly error |
-| Large lyrics payload | Slow render | Scrollable container, lazy rendering |
-| ISRC missing from library track | Cannot query index | Graceful "not indexed" state |
+| Risk                            | Impact              | Mitigation                           |
+| ------------------------------- | ------------------- | ------------------------------------ |
+| Qdrant latency spikes           | Slow accordion load | Timeout with user-friendly error     |
+| Large lyrics payload            | Slow render         | Scrollable container, lazy rendering |
+| ISRC missing from library track | Cannot query index  | Graceful "not indexed" state         |
 
 ---
 

@@ -21,7 +21,7 @@
 
 The demo task validates all infrastructure capabilities (multi-step workflows, retries, rate limiting, observability) without implementing business logic. This allows the infrastructure to be tested and validated independently before adding domain-specific enrichment workflows.
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - Infrastructure Validation via Demo Task (Priority: P1)
 
@@ -82,7 +82,7 @@ The infrastructure needs to demonstrate throttle configuration capabilities to e
 - **Queue backpressure**: How does system behave if queue grows faster than processing capacity? Inngest queues excess demo tasks beyond 10 concurrent limit, visible in dashboard metrics showing pending count. Priority configuration (FR-013) allows critical tasks to execute first.
 - **Duplicate task prevention** (FR-014): What happens when duplicate demo tasks are submitted? Inngest's idempotency configuration (24-hour window, keyed by taskId) automatically deduplicates. Demo task supports `force: true` to override idempotency and force re-execution.
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -115,7 +115,7 @@ The infrastructure needs to demonstrate throttle configuration capabilities to e
 - **Step Execution**: Records the execution of a single workflow step with attributes including step name, execution status, start/end timestamps, input data, output data (memoized for successful steps), and error information if failed
 - **Throttle Configuration**: Defines rate limiting rules with attributes including execution limit per time window, time window duration (e.g., "1m"), and throttle key for scoping limits
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 
@@ -123,7 +123,7 @@ The infrastructure needs to demonstrate throttle configuration capabilities to e
 
 - **SC-001**: Demo task submission via Inngest UI completes in under 500ms, with multi-step execution happening asynchronously
 - **SC-002**: Demo tasks configured with 5 retry attempts complete successfully within 24 hours when transient failures are simulated (validates retry policy configuration)
-- **SC-003**: *(Future Production Metric)* System architecture supports processing at least 10,000 tasks per day without performance degradation (validated via concurrency configuration of 10 concurrent executions, extrapolated throughput capacity)
+- **SC-003**: _(Future Production Metric)_ System architecture supports processing at least 10,000 tasks per day without performance degradation (validated via concurrency configuration of 10 concurrent executions, extrapolated throughput capacity)
 - **SC-004**: Demo tasks with simulated failures retry with exponential backoff (5min, 15min, 1hr, 4hr, 14hr intervals), with successful recovery demonstrated after transient failure resolution
 - **SC-005**: Throttle configuration prevents execution rate from exceeding configured limits (validated via demo task with 100 tasks/minute throttle configuration)
 - **SC-006**: Worker service restarts result in zero lost demo tasks, with all queued and in-progress tasks resuming automatically (validates durable execution)

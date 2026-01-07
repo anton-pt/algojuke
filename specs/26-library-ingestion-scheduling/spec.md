@@ -5,7 +5,7 @@
 **Status**: Draft
 **Input**: User description: "Scheduling of ingestion of tracks that the user adds to their library. Tracks and albums that are added to the library via specs/002-library-management/spec.md should automatically be added to the ingestion pipeline defined in specs/006-track-ingestion-pipeline/spec.md. This should apply to all tracks from an album. The ingestion tasks should be scheduled with an idempotency key that ensures that the same track isn't ingested multiple times to avoid excessive API costs. Tracks that have previously been ingested and are already present in the tracks collection defined in specs/004-vector-search-index/spec.md should not be re-ingested."
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - Automatic Track Ingestion on Library Addition (Priority: P1)
 
@@ -97,7 +97,7 @@ As a system administrator, I need the system to handle failures gracefully when 
 - **Track removed before ingestion completes**: The ingestion pipeline completes independently; removing a track from the library does not cancel pending ingestion.
 - **Very large albums (100+ tracks)**: System should handle bulk scheduling without timeout; tasks are queued individually with no batch size limit. Note: Ingestion is fully asynchronous via Inngest. Each track ingestion takes ~20 seconds (LLM + embedding). Tasks queue and execute with rate limiting per the worker pipeline's throttle configuration. Progress is monitored via Inngest dashboard. Retry policies are defined in the ingestion pipeline (006-track-ingestion-pipeline), not in scheduling.
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -123,7 +123,7 @@ As a system administrator, I need the system to handle failures gracefully when 
 - **Idempotency Key**: A unique identifier derived from the track's ISRC that prevents duplicate task scheduling. Format: deterministic hash or direct ISRC value.
 - **Index Existence Check**: A query to the vector search index to determine if a track document already exists by ISRC, used to skip unnecessary ingestion.
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 

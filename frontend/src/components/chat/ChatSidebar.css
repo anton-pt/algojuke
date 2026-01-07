@@ -177,7 +177,10 @@
   color: var(--text-tertiary, #9ca3af);
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.2s, background-color 0.2s, color 0.2s;
+  transition:
+    opacity 0.2s,
+    background-color 0.2s,
+    color 0.2s;
 }
 
 .chat-sidebar__item:hover .chat-sidebar__item-delete {

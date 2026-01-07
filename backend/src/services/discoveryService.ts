@@ -20,7 +20,13 @@ import {
   getAnthropicClient,
   QUERY_EXPANSION_MODEL,
 } from "../clients/anthropicClient.js";
-import { TEIClient, TEIError, getTEIClient, QUERY_EMBED_INSTRUCTION, TEI_MODEL_NAME } from "../clients/teiClient.js";
+import {
+  TEIClient,
+  TEIError,
+  getTEIClient,
+  QUERY_EMBED_INSTRUCTION,
+  TEI_MODEL_NAME,
+} from "../clients/teiClient.js";
 import { textToSparseVector } from "../utils/sparseVector.js";
 import { logger } from "../utils/logger.js";
 import {
@@ -79,7 +85,10 @@ export class DiscoveryService {
 
     // Normalize input
     const page = input.page ?? 0;
-    const pageSize = Math.min(input.pageSize ?? DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE);
+    const pageSize = Math.min(
+      input.pageSize ?? DEFAULT_PAGE_SIZE,
+      MAX_PAGE_SIZE,
+    );
     const offset = page * pageSize;
 
     // Check pagination bounds
@@ -88,13 +97,15 @@ export class DiscoveryService {
     }
 
     // Validate query
-    const validationResult = DiscoveryQuerySchema.safeParse({ text: input.query });
+    const validationResult = DiscoveryQuerySchema.safeParse({
+      text: input.query,
+    });
     if (!validationResult.success) {
       logger.debug("discovery_empty_query", { query: input.query });
       return this.createError(
         DiscoveryErrorCode.EMPTY_QUERY,
         "Please enter a search term",
-        false
+        false,
       );
     }
 
@@ -153,7 +164,7 @@ export class DiscoveryService {
     query: string,
     limit: number,
     offset: number,
-    trace: DiscoveryTrace | null = null
+    trace: DiscoveryTrace | null = null,
   ): Promise<DiscoverySearchResponse> {
     // Step 1: Query expansion
     const generationSpan = createGenerationSpan(trace, {
@@ -219,7 +230,8 @@ export class DiscoveryService {
     });
 
     // Calculate total results (approximate based on whether we got a full page)
-    const hasMore = results.length === limit && (offset + limit) < MAX_TOTAL_RESULTS;
+    const hasMore =
+      results.length === limit && offset + limit < MAX_TOTAL_RESULTS;
     const totalResults = hasMore
       ? Math.min(offset + limit + 1, MAX_TOTAL_RESULTS)
       : offset + results.length;
@@ -231,7 +243,7 @@ export class DiscoveryService {
       Math.floor(offset / limit),
       limit,
       totalResults,
-      hasMore
+      hasMore,
     );
   }
 
@@ -245,7 +257,7 @@ export class DiscoveryService {
       // Generate dense embedding with instruction prefix
       const denseVector = await this.teiClient.embedWithInstruct(
         text,
-        QUERY_EMBED_INSTRUCTION
+        QUERY_EMBED_INSTRUCTION,
       );
 
       // Generate sparse vector for BM25
@@ -271,7 +283,7 @@ export class DiscoveryService {
     page: number,
     pageSize: number,
     totalResults?: number,
-    hasMore?: boolean
+    hasMore?: boolean,
   ): DiscoverySearchResponse {
     return {
       results,
@@ -290,7 +302,7 @@ export class DiscoveryService {
   private createError(
     code: DiscoveryErrorCode,
     message: string,
-    retryable: boolean
+    retryable: boolean,
   ): DiscoverySearchError {
     return {
       code,
@@ -308,7 +320,7 @@ export class DiscoveryService {
       return this.createError(
         DiscoveryErrorCode.TIMEOUT,
         "Search took too long. Please try a simpler query.",
-        true
+        true,
       );
     }
 
@@ -317,7 +329,7 @@ export class DiscoveryService {
       return this.createError(
         DiscoveryErrorCode.LLM_UNAVAILABLE,
         "Search service temporarily unavailable. Please try again.",
-        error.retryable
+        error.retryable,
       );
     }
 
@@ -326,7 +338,7 @@ export class DiscoveryService {
       return this.createError(
         DiscoveryErrorCode.EMBEDDING_UNAVAILABLE,
         "Search service temporarily unavailable. Please try again.",
-        error.retryable
+        error.retryable,
       );
     }
 
@@ -341,7 +353,7 @@ export class DiscoveryService {
         return this.createError(
           DiscoveryErrorCode.INDEX_UNAVAILABLE,
           "Search service temporarily unavailable. Please try again.",
-          true
+          true,
         );
       }
     }
@@ -350,7 +362,7 @@ export class DiscoveryService {
     return this.createError(
       DiscoveryErrorCode.INTERNAL_ERROR,
       "An unexpected error occurred. Please try again.",
-      true
+      true,
     );
   }
 
@@ -366,23 +378,28 @@ export class DiscoveryService {
    * @param input - Search input with query and limit
    * @returns Optimized search results or error
    */
-  async searchOptimized(input: { query: string; limit?: number }): Promise<{
-    results: import('../clients/qdrantClient.js').OptimizedSearchResult[];
-    query: string;
-    expandedQueries: string[];
-    totalResults: number;
-  } | DiscoverySearchError> {
+  async searchOptimized(input: { query: string; limit?: number }): Promise<
+    | {
+        results: import("../clients/qdrantClient.js").OptimizedSearchResult[];
+        query: string;
+        expandedQueries: string[];
+        totalResults: number;
+      }
+    | DiscoverySearchError
+  > {
     const startTime = Date.now();
     const limit = Math.min(input.limit ?? DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE);
 
     // Validate query
-    const validationResult = DiscoveryQuerySchema.safeParse({ text: input.query });
+    const validationResult = DiscoveryQuerySchema.safeParse({
+      text: input.query,
+    });
     if (!validationResult.success) {
       logger.debug("discovery_optimized_empty_query", { query: input.query });
       return this.createError(
         DiscoveryErrorCode.EMPTY_QUERY,
         "Please enter a search term",
-        false
+        false,
       );
     }
 
@@ -440,9 +457,9 @@ export class DiscoveryService {
   private async executeSearchOptimized(
     query: string,
     limit: number,
-    trace: DiscoveryTrace | null = null
+    trace: DiscoveryTrace | null = null,
   ): Promise<{
-    results: import('../clients/qdrantClient.js').OptimizedSearchResult[];
+    results: import("../clients/qdrantClient.js").OptimizedSearchResult[];
     query: string;
     expandedQueries: string[];
     totalResults: number;
@@ -498,11 +515,14 @@ export class DiscoveryService {
     });
 
     const searchStartTime = Date.now();
-    const results = await this.qdrantClient.hybridSearchOptimized(expandedQueries, {
-      limit,
-      offset: 0,
-      prefetchLimit: Math.min(limit + 50, MAX_TOTAL_RESULTS + 50),
-    });
+    const results = await this.qdrantClient.hybridSearchOptimized(
+      expandedQueries,
+      {
+        limit,
+        offset: 0,
+        prefetchLimit: Math.min(limit + 50, MAX_TOTAL_RESULTS + 50),
+      },
+    );
     const searchDuration = Date.now() - searchStartTime;
 
     searchSpan.end({
@@ -554,7 +574,7 @@ let _discoveryService: DiscoveryService | null = null;
  * Create or get the discovery service singleton
  */
 export function getDiscoveryService(
-  qdrantClient: BackendQdrantClient
+  qdrantClient: BackendQdrantClient,
 ): DiscoveryService {
   if (!_discoveryService) {
     _discoveryService = new DiscoveryService({ qdrantClient });

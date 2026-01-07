@@ -27,10 +27,7 @@ describe("TEI Client Contract", () => {
 
     it("should validate array of strings input", () => {
       const request = {
-        inputs: [
-          "First interpretation",
-          "Second interpretation",
-        ],
+        inputs: ["First interpretation", "Second interpretation"],
       };
 
       const result = TEIEmbedRequestSchema.safeParse(request);
@@ -48,7 +45,9 @@ describe("TEI Client Contract", () => {
   describe("Embed Response Schema", () => {
     it("should validate single embedding response", () => {
       // Generate a mock 4096-dim embedding
-      const embedding = new Array(EMBEDDING_DIMENSIONS).fill(0).map(() => Math.random());
+      const embedding = new Array(EMBEDDING_DIMENSIONS)
+        .fill(0)
+        .map(() => Math.random());
       const response = [embedding];
 
       const result = TEIEmbedResponseSchema.safeParse(response);
@@ -56,8 +55,12 @@ describe("TEI Client Contract", () => {
     });
 
     it("should validate multiple embeddings response", () => {
-      const embedding1 = new Array(EMBEDDING_DIMENSIONS).fill(0).map(() => Math.random());
-      const embedding2 = new Array(EMBEDDING_DIMENSIONS).fill(0).map(() => Math.random());
+      const embedding1 = new Array(EMBEDDING_DIMENSIONS)
+        .fill(0)
+        .map(() => Math.random());
+      const embedding2 = new Array(EMBEDDING_DIMENSIONS)
+        .fill(0)
+        .map(() => Math.random());
       const response = [embedding1, embedding2];
 
       const result = TEIEmbedResponseSchema.safeParse(response);
@@ -105,7 +108,7 @@ describe("TEI Client Contract", () => {
     it("should throw for incorrect dimensions", () => {
       const shortEmbedding = new Array(512).fill(0);
       expect(() => validateEmbeddingDimensions(shortEmbedding)).toThrow(
-        `Embedding must be exactly ${EMBEDDING_DIMENSIONS} dimensions`
+        `Embedding must be exactly ${EMBEDDING_DIMENSIONS} dimensions`,
       );
     });
 

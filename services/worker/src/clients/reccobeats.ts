@@ -34,7 +34,7 @@ export const ReccoBeatsAudioFeaturesResponseSchema = z.object({
       speechiness: z.number().min(0).max(1).nullable(),
       tempo: z.number().min(0).max(250).nullable(),
       valence: z.number().min(0).max(1).nullable(),
-    })
+    }),
   ),
 });
 
@@ -95,27 +95,27 @@ export function createReccoBeatsClient(): ReccoBeatsClient {
             throw createAPIError(
               429,
               "ReccoBeats",
-              "ReccoBeats rate limit exceeded"
+              "ReccoBeats rate limit exceeded",
             );
           }
 
           throw createAPIError(
             response.status,
             "ReccoBeats",
-            `Failed to fetch audio features: ${response.statusText}`
+            `Failed to fetch audio features: ${response.statusText}`,
           );
         }
 
         // Parse and validate response
         const parsed = ReccoBeatsAudioFeaturesResponseSchema.safeParse(
-          response.data
+          response.data,
         );
 
         if (!parsed.success) {
           // Log warning but don't throw - treat as no data
           console.warn(
             "ReccoBeats response validation failed:",
-            parsed.error.message
+            parsed.error.message,
           );
           return null;
         }
@@ -128,7 +128,7 @@ export function createReccoBeatsClient(): ReccoBeatsClient {
         // Handle multiple results - use first, log warning
         if (parsed.data.content.length > 1) {
           console.warn(
-            `ReccoBeats returned ${parsed.data.content.length} results for ISRC ${isrc}, using first result`
+            `ReccoBeats returned ${parsed.data.content.length} results for ISRC ${isrc}, using first result`,
           );
         }
 
@@ -157,14 +157,14 @@ export function createReccoBeatsClient(): ReccoBeatsClient {
           throw createAPIError(
             error.response?.status ?? 500,
             "ReccoBeats",
-            error.message
+            error.message,
           );
         }
 
         throw createAPIError(
           500,
           "ReccoBeats",
-          error instanceof Error ? error.message : "Unknown error"
+          error instanceof Error ? error.message : "Unknown error",
         );
       }
     },

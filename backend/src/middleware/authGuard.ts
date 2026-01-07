@@ -5,8 +5,8 @@
  * Per FR-006: Validates user identity from Clerk tokens before processing any request.
  */
 
-import { GraphQLError } from 'graphql';
-import { logAuthFailure } from '../utils/securityLogger.js';
+import { GraphQLError } from "graphql";
+import { logAuthFailure } from "../utils/securityLogger.js";
 
 /**
  * Context interface for authenticated GraphQL operations
@@ -47,14 +47,14 @@ export interface GraphQLContext {
  */
 export function requireAuth(
   context: GraphQLContext,
-  operationName?: string
+  operationName?: string,
 ): asserts context is AuthenticatedContext {
   if (!context.userId) {
     // Log the authentication failure per FR-026
-    logAuthFailure(operationName || 'unknown_operation');
+    logAuthFailure(operationName || "unknown_operation");
 
-    throw new GraphQLError('Authentication required', {
-      extensions: { code: 'UNAUTHENTICATED' },
+    throw new GraphQLError("Authentication required", {
+      extensions: { code: "UNAUTHENTICATED" },
     });
   }
 }
@@ -65,6 +65,8 @@ export function requireAuth(
  * @param context - GraphQL context object
  * @returns true if userId exists in context
  */
-export function isAuthenticated(context: GraphQLContext): context is AuthenticatedContext {
-  return typeof context.userId === 'string' && context.userId.length > 0;
+export function isAuthenticated(
+  context: GraphQLContext,
+): context is AuthenticatedContext {
+  return typeof context.userId === "string" && context.userId.length > 0;
 }

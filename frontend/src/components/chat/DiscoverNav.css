@@ -21,7 +21,9 @@
   color: var(--text-secondary, #6b7280);
   text-decoration: none;
   border-radius: 6px;
-  transition: background-color 0.2s, color 0.2s;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
 }
 
 .discover-nav .nav-link:hover {

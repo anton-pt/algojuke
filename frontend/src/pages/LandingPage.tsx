@@ -4,10 +4,10 @@
  * Public landing page explaining AlgoJuke service with sign-in option.
  */
 
-import { SignInButton, useUser } from '@clerk/clerk-react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
-import { AuthLayout } from '../components/layout/AuthLayout';
+import { SignInButton, useUser } from "@clerk/clerk-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
+import { AuthLayout } from "../components/layout/AuthLayout";
 
 interface LocationState {
   from?: { pathname: string };
@@ -20,7 +20,7 @@ export function LandingPage(): JSX.Element {
 
   // Get the original URL the user was trying to access (if any)
   const state = location.state as LocationState | null;
-  const returnTo = state?.from?.pathname || '/discover';
+  const returnTo = state?.from?.pathname || "/discover";
 
   // Redirect signed-in users to appropriate page
   useEffect(() => {
@@ -53,8 +53,9 @@ export function LandingPage(): JSX.Element {
         </button>
       </SignInButton>
 
-      <p style={{ marginTop: '1.5rem', fontSize: '0.875rem', opacity: 0.7 }}>
-        AlgoJuke is currently in private beta. Sign in to check if you have access.
+      <p style={{ marginTop: "1.5rem", fontSize: "0.875rem", opacity: 0.7 }}>
+        AlgoJuke is currently in private beta. Sign in to check if you have
+        access.
       </p>
     </AuthLayout>
   );

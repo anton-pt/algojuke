@@ -42,7 +42,7 @@ describe("Track Ingestion Short Description Integration", () => {
       const prompt = buildShortDescriptionPrompt(
         "Bohemian Rhapsody",
         "Queen",
-        "A complex rock opera exploring themes of guilt, confession, and fate."
+        "A complex rock opera exploring themes of guilt, confession, and fate.",
       );
 
       expect(prompt).toContain("Bohemian Rhapsody");
@@ -57,7 +57,7 @@ describe("Track Ingestion Short Description Integration", () => {
         "Orion",
         "Metallica",
         "Master of Puppets",
-        { energy: 0.8, tempo: 125, valence: 0.4 }
+        { energy: 0.8, tempo: 125, valence: 0.4 },
       );
 
       expect(prompt).toContain("Orion");
@@ -71,7 +71,7 @@ describe("Track Ingestion Short Description Integration", () => {
       const prompt = buildMetadataOnlyShortDescriptionPrompt(
         "Unknown Track",
         "Unknown Artist",
-        "Unknown Album"
+        "Unknown Album",
       );
 
       expect(prompt).toContain("Unknown Track");
@@ -83,16 +83,16 @@ describe("Track Ingestion Short Description Integration", () => {
 
   describe("Pipeline Step Logic", () => {
     it("should use interpretation prompt when interpretation exists", () => {
-      const interpretation =
-        "A powerful anthem about rising above adversity.";
-      const hasInterpretation = interpretation !== null && interpretation !== "";
+      const interpretation = "A powerful anthem about rising above adversity.";
+      const hasInterpretation =
+        interpretation !== null && interpretation !== "";
 
       expect(hasInterpretation).toBe(true);
 
       const prompt = buildShortDescriptionPrompt(
         "Eye of the Tiger",
         "Survivor",
-        interpretation
+        interpretation,
       );
 
       expect(prompt).toContain("Summarize this track interpretation");
@@ -101,9 +101,10 @@ describe("Track Ingestion Short Description Integration", () => {
     it("should use instrumental prompt when no interpretation but has audio features", () => {
       const interpretation = null;
       const audioFeatures = { energy: 0.9, tempo: 180 };
-      const hasInterpretation = interpretation !== null && interpretation !== "";
+      const hasInterpretation =
+        interpretation !== null && interpretation !== "";
       const hasAudioFeatures = Object.values(audioFeatures).some(
-        (v) => v !== null && v !== undefined
+        (v) => v !== null && v !== undefined,
       );
 
       expect(hasInterpretation).toBe(false);
@@ -113,7 +114,7 @@ describe("Track Ingestion Short Description Integration", () => {
         "YYZ",
         "Rush",
         "Moving Pictures",
-        audioFeatures
+        audioFeatures,
       );
 
       expect(prompt).toContain("instrumental track");
@@ -122,9 +123,10 @@ describe("Track Ingestion Short Description Integration", () => {
     it("should use metadata-only prompt when no interpretation and no audio features", () => {
       const interpretation = null;
       const audioFeatures = {};
-      const hasInterpretation = interpretation !== null && interpretation !== "";
+      const hasInterpretation =
+        interpretation !== null && interpretation !== "";
       const hasAudioFeatures = Object.values(audioFeatures).some(
-        (v) => v !== null && v !== undefined
+        (v) => v !== null && v !== undefined,
       );
 
       expect(hasInterpretation).toBe(false);
@@ -133,7 +135,7 @@ describe("Track Ingestion Short Description Integration", () => {
       const prompt = buildMetadataOnlyShortDescriptionPrompt(
         "Mysterious Track",
         "Unknown",
-        "Unknown Album"
+        "Unknown Album",
       );
 
       expect(prompt).toContain("brief, neutral description");
