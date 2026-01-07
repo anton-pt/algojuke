@@ -20,13 +20,12 @@ import {
   getAnthropicClient,
   QUERY_EXPANSION_MODEL,
 } from "../clients/anthropicClient.js";
+import { TEIError } from "../clients/teiClient.js";
 import {
-  TEIClient,
-  TEIError,
-  getTEIClient,
-  QUERY_EMBED_INSTRUCTION,
-  TEI_MODEL_NAME,
-} from "../clients/teiClient.js";
+  EmbeddingClient,
+  EmbeddingError,
+  getEmbeddingClient,
+} from "../clients/embedding.js";
 import { textToSparseVector } from "../utils/sparseVector.js";
 import { logger } from "../utils/logger.js";
 import {
@@ -57,7 +56,7 @@ import {
 interface DiscoveryServiceConfig {
   qdrantClient: BackendQdrantClient;
   anthropicClient?: AnthropicClient;
-  teiClient?: TEIClient;
+  embeddingClient?: EmbeddingClient;
 }
 
 /**
@@ -66,12 +65,12 @@ interface DiscoveryServiceConfig {
 export class DiscoveryService {
   private qdrantClient: BackendQdrantClient;
   private anthropicClient: AnthropicClient;
-  private teiClient: TEIClient;
+  private embeddingClient: EmbeddingClient;
 
   constructor(config: DiscoveryServiceConfig) {
     this.qdrantClient = config.qdrantClient;
     this.anthropicClient = config.anthropicClient ?? getAnthropicClient();
-    this.teiClient = config.teiClient ?? getTEIClient();
+    this.embeddingClient = config.embeddingClient ?? getEmbeddingClient();
   }
 
   /**
@@ -193,9 +192,12 @@ export class DiscoveryService {
     // Step 2: Generate embeddings and sparse vectors for each expanded query
     const embeddingSpan = createEmbeddingSpan(trace, {
       name: "generate-embeddings",
-      model: TEI_MODEL_NAME,
+      model: this.embeddingClient.getModelName(),
       inputCount: expandedQueryTexts.length,
-      metadata: { step: "embedding_generation" },
+      metadata: {
+        step: "embedding_generation",
+        provider: this.embeddingClient.getProviderName(),
+      },
     });
 
     const embeddingStartTime = Date.now();
@@ -254,10 +256,10 @@ export class DiscoveryService {
     const queries: ExpandedQuery[] = [];
 
     for (const text of queryTexts) {
-      // Generate dense embedding with instruction prefix
-      const denseVector = await this.teiClient.embedWithInstruct(
+      // Generate dense embedding with RETRIEVAL_QUERY task type for search
+      const denseVector = await this.embeddingClient.embed(
         text,
-        QUERY_EMBED_INSTRUCTION,
+        "RETRIEVAL_QUERY",
       );
 
       // Generate sparse vector for BM25
@@ -333,8 +335,17 @@ export class DiscoveryService {
       );
     }
 
-    // TEI errors
+    // TEI errors (local embedding)
     if (error instanceof TEIError) {
+      return this.createError(
+        DiscoveryErrorCode.EMBEDDING_UNAVAILABLE,
+        "Search service temporarily unavailable. Please try again.",
+        error.retryable,
+      );
+    }
+
+    // Embedding errors (Gemini or other providers)
+    if (error instanceof EmbeddingError) {
       return this.createError(
         DiscoveryErrorCode.EMBEDDING_UNAVAILABLE,
         "Search service temporarily unavailable. Please try again.",
@@ -491,9 +502,13 @@ export class DiscoveryService {
     // Step 2: Generate embeddings and sparse vectors (same as regular search)
     const embeddingSpan = createEmbeddingSpan(trace, {
       name: "generate-embeddings",
-      model: TEI_MODEL_NAME,
+      model: this.embeddingClient.getModelName(),
       inputCount: expandedQueryTexts.length,
-      metadata: { step: "embedding_generation", optimized: true },
+      metadata: {
+        step: "embedding_generation",
+        optimized: true,
+        provider: this.embeddingClient.getProviderName(),
+      },
     });
 
     const embeddingStartTime = Date.now();
@@ -541,17 +556,18 @@ export class DiscoveryService {
   /**
    * Health check for discovery service
    *
-   * Checks all three dependencies: Anthropic (LLM), TEI (embeddings), and Qdrant (search)
+   * Checks all three dependencies: Anthropic (LLM), embeddings, and Qdrant (search)
    */
   async isHealthy(): Promise<boolean> {
     try {
-      const [anthropicHealthy, teiHealthy, qdrantHealthy] = await Promise.all([
-        this.anthropicClient.isHealthy(),
-        this.teiClient.isHealthy(),
-        this.qdrantClient.isHealthy(),
-      ]);
+      const [anthropicHealthy, embeddingHealthy, qdrantHealthy] =
+        await Promise.all([
+          this.anthropicClient.isHealthy(),
+          this.embeddingClient.isHealthy(),
+          this.qdrantClient.isHealthy(),
+        ]);
 
-      return anthropicHealthy && teiHealthy && qdrantHealthy;
+      return anthropicHealthy && embeddingHealthy && qdrantHealthy;
     } catch {
       return false;
     }

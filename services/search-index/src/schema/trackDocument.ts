@@ -4,9 +4,13 @@
  * Defines the structure and validation for music track documents stored in Qdrant.
  * Each document represents a single track with metadata, lyrics, interpretation,
  * embedding vector, and optional audio features.
+ *
+ * Feature: 043-gemini-embeddings
+ * Updated to support configurable embedding dimensions based on provider.
  */
 
 import { z } from "zod";
+import { getEmbeddingDimensions } from "../config.js";
 
 /**
  * Zod schema for Track Document
@@ -35,12 +39,17 @@ export const TrackDocumentSchema = z.object({
   // Short description for agent context in search results
   short_description: z.string().max(500).nullable().optional(),
 
-  // Vector embedding (4096-dimensional from Qwen3-Embedding-8B)
+  // Vector embedding (dimensions vary by provider)
+  // - Local TEI (mxbai-embed-large-v1): 1024 dimensions
+  // - Gemini (gemini-embedding-001): 3072 dimensions
   interpretation_embedding: z
     .array(z.number())
-    .length(4096, {
-      message: "Embedding must be exactly 4096 dimensions (Qwen3-Embedding-8B)",
-    })
+    .refine(
+      (arr) => arr.length === getEmbeddingDimensions(),
+      (arr) => ({
+        message: `Embedding must be exactly ${getEmbeddingDimensions()} dimensions, got ${arr.length}`,
+      }),
+    )
     .describe("Dense vector for semantic search"),
 
   // Optional audio features from reccobeats.com API

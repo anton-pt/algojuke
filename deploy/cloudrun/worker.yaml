@@ -69,3 +69,15 @@ spec:
                 secretKeyRef:
                   name: qdrant-api-key
                   key: latest
+            # Gemini embedding configuration
+            - name: EMBEDDING_PROVIDER
+              value: gemini
+            - name: EMBEDDING_DIMENSIONS
+              value: "3072"
+            - name: GOOGLE_CLOUD_PROJECT
+              valueFrom:
+                secretKeyRef:
+                  name: gcp-project-id
+                  key: latest
+            - name: GOOGLE_CLOUD_REGION
+              value: europe-west4
