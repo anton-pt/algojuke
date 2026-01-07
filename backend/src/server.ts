@@ -28,6 +28,10 @@ import { createChatRoutes } from "./routes/chatRoutes.js";
 import { createAuthRoutes } from "./routes/auth.js";
 // Note: Playlist export uses GraphQL mutation (exportPlaylistToTidal) instead of REST
 import { clerkMiddleware, getAuth } from "./middleware/clerkAuth.js";
+import {
+  applyStaticServing,
+  getDefaultPublicPath,
+} from "./middleware/staticServing.js";
 import { logger } from "./utils/logger.js";
 import { initializeDatabase, AppDataSource } from "./config/database.js";
 import { LibraryAlbum } from "./entities/LibraryAlbum.js";
@@ -234,25 +238,11 @@ async function startServer() {
     );
 
     // Serve frontend static files in production
-    if (process.env.NODE_ENV === "production") {
-      const publicPath = join(__dirname, "../public");
-
-      // Serve static assets with long cache (Vite adds content hashes)
-      app.use(
-        express.static(publicPath, {
-          maxAge: "1y",
-          index: false, // Don't auto-serve index.html for directory requests
-        }),
-      );
-
-      // SPA fallback - all unmatched GET requests serve index.html
-      app.get("*", (_req, res) => {
-        res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-        res.sendFile(join(publicPath, "index.html"));
-      });
-
-      console.log("📁 Serving frontend from /public");
-    }
+    // NOTE: This must be AFTER all API routes to ensure route priority
+    applyStaticServing(app, {
+      publicPath: getDefaultPublicPath(__dirname),
+      enabled: process.env.NODE_ENV === "production",
+    });
 
     // Start listening
     await new Promise<void>((resolve) => httpServer.listen({ port }, resolve));
