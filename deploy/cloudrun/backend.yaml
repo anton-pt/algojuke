@@ -22,7 +22,7 @@ spec:
               memory: 512Mi
           startupProbe:
             httpGet:
-              path: /graphql?query=%7B__typename%7D
+              path: /health
               port: 4000
             initialDelaySeconds: 5
             periodSeconds: 10
