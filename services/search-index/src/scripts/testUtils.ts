@@ -3,27 +3,36 @@
  *
  * Provides helper functions for creating test data, managing test collections,
  * and generating fixtures for contract and integration tests.
+ *
+ * Feature: 043-gemini-embeddings
+ * Updated to support configurable embedding dimensions.
  */
 
 import { randomUUID } from "crypto";
 import { qdrantClient } from "../client/qdrant.js";
 import { hashIsrcToUuid } from "../utils/isrcHash.js";
 import { getCollectionConfig } from "../schema/trackCollection.js";
+import { getEmbeddingDimensions } from "../config.js";
 import type { TrackDocument } from "../schema/trackDocument.js";
 
 /**
- * Generate a random 4096-dimensional normalized vector
+ * Generate a random normalized vector with configurable dimensions
  *
  * Creates a random vector suitable for testing vector similarity search.
  * Vector is L2-normalized to unit length for cosine similarity compatibility.
  *
- * @returns 4096-dimensional Float32 array
+ * Dimensions are determined by EMBEDDING_PROVIDER:
+ * - local (default): 1024 dimensions
+ * - gemini: 3072 dimensions
+ *
+ * @returns Normalized Float32 array with appropriate dimensions
  */
 export function generateRandomVector(): number[] {
-  const vector = new Float32Array(4096);
+  const dimensions = getEmbeddingDimensions();
+  const vector = new Float32Array(dimensions);
 
   // Fill with random values from normal distribution
-  for (let i = 0; i < 4096; i++) {
+  for (let i = 0; i < dimensions; i++) {
     vector[i] = (Math.random() - 0.5) * 2; // Range: -1 to 1
   }
 
@@ -31,7 +40,7 @@ export function generateRandomVector(): number[] {
   const magnitude = Math.sqrt(vector.reduce((sum, val) => sum + val * val, 0));
 
   if (magnitude > 0) {
-    for (let i = 0; i < 4096; i++) {
+    for (let i = 0; i < dimensions; i++) {
       vector[i] /= magnitude;
     }
   }

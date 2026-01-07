@@ -3,9 +3,13 @@
  *
  * Defines the vector configuration, HNSW index parameters, and payload indexes
  * for the tracks collection supporting hybrid search (dense + sparse vectors).
+ *
+ * Feature: 043-gemini-embeddings
+ * Updated to support configurable embedding dimensions based on provider.
  */
 
 import type { Schemas } from "@qdrant/js-client-rest";
+import { getEmbeddingDimensions } from "../config.js";
 
 /**
  * Collection name for production tracks index
@@ -13,16 +17,35 @@ import type { Schemas } from "@qdrant/js-client-rest";
 export const PRODUCTION_COLLECTION_NAME = "tracks";
 
 /**
- * Vector configuration for track collection
+ * Get vector configuration for track collection
  *
- * Includes dense vector (interpretation_embedding): 1024-dim semantic search with float16 vectors
+ * Includes dense vector (interpretation_embedding) with configurable dimensions:
+ * - Local TEI (mxbai-embed-large-v1): 1024 dimensions
+ * - Gemini (gemini-embedding-001): 3072 dimensions
+ *
+ * @returns Vector configuration object
+ */
+export function getVectorConfig() {
+  return {
+    interpretation_embedding: {
+      size: getEmbeddingDimensions(),
+      distance: "Cosine",
+      on_disk: false, // Keep in memory for performance
+      datatype: "float16", // Use float16 for embedding vectors
+    },
+  };
+}
+
+/**
+ * @deprecated Use getVectorConfig() instead for dynamic dimensions
+ * Kept for backwards compatibility
  */
 export const VECTOR_CONFIG = {
   interpretation_embedding: {
     size: 1024,
     distance: "Cosine",
-    on_disk: false, // Keep in memory for performance
-    datatype: "float16", // Use float16 for embedding vectors
+    on_disk: false,
+    datatype: "float16",
   },
 };
 
@@ -71,12 +94,15 @@ export const PAYLOAD_INDEXES = {
 
 /**
  * Complete collection creation configuration
+ *
+ * Uses getVectorConfig() for dynamic dimension configuration based on
+ * EMBEDDING_PROVIDER environment variable.
  */
 export function getCollectionConfig(
   _collectionName: string,
 ): Schemas["CreateCollection"] {
   return {
-    vectors: VECTOR_CONFIG as any, // Type assertion needed for complex schema
+    vectors: getVectorConfig() as any, // Type assertion needed for complex schema
     hnsw_config: HNSW_CONFIG,
     optimizers_config: OPTIMIZER_CONFIG,
     // Sparse vectors configuration for BM25 keyword search

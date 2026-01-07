@@ -27,11 +27,10 @@ import {
   CLAUDE_MODEL,
 } from "../../clients/anthropic.js";
 import {
-  createTEIClient,
+  createEmbeddingClient,
   createZeroVector,
   validateEmbeddingDimensions,
-  EMBEDDING_DIMENSIONS,
-} from "../../clients/tei.js";
+} from "../../clients/embedding.js";
 import { buildInterpretationPrompt } from "../../prompts/lyricsInterpretation.js";
 import {
   buildShortDescriptionPrompt,
@@ -289,19 +288,26 @@ export const trackIngestion = inngest.createFunction(
       }
 
       const stepStart = Date.now();
-      const teiUrl = process.env.TEI_URL ?? "http://localhost:8080";
+      const embeddingClient = createEmbeddingClient();
       const httpSpan = createHTTPSpan(trace, {
-        name: "tei-embedding",
-        url: `${teiUrl}/embed`,
+        name: `${embeddingClient.getProviderName()}-embedding`,
+        url: `embedding-${embeddingClient.getProviderName()}`,
         method: "POST",
-        metadata: { textLength: interpretation.text.length },
+        metadata: {
+          textLength: interpretation.text.length,
+          provider: embeddingClient.getProviderName(),
+          model: embeddingClient.getModelName(),
+        },
       });
 
       try {
-        const client = createTEIClient();
-        const embeddingVector = await client.embed(interpretation.text);
+        // Use RETRIEVAL_DOCUMENT task type for indexing track interpretations
+        const embeddingVector = await embeddingClient.embed(
+          interpretation.text,
+          "RETRIEVAL_DOCUMENT",
+        );
 
-        // Validate embedding dimensions (must be exactly 4096)
+        // Validate embedding dimensions match expected size
         validateEmbeddingDimensions(embeddingVector);
 
         httpSpan.end({
@@ -398,7 +404,7 @@ export const trackIngestion = inngest.createFunction(
         hasAudioFeatures: !!audioFeatures,
         hasInterpretation: !!interpretation?.text,
         hasShortDescription: !!shortDescription,
-        embeddingDimensions: EMBEDDING_DIMENSIONS,
+        embeddingDimensions: embedding.length,
       };
 
       await inngest.send({

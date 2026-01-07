@@ -20,6 +20,7 @@ import {
   generateTestIsrc,
   generateTestTrack,
 } from "../../src/scripts/testUtils.js";
+import { getEmbeddingDimensions } from "../../src/config.js";
 
 describe("TrackDocument Schema Validation", () => {
   describe("Required Fields", () => {
@@ -95,23 +96,28 @@ describe("TrackDocument Schema Validation", () => {
   });
 
   describe("Vector Dimensions", () => {
-    it("should accept 4096-dimensional embedding", () => {
+    it("should accept embedding with configured dimensions", () => {
+      const dimensions = getEmbeddingDimensions();
       const track = generateTestTrack();
-      expect(track.interpretation_embedding).toHaveLength(4096);
+      expect(track.interpretation_embedding).toHaveLength(dimensions);
       expect(() => validateTrackDocument(track)).not.toThrow();
     });
 
     it("should reject embedding with wrong dimensions", () => {
+      const dimensions = getEmbeddingDimensions();
+      // Use wrong dimensions (neither 1024 nor 3072)
+      const wrongDimensions = 1536;
       const track = generateTestTrack({
-        interpretation_embedding: new Array(1536).fill(0.1),
+        interpretation_embedding: new Array(wrongDimensions).fill(0.1),
       });
       const result = safeValidateTrackDocument(track);
       expect(result.success).toBe(false);
     });
 
     it("should reject non-numeric embedding values", () => {
+      const dimensions = getEmbeddingDimensions();
       const track = generateTestTrack({
-        interpretation_embedding: new Array(4096).fill("invalid" as any),
+        interpretation_embedding: new Array(dimensions).fill("invalid" as any),
       });
       const result = safeValidateTrackDocument(track);
       expect(result.success).toBe(false);

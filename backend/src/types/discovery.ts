@@ -165,7 +165,7 @@ export function isDiscoverySearchError(
 export interface ExpandedQuery {
   /** The expanded search query text */
   text: string;
-  /** Dense embedding vector (1024 dimensions from mxbai-embed-large-v1) */
+  /** Dense embedding vector (dimensions vary by provider: 1024 for local, 3072 for Gemini) */
   denseVector: number[];
   /** Sparse BM25 term frequency vector */
   sparseVector: SparseVector;
@@ -187,5 +187,9 @@ export const MAX_TOTAL_RESULTS = 100;
 /** Search timeout in milliseconds */
 export const SEARCH_TIMEOUT_MS = 30000;
 
-/** Embedding vector dimension */
+/**
+ * @deprecated Use getEmbeddingDimensions() from clients/embedding.js instead
+ * This constant is kept for backwards compatibility but should not be used.
+ * Embedding dimensions vary by provider: 1024 for local TEI, 3072 for Gemini.
+ */
 export const EMBEDDING_DIMENSION = 1024;

@@ -20,7 +20,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { DiscoveryService } from "../../src/services/discoveryService.js";
 import { BackendQdrantClient } from "../../src/clients/qdrantClient.js";
 import type { AnthropicClient } from "../../src/clients/anthropicClient.js";
-import type { TEIClient } from "../../src/clients/teiClient.js";
+import type { EmbeddingClient } from "../../src/clients/embedding.js";
 import {
   DiscoveryErrorCode,
   isDiscoverySearchError,
@@ -28,7 +28,7 @@ import {
   type DiscoverySearchResponse,
 } from "../../src/types/discovery.js";
 import { AnthropicError } from "../../src/clients/anthropicClient.js";
-import { TEIError } from "../../src/clients/teiClient.js";
+import { EmbeddingError } from "../../src/clients/embedding.js";
 
 describe("DiscoveryService Integration", () => {
   let service: DiscoveryService;
@@ -38,7 +38,7 @@ describe("DiscoveryService Integration", () => {
     isHealthy: ReturnType<typeof vi.fn>;
   };
   let mockAnthropicClient: AnthropicClient;
-  let mockTeiClient: TEIClient;
+  let mockEmbeddingClient: EmbeddingClient;
 
   // Sample test data
   const mockResults: DiscoveryResult[] = [
@@ -86,18 +86,22 @@ describe("DiscoveryService Integration", () => {
       isHealthy: vi.fn().mockResolvedValue(true),
     };
 
-    // Create mock TEI client
-    mockTeiClient = {
+    // Create mock embedding client
+    mockEmbeddingClient = {
       embed: vi.fn().mockResolvedValue(mockEmbedding),
-      embedWithInstruct: vi.fn().mockResolvedValue(mockEmbedding),
+      getDimensions: vi.fn().mockReturnValue(1024),
       isHealthy: vi.fn().mockResolvedValue(true),
+      getProviderName: vi.fn().mockReturnValue("local"),
+      getModelName: vi
+        .fn()
+        .mockReturnValue("mixedbread-ai/mxbai-embed-large-v1"),
     };
 
     // Create service with mocked dependencies
     service = new DiscoveryService({
       qdrantClient: mockQdrantClient as unknown as BackendQdrantClient,
       anthropicClient: mockAnthropicClient,
-      teiClient: mockTeiClient,
+      embeddingClient: mockEmbeddingClient,
     });
   });
 
@@ -136,7 +140,7 @@ describe("DiscoveryService Integration", () => {
       await service.search({ query: "test query", page: 0, pageSize: 20 });
 
       // Should be called twice (once per expanded query)
-      expect(mockTeiClient.embedWithInstruct).toHaveBeenCalledTimes(2);
+      expect(mockEmbeddingClient.embed).toHaveBeenCalledTimes(2);
     });
 
     it("should call hybrid search with prepared queries", async () => {
@@ -289,10 +293,12 @@ describe("DiscoveryService Integration", () => {
       }
     });
 
-    it("should return EMBEDDING_UNAVAILABLE error when TEI fails", async () => {
-      mockTeiClient.embedWithInstruct = vi
+    it("should return EMBEDDING_UNAVAILABLE error when embedding fails", async () => {
+      mockEmbeddingClient.embed = vi
         .fn()
-        .mockRejectedValue(new TEIError("TEI model not loaded", 503, true));
+        .mockRejectedValue(
+          new EmbeddingError("Embedding model not loaded", 503, true, "local"),
+        );
 
       const result = await service.search({
         query: "test",
@@ -349,12 +355,12 @@ describe("DiscoveryService Integration", () => {
       expect(healthy).toBe(true);
     });
 
-    it("should return false when TEI is unhealthy", async () => {
-      mockTeiClient.isHealthy = vi.fn().mockResolvedValue(false);
+    it("should return false when embedding is unhealthy", async () => {
+      mockEmbeddingClient.isHealthy = vi.fn().mockResolvedValue(false);
       service = new DiscoveryService({
         qdrantClient: mockQdrantClient as unknown as BackendQdrantClient,
         anthropicClient: mockAnthropicClient,
-        teiClient: mockTeiClient,
+        embeddingClient: mockEmbeddingClient,
       });
 
       const healthy = await service.isHealthy();
