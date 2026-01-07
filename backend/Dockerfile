@@ -1,19 +1,32 @@
-# Stage 1: Dependencies
+# Stage 1: Backend Dependencies
 FROM node:20-alpine AS deps
 WORKDIR /app
-COPY package*.json ./
+COPY backend/package*.json ./
 RUN npm ci
 
-# Stage 2: Builder
+# Stage 2: Frontend Dependencies
+FROM node:20-alpine AS frontend-deps
+WORKDIR /app
+COPY frontend/package*.json ./
+RUN npm ci
+
+# Stage 3: Frontend Builder
+FROM node:20-alpine AS frontend-builder
+WORKDIR /app
+COPY --from=frontend-deps /app/node_modules ./node_modules
+COPY frontend/ ./
+RUN npm run build
+
+# Stage 4: Backend Builder
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+COPY backend/ ./
 RUN npm run build
 # Copy GraphQL schemas to dist (not compiled by tsc)
 RUN cp -r src/schema dist/schema
 
-# Stage 3: Runner
+# Stage 5: Runner
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
@@ -22,10 +35,13 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nodeuser
 
-# Copy production dependencies
+# Copy backend
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package.json ./
+
+# Copy frontend build
+COPY --from=frontend-builder /app/dist ./public
 
 USER nodeuser
 EXPOSE 4000
