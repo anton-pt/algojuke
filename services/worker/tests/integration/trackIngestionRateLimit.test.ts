@@ -39,7 +39,7 @@ describe("Track Ingestion Rate Limiting", () => {
       ).opts;
 
       expect(config.concurrency).toBeDefined();
-      expect(config.concurrency?.limit).toBe(10);
+      expect(config.concurrency?.limit).toBe(5);
     });
 
     it("should have retry configuration", () => {
