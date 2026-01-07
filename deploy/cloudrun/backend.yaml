@@ -51,6 +51,11 @@ spec:
                 secretKeyRef:
                   name: clerk-secret-key
                   key: latest
+            - name: CLERK_PUBLISHABLE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: clerk-publishable-key
+                  key: latest
             - name: ANTHROPIC_API_KEY
               valueFrom:
                 secretKeyRef:
