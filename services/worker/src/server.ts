@@ -12,7 +12,7 @@ import { inngest } from "./inngest/client.js";
 import { functions } from "./inngest/functions/index.js";
 
 const app = express();
-const port = process.env.WORKER_PORT || 3001;
+const port = process.env.PORT || 3001;
 
 // Parse JSON request bodies (required for Inngest)
 app.use(express.json());
