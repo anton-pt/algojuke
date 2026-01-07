@@ -1,5 +1,5 @@
-import { useState, FormEvent } from 'react';
-import './DiscoverySearchBar.css';
+import { useState, FormEvent } from "react";
+import "./DiscoverySearchBar.css";
 
 /**
  * Search bar for semantic discovery search
@@ -22,7 +22,7 @@ export function DiscoverySearchBar({
   onSearch,
   loading = false,
   error = null,
-  initialQuery = '',
+  initialQuery = "",
 }: DiscoverySearchBarProps) {
   const [query, setQuery] = useState(initialQuery);
 
@@ -37,10 +37,10 @@ export function DiscoverySearchBar({
   const maxChars = 2000;
   const charCountClass =
     charCount >= maxChars
-      ? 'at-limit'
+      ? "at-limit"
       : charCount >= maxChars * 0.9
-      ? 'near-limit'
-      : '';
+        ? "near-limit"
+        : "";
 
   return (
     <form className="discovery-search-bar" onSubmit={handleSubmit}>
@@ -56,7 +56,8 @@ export function DiscoverySearchBar({
         />
         <div className="discovery-search-input-footer">
           <div className="discovery-search-hint">
-            Try something like "uplifting songs about hope" or "melancholic late night music"
+            Try something like "uplifting songs about hope" or "melancholic late
+            night music"
           </div>
           <div className={`discovery-search-char-count ${charCountClass}`}>
             {charCount}/{maxChars}
@@ -69,7 +70,7 @@ export function DiscoverySearchBar({
         className="discovery-search-button"
         disabled={loading || !query.trim()}
       >
-        {loading ? 'Searching...' : 'Discover'}
+        {loading ? "Searching..." : "Discover"}
       </button>
 
       {error && <div className="discovery-search-error">{error}</div>}

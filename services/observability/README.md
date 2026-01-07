@@ -222,31 +222,31 @@ npm run type-check
 
 ### Client Functions
 
-| Function | Description |
-|----------|-------------|
-| `createObservabilityClient()` | Create and initialize Langfuse client |
+| Function                         | Description                                  |
+| -------------------------------- | -------------------------------------------- |
+| `createObservabilityClient()`    | Create and initialize Langfuse client        |
 | `tryCreateObservabilityClient()` | Safe version that returns undefined on error |
-| `getObservabilityClient()` | Get or create singleton client |
-| `shutdownObservabilityClient()` | Flush and shutdown singleton client |
-| `checkLangfuseHealth()` | Check Langfuse server status |
+| `getObservabilityClient()`       | Get or create singleton client               |
+| `shutdownObservabilityClient()`  | Flush and shutdown singleton client          |
+| `checkLangfuseHealth()`          | Check Langfuse server status                 |
 
 ### Span Functions
 
-| Function | Description |
-|----------|-------------|
-| `createGenerationSpan(parent, options)` | Track LLM API calls |
-| `createSearchSpan(parent, options)` | Track vector search operations |
-| `createHTTPSpan(parent, options)` | Track HTTP API calls |
+| Function                                | Description                    |
+| --------------------------------------- | ------------------------------ |
+| `createGenerationSpan(parent, options)` | Track LLM API calls            |
+| `createSearchSpan(parent, options)`     | Track vector search operations |
+| `createHTTPSpan(parent, options)`       | Track HTTP API calls           |
 
 ### Context Functions
 
-| Function | Description |
-|----------|-------------|
-| `createTraceContext(options?)` | Create new trace context |
-| `withTraceContext(context, fn)` | Execute function within context |
-| `getTraceId()` | Get current trace ID |
-| `getSpanId()` | Get current span ID |
-| `getCurrentContext()` | Get full current context |
+| Function                        | Description                       |
+| ------------------------------- | --------------------------------- |
+| `createTraceContext(options?)`  | Create new trace context          |
+| `withTraceContext(context, fn)` | Execute function within context   |
+| `getTraceId()`                  | Get current trace ID              |
+| `getSpanId()`                   | Get current span ID               |
+| `getCurrentContext()`           | Get full current context          |
 | `createChildContext(metadata?)` | Create child context from current |
 
 ## Architecture

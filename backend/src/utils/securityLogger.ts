@@ -5,23 +5,23 @@
  * Per FR-027: Log all unauthorized access attempts with timestamp, authenticated user, target resource, and request origin
  */
 
-import { logger } from './logger.js';
+import { logger } from "./logger.js";
 
-export type SecurityEventType = 'AUTH_FAILURE' | 'ACCESS_VIOLATION';
+export type SecurityEventType = "AUTH_FAILURE" | "ACCESS_VIOLATION";
 
 export interface TargetResource {
-  type: 'conversation' | 'album' | 'track';
+  type: "conversation" | "album" | "track";
   id: string;
 }
 
 export interface AuthFailureEvent {
-  event: 'AUTH_FAILURE';
+  event: "AUTH_FAILURE";
   attemptedOperation: string;
   requestOrigin?: string;
 }
 
 export interface AccessViolationEvent {
-  event: 'ACCESS_VIOLATION';
+  event: "ACCESS_VIOLATION";
   userId: string;
   targetResource: TargetResource;
   requestOrigin?: string;
@@ -34,35 +34,37 @@ export interface AccessViolationEvent {
  * @param details - Event-specific details
  */
 export function logSecurityEvent(
-  eventType: 'AUTH_FAILURE',
-  details: Omit<AuthFailureEvent, 'event'>
+  eventType: "AUTH_FAILURE",
+  details: Omit<AuthFailureEvent, "event">,
 ): void;
 export function logSecurityEvent(
-  eventType: 'ACCESS_VIOLATION',
-  details: Omit<AccessViolationEvent, 'event'>
+  eventType: "ACCESS_VIOLATION",
+  details: Omit<AccessViolationEvent, "event">,
 ): void;
 export function logSecurityEvent(
   eventType: SecurityEventType,
-  details: Omit<AuthFailureEvent, 'event'> | Omit<AccessViolationEvent, 'event'>
+  details:
+    | Omit<AuthFailureEvent, "event">
+    | Omit<AccessViolationEvent, "event">,
 ): void {
   const timestamp = new Date().toISOString();
 
-  if (eventType === 'AUTH_FAILURE') {
-    const authDetails = details as Omit<AuthFailureEvent, 'event'>;
-    logger.warn('security_event', {
-      event: 'AUTH_FAILURE',
+  if (eventType === "AUTH_FAILURE") {
+    const authDetails = details as Omit<AuthFailureEvent, "event">;
+    logger.warn("security_event", {
+      event: "AUTH_FAILURE",
       timestamp,
       attemptedOperation: authDetails.attemptedOperation,
-      requestOrigin: authDetails.requestOrigin || 'unknown',
+      requestOrigin: authDetails.requestOrigin || "unknown",
     });
-  } else if (eventType === 'ACCESS_VIOLATION') {
-    const accessDetails = details as Omit<AccessViolationEvent, 'event'>;
-    logger.warn('security_event', {
-      event: 'ACCESS_VIOLATION',
+  } else if (eventType === "ACCESS_VIOLATION") {
+    const accessDetails = details as Omit<AccessViolationEvent, "event">;
+    logger.warn("security_event", {
+      event: "ACCESS_VIOLATION",
       timestamp,
       userId: accessDetails.userId,
       targetResource: accessDetails.targetResource,
-      requestOrigin: accessDetails.requestOrigin || 'unknown',
+      requestOrigin: accessDetails.requestOrigin || "unknown",
     });
   }
 }
@@ -72,9 +74,9 @@ export function logSecurityEvent(
  */
 export function logAuthFailure(
   attemptedOperation: string,
-  requestOrigin?: string
+  requestOrigin?: string,
 ): void {
-  logSecurityEvent('AUTH_FAILURE', {
+  logSecurityEvent("AUTH_FAILURE", {
     attemptedOperation,
     requestOrigin,
   });
@@ -86,9 +88,9 @@ export function logAuthFailure(
 export function logAccessViolation(
   userId: string,
   targetResource: TargetResource,
-  requestOrigin?: string
+  requestOrigin?: string,
 ): void {
-  logSecurityEvent('ACCESS_VIOLATION', {
+  logSecurityEvent("ACCESS_VIOLATION", {
     userId,
     targetResource,
     requestOrigin,

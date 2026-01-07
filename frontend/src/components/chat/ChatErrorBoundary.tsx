@@ -7,8 +7,8 @@
  * Allows users to recover by resetting the chat state.
  */
 
-import { Component, ReactNode } from 'react';
-import './ChatErrorBoundary.css';
+import { Component, ReactNode } from "react";
+import "./ChatErrorBoundary.css";
 
 interface ChatErrorBoundaryProps {
   children: ReactNode;
@@ -36,7 +36,7 @@ export class ChatErrorBoundary extends Component<
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
     // Log error for debugging
-    console.error('Chat component error:', error, errorInfo);
+    console.error("Chat component error:", error, errorInfo);
   }
 
   handleReset = (): void => {

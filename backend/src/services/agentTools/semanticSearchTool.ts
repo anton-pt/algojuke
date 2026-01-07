@@ -29,24 +29,30 @@
  * maintaining recommendation quality for key tracks.
  */
 
-import { Repository } from 'typeorm';
-import { DiscoveryService } from '../discoveryService.js';
-import { TrackMetadataService } from '../trackMetadataService.js';
-import { LibraryTrack } from '../../entities/LibraryTrack.js';
-import { LibraryAlbum } from '../../entities/LibraryAlbum.js';
-import { SemanticSearchInputSchema, type SemanticSearchInput } from '../../schemas/agentTools.js';
+import { Repository } from "typeorm";
+import { DiscoveryService } from "../discoveryService.js";
+import { TrackMetadataService } from "../trackMetadataService.js";
+import { LibraryTrack } from "../../entities/LibraryTrack.js";
+import { LibraryAlbum } from "../../entities/LibraryAlbum.js";
+import {
+  SemanticSearchInputSchema,
+  type SemanticSearchInput,
+} from "../../schemas/agentTools.js";
 import type {
   SemanticSearchOutput,
   IndexedTrackResult,
   AudioFeatures,
   OptimizedIndexedTrackResult,
   OptimizedSemanticSearchOutput,
-} from '../../types/agentTools.js';
-import { isDiscoverySearchError, type DiscoverySearchResponse } from '../../types/discovery.js';
-import { createToolError, type ToolError } from '../../types/agentTools.js';
-import { getLibraryIsrcs } from './libraryStatus.js';
-import { logger } from '../../utils/logger.js';
-import { type OptimizedSearchResult } from '../../clients/qdrantClient.js';
+} from "../../types/agentTools.js";
+import {
+  isDiscoverySearchError,
+  type DiscoverySearchResponse,
+} from "../../types/discovery.js";
+import { createToolError, type ToolError } from "../../types/agentTools.js";
+import { getLibraryIsrcs } from "./libraryStatus.js";
+import { logger } from "../../utils/logger.js";
+import { type OptimizedSearchResult } from "../../clients/qdrantClient.js";
 
 // -----------------------------------------------------------------------------
 // Types
@@ -73,7 +79,7 @@ export interface SemanticSearchContext {
 async function enrichResults(
   discoveryResults: DiscoverySearchResponse,
   trackMetadataService: TrackMetadataService,
-  libraryIsrcs: Set<string>
+  libraryIsrcs: Set<string>,
 ): Promise<IndexedTrackResult[]> {
   const enrichedTracks: IndexedTrackResult[] = [];
 
@@ -81,7 +87,8 @@ async function enrichResults(
     const isrc = result.isrc.toUpperCase();
 
     // Fetch full metadata from Qdrant
-    const extendedMetadata = await trackMetadataService.getExtendedMetadata(isrc);
+    const extendedMetadata =
+      await trackMetadataService.getExtendedMetadata(isrc);
 
     // Build audio features if available
     let audioFeatures: AudioFeatures | undefined;
@@ -146,7 +153,7 @@ async function enrichResults(
  */
 function enrichResultsOptimized(
   optimizedResults: OptimizedSearchResult[],
-  libraryIsrcs: Set<string>
+  libraryIsrcs: Set<string>,
 ): OptimizedIndexedTrackResult[] {
   return optimizedResults.map((result) => {
     const isrc = result.isrc.toUpperCase();
@@ -218,12 +225,12 @@ function enrichResultsOptimized(
  */
 export async function executeSemanticSearch(
   input: SemanticSearchInput,
-  context: SemanticSearchContext
+  context: SemanticSearchContext,
 ): Promise<OptimizedSemanticSearchOutput> {
   const startTime = Date.now();
   const { userId } = context;
 
-  logger.info('semantic_search_tool_start', {
+  logger.info("semantic_search_tool_start", {
     query: input.query.slice(0, 100),
     limit: input.limit,
     optimized: true, // T010: Log that we're using optimized path
@@ -234,8 +241,8 @@ export async function executeSemanticSearch(
   if (!validationResult.success) {
     const errorMessage = validationResult.error.issues
       .map((e) => e.message)
-      .join(', ');
-    throw createToolError(errorMessage, false, false, 'VALIDATION_ERROR');
+      .join(", ");
+    throw createToolError(errorMessage, false, false, "VALIDATION_ERROR");
   }
 
   const { query, limit } = validationResult.data;
@@ -250,13 +257,17 @@ export async function executeSemanticSearch(
 
     // Check for discovery errors
     // Use inline check since optimized result has different type than DiscoverySearchResult
-    if ('code' in discoveryResult && 'retryable' in discoveryResult) {
-      const errorResult = discoveryResult as { code: string; message: string; retryable: boolean };
+    if ("code" in discoveryResult && "retryable" in discoveryResult) {
+      const errorResult = discoveryResult as {
+        code: string;
+        message: string;
+        retryable: boolean;
+      };
       throw createToolError(
         errorResult.message,
         errorResult.retryable,
         false,
-        errorResult.code
+        errorResult.code,
       );
     }
 
@@ -269,24 +280,24 @@ export async function executeSemanticSearch(
       context.libraryTrackRepository,
       context.libraryAlbumRepository,
       userId,
-      'semantic_search_optimized'
+      "semantic_search_optimized",
     );
 
     // Enrich results with library status (T007)
     // Uses optimized enrichment - no additional Qdrant calls needed
     const enrichedTracks = enrichResultsOptimized(
       discoveryResult.results,
-      libraryIsrcs
+      libraryIsrcs,
     );
 
     const durationMs = Date.now() - startTime;
     const totalFound = discoveryResult.totalResults;
     const summary =
       totalFound > 0
-        ? `Found ${totalFound} track${totalFound === 1 ? '' : 's'} matching "${query}"`
+        ? `Found ${totalFound} track${totalFound === 1 ? "" : "s"} matching "${query}"`
         : `No tracks found matching "${query}"`;
 
-    logger.info('semantic_search_tool_complete', {
+    logger.info("semantic_search_tool_complete", {
       query: query.slice(0, 100),
       resultCount: enrichedTracks.length,
       totalFound,
@@ -304,8 +315,8 @@ export async function executeSemanticSearch(
     const durationMs = Date.now() - startTime;
 
     // Re-throw ToolErrors
-    if (error instanceof Error && 'retryable' in error) {
-      logger.error('semantic_search_tool_error', {
+    if (error instanceof Error && "retryable" in error) {
+      logger.error("semantic_search_tool_error", {
         query: query.slice(0, 100),
         durationMs,
         error: error.message,
@@ -315,17 +326,17 @@ export async function executeSemanticSearch(
     }
 
     // Wrap unknown errors
-    logger.error('semantic_search_tool_unexpected_error', {
+    logger.error("semantic_search_tool_unexpected_error", {
       query: query.slice(0, 100),
       durationMs,
       error: error instanceof Error ? error.message : String(error),
     });
 
     throw createToolError(
-      'Vector search service is temporarily unavailable',
+      "Vector search service is temporarily unavailable",
       true,
       false,
-      'INTERNAL_ERROR'
+      "INTERNAL_ERROR",
     );
   }
 }

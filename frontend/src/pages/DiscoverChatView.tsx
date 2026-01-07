@@ -1,4 +1,4 @@
-import { ChatPage, ChatErrorBoundary } from '../components/chat';
+import { ChatPage, ChatErrorBoundary } from "../components/chat";
 
 /**
  * Discover chat view for AI-powered music discovery conversation

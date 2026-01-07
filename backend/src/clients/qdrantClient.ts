@@ -29,25 +29,26 @@ import type { SparseVector, DiscoveryResult } from "../types/discovery.js";
  * network transfer and token usage.
  */
 export const AGENT_SEARCH_PAYLOAD_FIELDS = [
-  'isrc',
-  'title',
-  'artist',
-  'album',
-  'short_description',
-  'acousticness',
-  'danceability',
-  'energy',
-  'instrumentalness',
-  'key',
-  'liveness',
-  'loudness',
-  'mode',
-  'speechiness',
-  'tempo',
-  'valence',
+  "isrc",
+  "title",
+  "artist",
+  "album",
+  "short_description",
+  "acousticness",
+  "danceability",
+  "energy",
+  "instrumentalness",
+  "key",
+  "liveness",
+  "loudness",
+  "mode",
+  "speechiness",
+  "tempo",
+  "valence",
 ] as const;
 
-export type AgentSearchPayloadField = typeof AGENT_SEARCH_PAYLOAD_FIELDS[number];
+export type AgentSearchPayloadField =
+  (typeof AGENT_SEARCH_PAYLOAD_FIELDS)[number];
 
 /**
  * Optimized search result from hybridSearchOptimized
@@ -89,8 +90,11 @@ export class BackendQdrantClient {
   private client: QdrantClient;
   private collection: string;
 
-  constructor(url: string, collection: string) {
-    this.client = new QdrantClient({ url });
+  constructor(url: string, collection: string, apiKey?: string) {
+    this.client = new QdrantClient({
+      url,
+      ...(apiKey && { apiKey }),
+    });
     this.collection = collection;
   }
 
@@ -228,22 +232,37 @@ export class BackendQdrantClient {
 
       return {
         isrc: String(payload.isrc ?? normalizedIsrc),
-        title: String(payload.title ?? ''),
-        artist: String(payload.artist ?? ''),
-        album: String(payload.album ?? ''),
+        title: String(payload.title ?? ""),
+        artist: String(payload.artist ?? ""),
+        album: String(payload.album ?? ""),
         lyrics: payload.lyrics != null ? String(payload.lyrics) : null,
-        interpretation: payload.interpretation != null ? String(payload.interpretation) : null,
-        acousticness: typeof payload.acousticness === 'number' ? payload.acousticness : null,
-        danceability: typeof payload.danceability === 'number' ? payload.danceability : null,
-        energy: typeof payload.energy === 'number' ? payload.energy : null,
-        instrumentalness: typeof payload.instrumentalness === 'number' ? payload.instrumentalness : null,
-        key: typeof payload.key === 'number' ? payload.key : null,
-        liveness: typeof payload.liveness === 'number' ? payload.liveness : null,
-        loudness: typeof payload.loudness === 'number' ? payload.loudness : null,
-        mode: typeof payload.mode === 'number' ? payload.mode : null,
-        speechiness: typeof payload.speechiness === 'number' ? payload.speechiness : null,
-        tempo: typeof payload.tempo === 'number' ? payload.tempo : null,
-        valence: typeof payload.valence === 'number' ? payload.valence : null,
+        interpretation:
+          payload.interpretation != null
+            ? String(payload.interpretation)
+            : null,
+        acousticness:
+          typeof payload.acousticness === "number"
+            ? payload.acousticness
+            : null,
+        danceability:
+          typeof payload.danceability === "number"
+            ? payload.danceability
+            : null,
+        energy: typeof payload.energy === "number" ? payload.energy : null,
+        instrumentalness:
+          typeof payload.instrumentalness === "number"
+            ? payload.instrumentalness
+            : null,
+        key: typeof payload.key === "number" ? payload.key : null,
+        liveness:
+          typeof payload.liveness === "number" ? payload.liveness : null,
+        loudness:
+          typeof payload.loudness === "number" ? payload.loudness : null,
+        mode: typeof payload.mode === "number" ? payload.mode : null,
+        speechiness:
+          typeof payload.speechiness === "number" ? payload.speechiness : null,
+        tempo: typeof payload.tempo === "number" ? payload.tempo : null,
+        valence: typeof payload.valence === "number" ? payload.valence : null,
       };
     } catch (error) {
       logger.warn("qdrant_get_payload_failed", {
@@ -274,7 +293,7 @@ export class BackendQdrantClient {
       limit: number;
       offset: number;
       prefetchLimit?: number;
-    }
+    },
   ): Promise<DiscoveryResult[]> {
     const { limit, offset, prefetchLimit = offset + limit + 50 } = options;
 
@@ -326,7 +345,8 @@ export class BackendQdrantClient {
           artist: String(payload.artist ?? ""),
           album: String(payload.album ?? ""),
           score: point.score ?? 0,
-          artworkUrl: payload.artworkUrl != null ? String(payload.artworkUrl) : null,
+          artworkUrl:
+            payload.artworkUrl != null ? String(payload.artworkUrl) : null,
         });
       }
 
@@ -365,7 +385,7 @@ export class BackendQdrantClient {
       limit: number;
       offset: number;
       prefetchLimit?: number;
-    }
+    },
   ): Promise<OptimizedSearchResult[]> {
     const { limit, offset, prefetchLimit = offset + limit + 50 } = options;
 
@@ -417,19 +437,36 @@ export class BackendQdrantClient {
           artist: String(payload.artist ?? ""),
           album: String(payload.album ?? ""),
           score: point.score ?? 0,
-          shortDescription: payload.short_description != null ? String(payload.short_description) : null,
+          shortDescription:
+            payload.short_description != null
+              ? String(payload.short_description)
+              : null,
           // Audio features
-          acousticness: typeof payload.acousticness === 'number' ? payload.acousticness : null,
-          danceability: typeof payload.danceability === 'number' ? payload.danceability : null,
-          energy: typeof payload.energy === 'number' ? payload.energy : null,
-          instrumentalness: typeof payload.instrumentalness === 'number' ? payload.instrumentalness : null,
-          key: typeof payload.key === 'number' ? payload.key : null,
-          liveness: typeof payload.liveness === 'number' ? payload.liveness : null,
-          loudness: typeof payload.loudness === 'number' ? payload.loudness : null,
-          mode: typeof payload.mode === 'number' ? payload.mode : null,
-          speechiness: typeof payload.speechiness === 'number' ? payload.speechiness : null,
-          tempo: typeof payload.tempo === 'number' ? payload.tempo : null,
-          valence: typeof payload.valence === 'number' ? payload.valence : null,
+          acousticness:
+            typeof payload.acousticness === "number"
+              ? payload.acousticness
+              : null,
+          danceability:
+            typeof payload.danceability === "number"
+              ? payload.danceability
+              : null,
+          energy: typeof payload.energy === "number" ? payload.energy : null,
+          instrumentalness:
+            typeof payload.instrumentalness === "number"
+              ? payload.instrumentalness
+              : null,
+          key: typeof payload.key === "number" ? payload.key : null,
+          liveness:
+            typeof payload.liveness === "number" ? payload.liveness : null,
+          loudness:
+            typeof payload.loudness === "number" ? payload.loudness : null,
+          mode: typeof payload.mode === "number" ? payload.mode : null,
+          speechiness:
+            typeof payload.speechiness === "number"
+              ? payload.speechiness
+              : null,
+          tempo: typeof payload.tempo === "number" ? payload.tempo : null,
+          valence: typeof payload.valence === "number" ? payload.valence : null,
         });
       }
 
@@ -472,15 +509,18 @@ export class BackendQdrantClient {
  *
  * @param url - Qdrant server URL (default from config)
  * @param collection - Qdrant collection name (default from config)
+ * @param apiKey - Qdrant API key (default from QDRANT_API_KEY env var)
  * @returns BackendQdrantClient instance
  */
 export function createBackendQdrantClient(
   url?: string,
-  collection?: string
+  collection?: string,
+  apiKey?: string,
 ): BackendQdrantClient {
   const config = getIngestionConfig();
   return new BackendQdrantClient(
     url ?? config.qdrant.url,
-    collection ?? config.qdrant.collection
+    collection ?? config.qdrant.collection,
+    apiKey ?? process.env.QDRANT_API_KEY,
   );
 }

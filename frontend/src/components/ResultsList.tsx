@@ -1,7 +1,7 @@
-import { AlbumCard } from './AlbumCard';
-import { TrackCard } from './TrackCard';
-import { NoResultsMessage } from './NoResultsMessage';
-import './ResultsList.css';
+import { AlbumCard } from "./AlbumCard";
+import { TrackCard } from "./TrackCard";
+import { NoResultsMessage } from "./NoResultsMessage";
+import "./ResultsList.css";
 
 interface ResultsListProps {
   results: {

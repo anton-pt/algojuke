@@ -51,7 +51,7 @@ export function normalizeIsrc(isrc: string): string {
  * @returns Normalized uppercase ISRC or null if invalid
  */
 export function validateAndNormalizeIsrc(
-  isrc: string | null | undefined
+  isrc: string | null | undefined,
 ): string | null {
   if (!isValidIsrc(isrc)) {
     return null;

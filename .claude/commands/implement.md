@@ -1,15 +1,17 @@
 # Implement Feature
 
 ## Steps
+
 1. Determine current feature from branch:
+
    ```bash
    BRANCH=$(git rev-parse --abbrev-ref HEAD)
    ISSUE_NUM=$(echo "$BRANCH" | grep -oE '^[0-9]+')
    ```
 
 2. Read context:
-   - specs/${ISSUE_NUM}-*/spec.md
-   - specs/${ISSUE_NUM}-*/research.md (if exists)
+   - specs/${ISSUE_NUM}-\*/spec.md
+   - specs/${ISSUE_NUM}-\*/research.md (if exists)
 
 3. Implement the feature:
    - Follow patterns from research.md

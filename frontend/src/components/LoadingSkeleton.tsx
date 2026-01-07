@@ -1,4 +1,4 @@
-import './LoadingSkeleton.css';
+import "./LoadingSkeleton.css";
 
 /**
  * Skeleton component for album cards
@@ -6,7 +6,11 @@ import './LoadingSkeleton.css';
  */
 export function AlbumSkeleton() {
   return (
-    <div className="skeleton-card album-skeleton" role="status" aria-label="Loading album">
+    <div
+      className="skeleton-card album-skeleton"
+      role="status"
+      aria-label="Loading album"
+    >
       <div className="skeleton-artwork"></div>
       <div className="skeleton-content">
         <div className="skeleton-title"></div>
@@ -26,7 +30,11 @@ export function AlbumSkeleton() {
  */
 export function TrackSkeleton() {
   return (
-    <div className="skeleton-card track-skeleton" role="status" aria-label="Loading track">
+    <div
+      className="skeleton-card track-skeleton"
+      role="status"
+      aria-label="Loading track"
+    >
       <div className="skeleton-artwork-small"></div>
       <div className="skeleton-content">
         <div className="skeleton-title-small"></div>
@@ -46,11 +54,11 @@ export function TrackSkeleton() {
  */
 interface LoadingSkeletonProps {
   count?: number;
-  type: 'album' | 'track';
+  type: "album" | "track";
 }
 
 export function LoadingSkeleton({ count = 8, type }: LoadingSkeletonProps) {
-  const SkeletonComponent = type === 'album' ? AlbumSkeleton : TrackSkeleton;
+  const SkeletonComponent = type === "album" ? AlbumSkeleton : TrackSkeleton;
 
   return (
     <div className="skeleton-container">

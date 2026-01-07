@@ -1,9 +1,9 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { StreamingProvider } from '../contexts/StreamingContext';
-import { DiscoverNav } from '../components/chat/DiscoverNav';
-import { DiscoverSearchView } from './DiscoverSearchView';
-import { DiscoverChatView } from './DiscoverChatView';
-import './DiscoverPage.css';
+import { Routes, Route, Navigate } from "react-router-dom";
+import { StreamingProvider } from "../contexts/StreamingContext";
+import { DiscoverNav } from "../components/chat/DiscoverNav";
+import { DiscoverSearchView } from "./DiscoverSearchView";
+import { DiscoverChatView } from "./DiscoverChatView";
+import "./DiscoverPage.css";
 
 /**
  * Discover page with tabs for semantic search and chat

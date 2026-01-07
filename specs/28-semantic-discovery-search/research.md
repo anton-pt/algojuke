@@ -212,7 +212,7 @@ const MAX_RESULTS = 100;
 
 async function paginatedSearch(
   queries: SearchQuery[],
-  page: number // 0-indexed
+  page: number, // 0-indexed
 ) {
   const offset = page * PAGE_SIZE;
   const limit = PAGE_SIZE;
@@ -266,11 +266,9 @@ async function paginatedSearch(
 **Spans to Create**:
 
 1. **LLM Generation Span**: Query expansion (Haiku)
-
    - Prompt, completion, tokens, model
 
 2. **HTTP Span**: TEI embedding request
-
    - URL, method, status, latency
 
 3. **Search Span**: Qdrant hybrid query

@@ -1,5 +1,5 @@
-import { useCallback } from 'react';
-import { useUndoDeleteContext } from '../contexts/UndoDeleteContext';
+import { useCallback } from "react";
+import { useUndoDeleteContext } from "../contexts/UndoDeleteContext";
 
 interface UseUndoDeleteOptions<T> {
   itemName: string; // e.g., "Album", "Track"
@@ -8,10 +8,11 @@ interface UseUndoDeleteOptions<T> {
 }
 
 export function useUndoDelete<T extends { id: string }>(
-  options: UseUndoDeleteOptions<T>
+  options: UseUndoDeleteOptions<T>,
 ) {
   const { itemName, getItemLabel, onDelete } = options;
-  const { isDeleted, handleDelete: contextHandleDelete } = useUndoDeleteContext();
+  const { isDeleted, handleDelete: contextHandleDelete } =
+    useUndoDeleteContext();
 
   // Wrap the context's handleDelete with type-safe item handling
   const handleDelete = useCallback(
@@ -23,7 +24,7 @@ export function useUndoDelete<T extends { id: string }>(
         await onDelete(id);
       });
     },
-    [itemName, getItemLabel, onDelete, contextHandleDelete]
+    [itemName, getItemLabel, onDelete, contextHandleDelete],
   );
 
   return {

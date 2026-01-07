@@ -5,11 +5,11 @@
  * and generating fixtures for contract and integration tests.
  */
 
-import { randomUUID } from 'crypto';
-import { qdrantClient } from '../client/qdrant.js';
-import { hashIsrcToUuid } from '../utils/isrcHash.js';
-import { getCollectionConfig } from '../schema/trackCollection.js';
-import type { TrackDocument } from '../schema/trackDocument.js';
+import { randomUUID } from "crypto";
+import { qdrantClient } from "../client/qdrant.js";
+import { hashIsrcToUuid } from "../utils/isrcHash.js";
+import { getCollectionConfig } from "../schema/trackCollection.js";
+import type { TrackDocument } from "../schema/trackDocument.js";
 
 /**
  * Generate a random 4096-dimensional normalized vector
@@ -28,9 +28,7 @@ export function generateRandomVector(): number[] {
   }
 
   // Normalize to unit length for cosine similarity
-  const magnitude = Math.sqrt(
-    vector.reduce((sum, val) => sum + val * val, 0)
-  );
+  const magnitude = Math.sqrt(vector.reduce((sum, val) => sum + val * val, 0));
 
   if (magnitude > 0) {
     for (let i = 0; i < 4096; i++) {
@@ -52,7 +50,7 @@ export function generateRandomVector(): number[] {
 export function generateTestIsrc(): string {
   const randomDigits = Math.floor(Math.random() * 1000000)
     .toString()
-    .padStart(6, '0');
+    .padStart(6, "0");
   return `USTEST${randomDigits}`;
 }
 
@@ -65,7 +63,7 @@ export function generateTestIsrc(): string {
  * @returns Test collection name
  */
 export function generateTestCollectionName(): string {
-  const uuid = randomUUID().split('-')[0]; // Use first segment for brevity
+  const uuid = randomUUID().split("-")[0]; // Use first segment for brevity
   return `tracks-test-${uuid}`;
 }
 
@@ -97,26 +95,25 @@ export async function createTestCollection(): Promise<string> {
  * @throws Error if collection name doesn't have test prefix
  */
 export async function deleteTestCollection(
-  collectionName: string
+  collectionName: string,
 ): Promise<void> {
   // Safety check: only delete test collections
-  if (!collectionName.startsWith('tracks-test-')) {
+  if (!collectionName.startsWith("tracks-test-")) {
     throw new Error(
-      `Refusing to delete collection '${collectionName}': not a test collection (must start with 'tracks-test-')`
+      `Refusing to delete collection '${collectionName}': not a test collection (must start with 'tracks-test-')`,
     );
   }
 
   try {
     await qdrantClient.deleteCollection(collectionName);
-    console.log(`[testUtils] INFO: Deleted test collection '${collectionName}'`);
+    console.log(
+      `[testUtils] INFO: Deleted test collection '${collectionName}'`,
+    );
   } catch (error) {
     // Ignore "not found" errors (collection already deleted)
-    if (
-      error instanceof Error &&
-      error.message.includes('Not found')
-    ) {
+    if (error instanceof Error && error.message.includes("Not found")) {
       console.log(
-        `[testUtils] INFO: Collection '${collectionName}' already deleted`
+        `[testUtils] INFO: Collection '${collectionName}' already deleted`,
       );
       return;
     }
@@ -134,31 +131,42 @@ export async function deleteTestCollection(
  * @returns Complete track document ready for insertion
  */
 export function generateTestTrack(
-  overrides?: Partial<TrackDocument>
+  overrides?: Partial<TrackDocument>,
 ): TrackDocument {
   const isrc = overrides?.isrc || generateTestIsrc();
 
   return {
     isrc,
-    title: overrides?.title || 'Test Track',
-    artist: overrides?.artist || 'Test Artist',
-    album: overrides?.album || 'Test Album',
-    lyrics: overrides?.lyrics !== undefined ? overrides.lyrics : 'Test lyrics content for searching',
-    interpretation: overrides?.interpretation !== undefined
-      ? overrides.interpretation
-      : 'This is a test track for validating the vector search infrastructure',
-    interpretation_embedding: overrides?.interpretation_embedding || generateRandomVector(),
+    title: overrides?.title || "Test Track",
+    artist: overrides?.artist || "Test Artist",
+    album: overrides?.album || "Test Album",
+    lyrics:
+      overrides?.lyrics !== undefined
+        ? overrides.lyrics
+        : "Test lyrics content for searching",
+    interpretation:
+      overrides?.interpretation !== undefined
+        ? overrides.interpretation
+        : "This is a test track for validating the vector search infrastructure",
+    interpretation_embedding:
+      overrides?.interpretation_embedding || generateRandomVector(),
 
     // Audio features (all optional)
-    acousticness: overrides?.acousticness !== undefined ? overrides.acousticness : 0.5,
-    danceability: overrides?.danceability !== undefined ? overrides.danceability : 0.7,
+    acousticness:
+      overrides?.acousticness !== undefined ? overrides.acousticness : 0.5,
+    danceability:
+      overrides?.danceability !== undefined ? overrides.danceability : 0.7,
     energy: overrides?.energy !== undefined ? overrides.energy : 0.6,
-    instrumentalness: overrides?.instrumentalness !== undefined ? overrides.instrumentalness : 0.1,
+    instrumentalness:
+      overrides?.instrumentalness !== undefined
+        ? overrides.instrumentalness
+        : 0.1,
     key: overrides?.key !== undefined ? overrides.key : 5,
     liveness: overrides?.liveness !== undefined ? overrides.liveness : 0.2,
     loudness: overrides?.loudness !== undefined ? overrides.loudness : -8,
     mode: overrides?.mode !== undefined ? overrides.mode : 1,
-    speechiness: overrides?.speechiness !== undefined ? overrides.speechiness : 0.05,
+    speechiness:
+      overrides?.speechiness !== undefined ? overrides.speechiness : 0.05,
     tempo: overrides?.tempo !== undefined ? overrides.tempo : 120,
     valence: overrides?.valence !== undefined ? overrides.valence : 0.65,
   };
@@ -176,7 +184,7 @@ export function generateTestTrack(
  */
 export async function insertTestTrack(
   collectionName: string,
-  track: TrackDocument
+  track: TrackDocument,
 ): Promise<string> {
   const pointId = hashIsrcToUuid(track.isrc);
   const { interpretation_embedding, ...payload } = track;
@@ -185,11 +193,11 @@ export async function insertTestTrack(
   const textContent = [
     track.title,
     track.artist,
-    track.lyrics || '',
-    track.interpretation || '',
+    track.lyrics || "",
+    track.interpretation || "",
   ]
     .filter((s) => s)
-    .join(' ');
+    .join(" ");
 
   const sparseVector = generateSparseVector(textContent);
 
@@ -218,7 +226,7 @@ export async function insertTestTrack(
  */
 export async function retrieveTrackByIsrc(
   collectionName: string,
-  isrc: string
+  isrc: string,
 ): Promise<Record<string, unknown> | null> {
   const pointId = hashIsrcToUuid(isrc);
 
@@ -251,7 +259,7 @@ export function generateSparseVector(text: string): {
   // Simple tokenization: lowercase, remove punctuation, split on whitespace
   const words = text
     .toLowerCase()
-    .replace(/[^\w\s]/g, '')
+    .replace(/[^\w\s]/g, "")
     .split(/\s+/)
     .filter((w) => w.length > 0);
 

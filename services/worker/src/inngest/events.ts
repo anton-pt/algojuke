@@ -345,7 +345,7 @@ export function createDemoTaskRequest(
   params: Partial<DemoTaskRequestedEvent> & {
     taskId: string;
     source?: "manual" | "automated" | "test";
-  }
+  },
 ): DemoTaskRequestedEvent {
   return {
     taskId: params.taskId,
@@ -373,7 +373,7 @@ export function createDemoTaskRequest(
 export function createStepResult(
   stepName: DemoStepName,
   duration: number,
-  data?: Record<string, unknown>
+  data?: Record<string, unknown>,
 ): StepResult {
   return {
     stepName,
@@ -414,9 +414,12 @@ export const TrackIngestionRequestedEvent = z.object({
      * ISO 3901 ISRC (12 alphanumeric characters)
      * @example "USRC11700001"
      */
-    isrc: z.string().length(12).regex(/^[A-Z0-9]{12}$/i, {
-      message: "ISRC must be 12 alphanumeric characters",
-    }),
+    isrc: z
+      .string()
+      .length(12)
+      .regex(/^[A-Z0-9]{12}$/i, {
+        message: "ISRC must be 12 alphanumeric characters",
+      }),
 
     /**
      * Track title from Tidal API
@@ -572,7 +575,7 @@ export type TrackIngestionEvent =
  * Type guard to check if event is track-ingestion-related
  */
 export function isTrackIngestionEvent(
-  eventName: string
+  eventName: string,
 ): eventName is TrackIngestionEvent["name"] {
   return eventName.startsWith("track/ingestion.");
 }

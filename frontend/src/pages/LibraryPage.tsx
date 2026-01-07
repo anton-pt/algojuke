@@ -1,16 +1,18 @@
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { LibraryNav } from '../components/library/LibraryNav';
-import { AlbumsView } from '../components/library/AlbumsView';
-import { TracksView } from '../components/library/TracksView';
-import { AlbumDetailView } from '../components/library/AlbumDetailView';
-import { TrackDetailView } from '../components/library/TrackDetailView';
-import './LibraryPage.css';
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { LibraryNav } from "../components/library/LibraryNav";
+import { AlbumsView } from "../components/library/AlbumsView";
+import { TracksView } from "../components/library/TracksView";
+import { AlbumDetailView } from "../components/library/AlbumDetailView";
+import { TrackDetailView } from "../components/library/TrackDetailView";
+import "./LibraryPage.css";
 
 export function LibraryPage() {
   const location = useLocation();
 
   // Hide header and nav on detail views
-  const isDetailView = location.pathname.match(/\/library\/(albums|tracks)\/[^/]+$/);
+  const isDetailView = location.pathname.match(
+    /\/library\/(albums|tracks)\/[^/]+$/,
+  );
 
   return (
     <div className="library-page">

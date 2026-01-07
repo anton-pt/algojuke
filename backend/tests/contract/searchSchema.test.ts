@@ -1,24 +1,24 @@
-import { describe, test, expect } from 'vitest';
-import { readFileSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-import { buildSchema } from 'graphql';
+import { describe, test, expect } from "vitest";
+import { readFileSync } from "fs";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
+import { buildSchema } from "graphql";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-describe('GraphQL Schema Contract Tests', () => {
-  test('schema file exists and is valid GraphQL', () => {
-    const schemaPath = join(__dirname, '../../src/schema/schema.graphql');
-    const schemaContent = readFileSync(schemaPath, 'utf-8');
+describe("GraphQL Schema Contract Tests", () => {
+  test("schema file exists and is valid GraphQL", () => {
+    const schemaPath = join(__dirname, "../../src/schema/schema.graphql");
+    const schemaContent = readFileSync(schemaPath, "utf-8");
 
     expect(schemaContent).toBeTruthy();
     expect(() => buildSchema(schemaContent)).not.toThrow();
   });
 
-  test('schema defines Query type with search field', () => {
-    const schemaPath = join(__dirname, '../../src/schema/schema.graphql');
-    const schemaContent = readFileSync(schemaPath, 'utf-8');
+  test("schema defines Query type with search field", () => {
+    const schemaPath = join(__dirname, "../../src/schema/schema.graphql");
+    const schemaContent = readFileSync(schemaPath, "utf-8");
     const schema = buildSchema(schemaContent);
 
     const queryType = schema.getQueryType();
@@ -28,9 +28,9 @@ describe('GraphQL Schema Contract Tests', () => {
     expect(searchField).toBeDefined();
   });
 
-  test('search query accepts required parameters', () => {
-    const schemaPath = join(__dirname, '../../src/schema/schema.graphql');
-    const schemaContent = readFileSync(schemaPath, 'utf-8');
+  test("search query accepts required parameters", () => {
+    const schemaPath = join(__dirname, "../../src/schema/schema.graphql");
+    const schemaContent = readFileSync(schemaPath, "utf-8");
     const schema = buildSchema(schemaContent);
 
     const queryType = schema.getQueryType();
@@ -38,21 +38,21 @@ describe('GraphQL Schema Contract Tests', () => {
     const args = searchField?.args;
 
     expect(args).toBeDefined();
-    expect(args?.find(arg => arg.name === 'query')).toBeDefined();
-    expect(args?.find(arg => arg.name === 'limit')).toBeDefined();
-    expect(args?.find(arg => arg.name === 'offset')).toBeDefined();
-    expect(args?.find(arg => arg.name === 'countryCode')).toBeDefined();
+    expect(args?.find((arg) => arg.name === "query")).toBeDefined();
+    expect(args?.find((arg) => arg.name === "limit")).toBeDefined();
+    expect(args?.find((arg) => arg.name === "offset")).toBeDefined();
+    expect(args?.find((arg) => arg.name === "countryCode")).toBeDefined();
   });
 
-  test('search returns SearchResults type with required fields', () => {
-    const schemaPath = join(__dirname, '../../src/schema/schema.graphql');
-    const schemaContent = readFileSync(schemaPath, 'utf-8');
+  test("search returns SearchResults type with required fields", () => {
+    const schemaPath = join(__dirname, "../../src/schema/schema.graphql");
+    const schemaContent = readFileSync(schemaPath, "utf-8");
     const schema = buildSchema(schemaContent);
 
-    const searchResultsType = schema.getType('SearchResults');
+    const searchResultsType = schema.getType("SearchResults");
     expect(searchResultsType).toBeDefined();
 
-    if (searchResultsType && 'getFields' in searchResultsType) {
+    if (searchResultsType && "getFields" in searchResultsType) {
       const fields = searchResultsType.getFields();
       expect(fields.albums).toBeDefined();
       expect(fields.tracks).toBeDefined();
@@ -63,15 +63,15 @@ describe('GraphQL Schema Contract Tests', () => {
     }
   });
 
-  test('AlbumResult type has all required fields', () => {
-    const schemaPath = join(__dirname, '../../src/schema/schema.graphql');
-    const schemaContent = readFileSync(schemaPath, 'utf-8');
+  test("AlbumResult type has all required fields", () => {
+    const schemaPath = join(__dirname, "../../src/schema/schema.graphql");
+    const schemaContent = readFileSync(schemaPath, "utf-8");
     const schema = buildSchema(schemaContent);
 
-    const albumResultType = schema.getType('AlbumResult');
+    const albumResultType = schema.getType("AlbumResult");
     expect(albumResultType).toBeDefined();
 
-    if (albumResultType && 'getFields' in albumResultType) {
+    if (albumResultType && "getFields" in albumResultType) {
       const fields = albumResultType.getFields();
       expect(fields.id).toBeDefined();
       expect(fields.title).toBeDefined();
@@ -84,15 +84,15 @@ describe('GraphQL Schema Contract Tests', () => {
     }
   });
 
-  test('TrackResult type has all required fields', () => {
-    const schemaPath = join(__dirname, '../../src/schema/schema.graphql');
-    const schemaContent = readFileSync(schemaPath, 'utf-8');
+  test("TrackResult type has all required fields", () => {
+    const schemaPath = join(__dirname, "../../src/schema/schema.graphql");
+    const schemaContent = readFileSync(schemaPath, "utf-8");
     const schema = buildSchema(schemaContent);
 
-    const trackResultType = schema.getType('TrackResult');
+    const trackResultType = schema.getType("TrackResult");
     expect(trackResultType).toBeDefined();
 
-    if (trackResultType && 'getFields' in trackResultType) {
+    if (trackResultType && "getFields" in trackResultType) {
       const fields = trackResultType.getFields();
       expect(fields.id).toBeDefined();
       expect(fields.title).toBeDefined();

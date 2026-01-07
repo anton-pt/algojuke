@@ -91,7 +91,7 @@
 }
 
 .album-detail-meta span:not(:last-child)::after {
-  content: '•';
+  content: "•";
   margin-left: 1rem;
   color: #d1d5db;
 }

@@ -67,7 +67,7 @@ await this.client.query(this.collection, {
   query: { fusion: "rrf" },
   limit,
   offset,
-  with_payload: AGENT_SEARCH_FIELDS,  // ← Field selection
+  with_payload: AGENT_SEARCH_FIELDS, // ← Field selection
 });
 ```
 
@@ -84,16 +84,16 @@ await this.client.query(this.collection, {
 
 Based on codebase exploration:
 
-| Field | Typical Size | Included in Optimized? |
-|-------|--------------|----------------------|
-| isrc | 12 bytes | ✅ Yes |
-| title | ~50 bytes | ✅ Yes |
-| artist | ~30 bytes | ✅ Yes |
-| album | ~40 bytes | ✅ Yes |
-| lyrics | ~2000-5000 bytes | ❌ No |
-| interpretation | ~500-2000 bytes | ❌ No |
-| short_description | ~200 bytes (max 500) | ✅ Yes |
-| audio features (11) | ~88 bytes | ✅ Yes |
+| Field               | Typical Size         | Included in Optimized? |
+| ------------------- | -------------------- | ---------------------- |
+| isrc                | 12 bytes             | ✅ Yes                 |
+| title               | ~50 bytes            | ✅ Yes                 |
+| artist              | ~30 bytes            | ✅ Yes                 |
+| album               | ~40 bytes            | ✅ Yes                 |
+| lyrics              | ~2000-5000 bytes     | ❌ No                  |
+| interpretation      | ~500-2000 bytes      | ❌ No                  |
+| short_description   | ~200 bytes (max 500) | ✅ Yes                 |
+| audio features (11) | ~88 bytes            | ✅ Yes                 |
 
 ### Estimated Savings
 
@@ -102,6 +102,7 @@ Based on codebase exploration:
 - **Reduction**: 80-90% per track
 
 For 20 search results:
+
 - Before: ~60-140 KB
 - After: ~8-12 KB
 - **Savings: 85%+ (exceeds 70% target)**
@@ -150,10 +151,10 @@ When searching for tracks:
 
 ## Summary
 
-| Research Question | Decision | Confidence |
-|-------------------|----------|------------|
-| Qdrant field selection | Use `with_payload: ["field1", ...]` array | High |
-| Payload size reduction | 85%+ reduction achievable | High |
-| Agent usage pattern | Two-tier: scan with short, detail with batch | High |
+| Research Question      | Decision                                     | Confidence |
+| ---------------------- | -------------------------------------------- | ---------- |
+| Qdrant field selection | Use `with_payload: ["field1", ...]` array    | High       |
+| Payload size reduction | 85%+ reduction achievable                    | High       |
+| Agent usage pattern    | Two-tier: scan with short, detail with batch | High       |
 
 All research questions resolved. Ready for Phase 1 design.

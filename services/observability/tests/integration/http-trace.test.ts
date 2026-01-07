@@ -7,11 +7,11 @@
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 
-import { createObservabilityClient, type ObservabilityClient } from "../../src/client.js";
 import {
-  createHTTPSpan,
-  type HTTPSpanOptions,
-} from "../../src/http.js";
+  createObservabilityClient,
+  type ObservabilityClient,
+} from "../../src/client.js";
+import { createHTTPSpan, type HTTPSpanOptions } from "../../src/http.js";
 
 describe("HTTP Trace Capture", () => {
   let client: ObservabilityClient;

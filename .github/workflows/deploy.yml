@@ -1,0 +1,80 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+
+env:
+  GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  GCP_REGION: ${{ vars.GCP_REGION }}
+  GAR_LOCATION: ${{ vars.GCP_REGION }}-docker.pkg.dev
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Required for OIDC
+
+    strategy:
+      matrix:
+        service:
+          - name: backend
+            path: backend
+            image: algojuke-backend
+          - name: worker
+            path: services/worker
+            image: algojuke-worker
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker ${{ env.GAR_LOCATION }}
+
+      - name: Build and Push
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.service.path }}
+          push: true
+          tags: |
+            ${{ env.GAR_LOCATION }}/${{ env.GCP_PROJECT_ID }}/${{ matrix.service.image }}/${{ matrix.service.name }}:${{ github.sha }}
+            ${{ env.GAR_LOCATION }}/${{ env.GCP_PROJECT_ID }}/${{ matrix.service.image }}/${{ matrix.service.name }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    strategy:
+      matrix:
+        service: [backend, worker]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: algojuke-${{ matrix.service }}
+          region: ${{ vars.GCP_REGION }}
+          image: ${{ env.GAR_LOCATION }}/${{ env.GCP_PROJECT_ID }}/algojuke-${{ matrix.service }}/${{ matrix.service }}:${{ github.sha }}
+          metadata: deploy/cloudrun/${{ matrix.service }}.yaml

@@ -1,10 +1,10 @@
-import { useQuery } from '@apollo/client';
-import { useDiscoverySearch } from '../hooks/useDiscoverySearch';
-import { useTrackMetadata } from '../hooks/useTrackMetadata';
-import { GET_DISCOVERY_INDEXED_COUNT } from '../graphql/discovery';
-import { DiscoverySearchBar } from '../components/discover/DiscoverySearchBar';
-import { DiscoveryResults } from '../components/discover/DiscoveryResults';
-import { TrackMetadataPanel } from '../components/library/TrackMetadataPanel';
+import { useQuery } from "@apollo/client";
+import { useDiscoverySearch } from "../hooks/useDiscoverySearch";
+import { useTrackMetadata } from "../hooks/useTrackMetadata";
+import { GET_DISCOVERY_INDEXED_COUNT } from "../graphql/discovery";
+import { DiscoverySearchBar } from "../components/discover/DiscoverySearchBar";
+import { DiscoveryResults } from "../components/discover/DiscoveryResults";
+import { TrackMetadataPanel } from "../components/library/TrackMetadataPanel";
 
 /**
  * Discover search view for semantic music search
@@ -16,9 +16,9 @@ import { TrackMetadataPanel } from '../components/library/TrackMetadataPanel';
 
 export function DiscoverSearchView() {
   // Check indexed track count
-  const { data: indexedCountData } = useQuery<{ discoveryIndexedCount: number }>(
-    GET_DISCOVERY_INDEXED_COUNT
-  );
+  const { data: indexedCountData } = useQuery<{
+    discoveryIndexedCount: number;
+  }>(GET_DISCOVERY_INDEXED_COUNT);
   const indexedCount = indexedCountData?.discoveryIndexedCount ?? null;
   const isCollectionEmpty = indexedCount === 0;
 

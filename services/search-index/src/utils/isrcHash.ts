@@ -2,13 +2,13 @@
  * ISRC to UUID hashing utility for deterministic point IDs
  */
 
-import { createHash } from 'crypto';
+import { createHash } from "crypto";
 
 /**
  * Namespace UUID for ISRC hashing (UUID v5)
  * Generated once for algojuke project using DNS namespace
  */
-const ISRC_NAMESPACE = '6ba7b810-9dad-11d1-80b4-00c04fd430c8'; // Standard DNS namespace
+const ISRC_NAMESPACE = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"; // Standard DNS namespace
 
 /**
  * Hash ISRC to deterministic UUID
@@ -27,17 +27,19 @@ const ISRC_NAMESPACE = '6ba7b810-9dad-11d1-80b4-00c04fd430c8'; // Standard DNS n
 export function hashIsrcToUuid(isrc: string): string {
   // Validate ISRC format (12 alphanumeric characters)
   if (!/^[A-Z0-9]{12}$/i.test(isrc)) {
-    throw new Error(`Invalid ISRC format: ${isrc}. Expected 12 alphanumeric characters.`);
+    throw new Error(
+      `Invalid ISRC format: ${isrc}. Expected 12 alphanumeric characters.`,
+    );
   }
 
   // Normalize to uppercase for consistent hashing
   const normalizedIsrc = isrc.toUpperCase();
 
   // Create deterministic hash from ISRC with namespace
-  const hash = createHash('sha256')
+  const hash = createHash("sha256")
     .update(ISRC_NAMESPACE)
     .update(normalizedIsrc)
-    .digest('hex');
+    .digest("hex");
 
   // Format as UUID v5 (8-4-4-4-12)
   const uuid = [
@@ -46,7 +48,7 @@ export function hashIsrcToUuid(isrc: string): string {
     hash.substring(12, 16),
     hash.substring(16, 20),
     hash.substring(20, 32),
-  ].join('-');
+  ].join("-");
 
   return uuid;
 }

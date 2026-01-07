@@ -19,7 +19,11 @@ describe("Track Ingestion Rate Limiting", () => {
   describe("Throttle Configuration", () => {
     it("should have throttle limit configured", () => {
       // Access the function configuration
-      const config = (trackIngestion as unknown as { opts: { throttle?: { limit: number; period: string } } }).opts;
+      const config = (
+        trackIngestion as unknown as {
+          opts: { throttle?: { limit: number; period: string } };
+        }
+      ).opts;
 
       // Verify throttle is configured
       expect(config.throttle).toBeDefined();
@@ -28,21 +32,29 @@ describe("Track Ingestion Rate Limiting", () => {
     });
 
     it("should have reasonable concurrency limit", () => {
-      const config = (trackIngestion as unknown as { opts: { concurrency?: { limit: number } } }).opts;
+      const config = (
+        trackIngestion as unknown as {
+          opts: { concurrency?: { limit: number } };
+        }
+      ).opts;
 
       expect(config.concurrency).toBeDefined();
       expect(config.concurrency?.limit).toBe(10);
     });
 
     it("should have retry configuration", () => {
-      const config = (trackIngestion as unknown as { opts: { retries?: number } }).opts;
+      const config = (
+        trackIngestion as unknown as { opts: { retries?: number } }
+      ).opts;
 
       expect(config.retries).toBeDefined();
       expect(config.retries).toBe(5);
     });
 
     it("should have idempotency key on ISRC", () => {
-      const config = (trackIngestion as unknown as { opts: { idempotency?: string } }).opts;
+      const config = (
+        trackIngestion as unknown as { opts: { idempotency?: string } }
+      ).opts;
 
       expect(config.idempotency).toBe("event.data.isrc");
     });
@@ -50,7 +62,11 @@ describe("Track Ingestion Rate Limiting", () => {
 
   describe("Rate Limit Error Handling", () => {
     it("should mark 429 errors as retryable", () => {
-      const rateLimitError = createAPIError(429, "TestService", "Rate limit exceeded");
+      const rateLimitError = createAPIError(
+        429,
+        "TestService",
+        "Rate limit exceeded",
+      );
 
       expect(isRetryableError(rateLimitError)).toBe(true);
     });
@@ -68,9 +84,17 @@ describe("Track Ingestion Rate Limiting", () => {
     });
 
     it("should mark 500+ errors as retryable", () => {
-      const serverError = createAPIError(500, "TestService", "Internal server error");
+      const serverError = createAPIError(
+        500,
+        "TestService",
+        "Internal server error",
+      );
       const gatewayError = createAPIError(502, "TestService", "Bad gateway");
-      const serviceError = createAPIError(503, "TestService", "Service unavailable");
+      const serviceError = createAPIError(
+        503,
+        "TestService",
+        "Service unavailable",
+      );
 
       expect(isRetryableError(serverError)).toBe(true);
       expect(isRetryableError(gatewayError)).toBe(true);
@@ -113,7 +137,11 @@ describe("Track Ingestion Rate Limiting", () => {
      * See scripts/test-rate-limits.sh for automated validation.
      */
     it("should document throttle configuration (10 per minute)", () => {
-      const config = (trackIngestion as unknown as { opts: { throttle?: { limit: number; period: string } } }).opts;
+      const config = (
+        trackIngestion as unknown as {
+          opts: { throttle?: { limit: number; period: string } };
+        }
+      ).opts;
 
       // Document the expected behavior
       expect(config.throttle).toEqual({

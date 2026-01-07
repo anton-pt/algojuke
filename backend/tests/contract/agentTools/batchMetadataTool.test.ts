@@ -6,11 +6,14 @@
  * Tests the batch metadata tool implementation contract.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { executeBatchMetadata, type BatchMetadataContext } from '../../../src/services/agentTools/batchMetadataTool.js';
-import type { BatchMetadataInput } from '../../../src/schemas/agentTools.js';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import {
+  executeBatchMetadata,
+  type BatchMetadataContext,
+} from "../../../src/services/agentTools/batchMetadataTool.js";
+import type { BatchMetadataInput } from "../../../src/schemas/agentTools.js";
 
-describe('executeBatchMetadata', () => {
+describe("executeBatchMetadata", () => {
   // Mock implementations
   const mockQdrantClient = {
     getTrackPayload: vi.fn(),
@@ -37,7 +40,7 @@ describe('executeBatchMetadata', () => {
     qdrantClient: mockQdrantClient as any,
     libraryTrackRepository: mockLibraryTrackRepository as any,
     libraryAlbumRepository: mockLibraryAlbumRepository as any,
-    userId: 'test-user-123',
+    userId: "test-user-123",
   };
 
   beforeEach(() => {
@@ -45,14 +48,14 @@ describe('executeBatchMetadata', () => {
 
     // Default successful payload response
     mockQdrantClient.getTrackPayload.mockImplementation((isrc: string) => {
-      if (isrc === 'USRC17607839') {
+      if (isrc === "USRC17607839") {
         return Promise.resolve({
-          isrc: 'USRC17607839',
-          title: 'Paranoid Android',
-          artist: 'Radiohead',
-          album: 'OK Computer',
-          lyrics: 'Please could you stop the noise...',
-          interpretation: 'A song about alienation and technology.',
+          isrc: "USRC17607839",
+          title: "Paranoid Android",
+          artist: "Radiohead",
+          album: "OK Computer",
+          lyrics: "Please could you stop the noise...",
+          interpretation: "A song about alienation and technology.",
           acousticness: 0.02,
           danceability: 0.35,
           energy: 0.65,
@@ -70,8 +73,8 @@ describe('executeBatchMetadata', () => {
     });
   });
 
-  describe('input validation', () => {
-    it('handles empty ISRC array without error', async () => {
+  describe("input validation", () => {
+    it("handles empty ISRC array without error", async () => {
       const input: BatchMetadataInput = {
         isrcs: [],
       };
@@ -81,22 +84,24 @@ describe('executeBatchMetadata', () => {
       expect(result.tracks).toEqual([]);
       expect(result.found).toEqual([]);
       expect(result.notFound).toEqual([]);
-      expect(result.summary).toBe('No ISRCs provided');
+      expect(result.summary).toBe("No ISRCs provided");
     });
 
-    it('rejects more than 100 ISRCs', async () => {
+    it("rejects more than 100 ISRCs", async () => {
       const input: BatchMetadataInput = {
-        isrcs: Array(101).fill('USRC17607839'),
+        isrcs: Array(101).fill("USRC17607839"),
       };
 
-      await expect(executeBatchMetadata(input, mockContext)).rejects.toMatchObject({
+      await expect(
+        executeBatchMetadata(input, mockContext),
+      ).rejects.toMatchObject({
         retryable: false,
       });
     });
 
-    it('accepts up to 100 ISRCs', async () => {
+    it("accepts up to 100 ISRCs", async () => {
       const input: BatchMetadataInput = {
-        isrcs: Array(100).fill('USRC17607839'),
+        isrcs: Array(100).fill("USRC17607839"),
       };
 
       const result = await executeBatchMetadata(input, mockContext);
@@ -104,113 +109,123 @@ describe('executeBatchMetadata', () => {
       expect(result).toBeDefined();
     });
 
-    it('normalizes ISRCs to uppercase', async () => {
+    it("normalizes ISRCs to uppercase", async () => {
       const input: BatchMetadataInput = {
-        isrcs: ['usrc17607839'],
+        isrcs: ["usrc17607839"],
       };
 
       await executeBatchMetadata(input, mockContext);
 
-      expect(mockQdrantClient.getTrackPayload).toHaveBeenCalledWith('USRC17607839');
+      expect(mockQdrantClient.getTrackPayload).toHaveBeenCalledWith(
+        "USRC17607839",
+      );
     });
 
-    it('reports specific malformed ISRCs in error message', async () => {
+    it("reports specific malformed ISRCs in error message", async () => {
       const input: BatchMetadataInput = {
-        isrcs: ['INVALID', 'USRC17607839', 'TOO-SHORT'],
+        isrcs: ["INVALID", "USRC17607839", "TOO-SHORT"],
       };
 
-      await expect(executeBatchMetadata(input, mockContext)).rejects.toMatchObject({
+      await expect(
+        executeBatchMetadata(input, mockContext),
+      ).rejects.toMatchObject({
         message: expect.stringContaining('"INVALID"'),
         retryable: false,
-        code: 'VALIDATION_ERROR',
+        code: "VALIDATION_ERROR",
       });
     });
 
-    it('limits number of malformed ISRCs shown in error', async () => {
+    it("limits number of malformed ISRCs shown in error", async () => {
       const input: BatchMetadataInput = {
-        isrcs: ['X', 'XX', 'XXX', 'XXXX', 'XXXXX', 'XXXXXX', 'XXXXXXX'],
+        isrcs: ["X", "XX", "XXX", "XXXX", "XXXXX", "XXXXXX", "XXXXXXX"],
       };
 
-      const error = await executeBatchMetadata(input, mockContext).catch((e) => e);
+      const error = await executeBatchMetadata(input, mockContext).catch(
+        (e) => e,
+      );
 
       // Should show max 5 examples and indicate there are more
-      expect(error.message).toContain('and 2 more');
+      expect(error.message).toContain("and 2 more");
       expect(error.message).toContain('"X"');
       expect(error.message).not.toContain('"XXXXXXX"'); // Should be in "and X more"
     });
 
-    it('provides helpful error message for malformed ISRCs', async () => {
+    it("provides helpful error message for malformed ISRCs", async () => {
       const input: BatchMetadataInput = {
-        isrcs: ['INVALID-ISRC'],
+        isrcs: ["INVALID-ISRC"],
       };
 
-      const error = await executeBatchMetadata(input, mockContext).catch((e) => e);
+      const error = await executeBatchMetadata(input, mockContext).catch(
+        (e) => e,
+      );
 
-      expect(error.message).toContain('12 alphanumeric characters');
+      expect(error.message).toContain("12 alphanumeric characters");
       expect(error.message).toContain('"INVALID-ISRC"');
     });
 
-    it('provides helpful error message when exceeding 100 ISRCs', async () => {
+    it("provides helpful error message when exceeding 100 ISRCs", async () => {
       const input: BatchMetadataInput = {
-        isrcs: Array(150).fill('USRC17607839'),
+        isrcs: Array(150).fill("USRC17607839"),
       };
 
-      const error = await executeBatchMetadata(input, mockContext).catch((e) => e);
+      const error = await executeBatchMetadata(input, mockContext).catch(
+        (e) => e,
+      );
 
-      expect(error.message).toContain('Maximum 100 ISRCs');
-      expect(error.message).toContain('received 150');
+      expect(error.message).toContain("Maximum 100 ISRCs");
+      expect(error.message).toContain("received 150");
     });
   });
 
-  describe('metadata retrieval', () => {
-    it('retrieves metadata for found ISRCs', async () => {
+  describe("metadata retrieval", () => {
+    it("retrieves metadata for found ISRCs", async () => {
       const input: BatchMetadataInput = {
-        isrcs: ['USRC17607839'],
+        isrcs: ["USRC17607839"],
       };
 
       const result = await executeBatchMetadata(input, mockContext);
 
-      expect(result.found).toContain('USRC17607839');
+      expect(result.found).toContain("USRC17607839");
       expect(result.tracks).toHaveLength(1);
       expect(result.tracks[0]).toMatchObject({
-        isrc: 'USRC17607839',
-        title: 'Paranoid Android',
-        artist: 'Radiohead',
-        album: 'OK Computer',
+        isrc: "USRC17607839",
+        title: "Paranoid Android",
+        artist: "Radiohead",
+        album: "OK Computer",
         isIndexed: true,
         score: 1.0,
       });
     });
 
-    it('tracks not found ISRCs', async () => {
+    it("tracks not found ISRCs", async () => {
       const input: BatchMetadataInput = {
-        isrcs: ['GBDCA1234567'], // Valid format but not in index
+        isrcs: ["GBDCA1234567"], // Valid format but not in index
       };
 
       const result = await executeBatchMetadata(input, mockContext);
 
       expect(result.found).toHaveLength(0);
-      expect(result.notFound).toContain('GBDCA1234567');
+      expect(result.notFound).toContain("GBDCA1234567");
       expect(result.tracks).toHaveLength(0);
     });
 
-    it('handles mixed found and not found ISRCs', async () => {
+    it("handles mixed found and not found ISRCs", async () => {
       const input: BatchMetadataInput = {
-        isrcs: ['USRC17607839', 'GBDCA1234567'],
+        isrcs: ["USRC17607839", "GBDCA1234567"],
       };
 
       const result = await executeBatchMetadata(input, mockContext);
 
-      expect(result.found).toContain('USRC17607839');
-      expect(result.notFound).toContain('GBDCA1234567');
+      expect(result.found).toContain("USRC17607839");
+      expect(result.notFound).toContain("GBDCA1234567");
       expect(result.tracks).toHaveLength(1);
     });
   });
 
-  describe('audio features', () => {
-    it('includes audio features when available', async () => {
+  describe("audio features", () => {
+    it("includes audio features when available", async () => {
       const input: BatchMetadataInput = {
-        isrcs: ['USRC17607839'],
+        isrcs: ["USRC17607839"],
       };
 
       const result = await executeBatchMetadata(input, mockContext);
@@ -224,12 +239,12 @@ describe('executeBatchMetadata', () => {
       });
     });
 
-    it('omits audio features when all are null', async () => {
+    it("omits audio features when all are null", async () => {
       mockQdrantClient.getTrackPayload.mockResolvedValue({
-        isrc: 'USRC17607839',
-        title: 'Test Track',
-        artist: 'Test Artist',
-        album: 'Test Album',
+        isrc: "USRC17607839",
+        title: "Test Track",
+        artist: "Test Artist",
+        album: "Test Album",
         lyrics: null,
         interpretation: null,
         acousticness: null,
@@ -246,7 +261,7 @@ describe('executeBatchMetadata', () => {
       });
 
       const input: BatchMetadataInput = {
-        isrcs: ['USRC17607839'],
+        isrcs: ["USRC17607839"],
       };
 
       const result = await executeBatchMetadata(input, mockContext);
@@ -255,24 +270,28 @@ describe('executeBatchMetadata', () => {
     });
   });
 
-  describe('lyrics and interpretation', () => {
-    it('includes lyrics and interpretation when available', async () => {
+  describe("lyrics and interpretation", () => {
+    it("includes lyrics and interpretation when available", async () => {
       const input: BatchMetadataInput = {
-        isrcs: ['USRC17607839'],
+        isrcs: ["USRC17607839"],
       };
 
       const result = await executeBatchMetadata(input, mockContext);
 
-      expect(result.tracks[0].lyrics).toBe('Please could you stop the noise...');
-      expect(result.tracks[0].interpretation).toBe('A song about alienation and technology.');
+      expect(result.tracks[0].lyrics).toBe(
+        "Please could you stop the noise...",
+      );
+      expect(result.tracks[0].interpretation).toBe(
+        "A song about alienation and technology.",
+      );
     });
 
-    it('omits lyrics and interpretation when null', async () => {
+    it("omits lyrics and interpretation when null", async () => {
       mockQdrantClient.getTrackPayload.mockResolvedValue({
-        isrc: 'USRC17607839',
-        title: 'Test Track',
-        artist: 'Test Artist',
-        album: 'Test Album',
+        isrc: "USRC17607839",
+        title: "Test Track",
+        artist: "Test Artist",
+        album: "Test Album",
         lyrics: null,
         interpretation: null,
         acousticness: null,
@@ -289,7 +308,7 @@ describe('executeBatchMetadata', () => {
       });
 
       const input: BatchMetadataInput = {
-        isrcs: ['USRC17607839'],
+        isrcs: ["USRC17607839"],
       };
 
       const result = await executeBatchMetadata(input, mockContext);
@@ -299,18 +318,20 @@ describe('executeBatchMetadata', () => {
     });
   });
 
-  describe('library status', () => {
-    it('sets inLibrary=true for tracks in library', async () => {
+  describe("library status", () => {
+    it("sets inLibrary=true for tracks in library", async () => {
       // Mock track in library
       mockLibraryTrackRepository.createQueryBuilder.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         where: vi.fn().mockReturnThis(),
         andWhere: vi.fn().mockReturnThis(),
-        getMany: vi.fn().mockResolvedValue([{ metadata: { isrc: 'USRC17607839' } }]),
+        getMany: vi
+          .fn()
+          .mockResolvedValue([{ metadata: { isrc: "USRC17607839" } }]),
       });
 
       const input: BatchMetadataInput = {
-        isrcs: ['USRC17607839'],
+        isrcs: ["USRC17607839"],
       };
 
       const result = await executeBatchMetadata(input, mockContext);
@@ -318,7 +339,7 @@ describe('executeBatchMetadata', () => {
       expect(result.tracks[0].inLibrary).toBe(true);
     });
 
-    it('sets inLibrary=false for tracks not in library', async () => {
+    it("sets inLibrary=false for tracks not in library", async () => {
       // Reset mocks to ensure empty library
       mockLibraryTrackRepository.createQueryBuilder.mockReturnValue({
         select: vi.fn().mockReturnThis(),
@@ -333,7 +354,7 @@ describe('executeBatchMetadata', () => {
       });
 
       const input: BatchMetadataInput = {
-        isrcs: ['USRC17607839'],
+        isrcs: ["USRC17607839"],
       };
 
       const result = await executeBatchMetadata(input, mockContext);
@@ -341,16 +362,16 @@ describe('executeBatchMetadata', () => {
       expect(result.tracks[0].inLibrary).toBe(false);
     });
 
-    it('handles library check failures gracefully', async () => {
+    it("handles library check failures gracefully", async () => {
       mockLibraryTrackRepository.createQueryBuilder.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         where: vi.fn().mockReturnThis(),
         andWhere: vi.fn().mockReturnThis(),
-        getMany: vi.fn().mockRejectedValue(new Error('Database error')),
+        getMany: vi.fn().mockRejectedValue(new Error("Database error")),
       });
 
       const input: BatchMetadataInput = {
-        isrcs: ['USRC17607839'],
+        isrcs: ["USRC17607839"],
       };
 
       // Should not throw, but all tracks should have inLibrary=false
@@ -361,45 +382,45 @@ describe('executeBatchMetadata', () => {
     });
   });
 
-  describe('summary generation', () => {
-    it('generates correct summary for all found', async () => {
+  describe("summary generation", () => {
+    it("generates correct summary for all found", async () => {
       const input: BatchMetadataInput = {
-        isrcs: ['USRC17607839'],
+        isrcs: ["USRC17607839"],
       };
 
       const result = await executeBatchMetadata(input, mockContext);
 
-      expect(result.summary).toBe('Found metadata for all 1 track');
+      expect(result.summary).toBe("Found metadata for all 1 track");
     });
 
-    it('generates correct summary for none found', async () => {
+    it("generates correct summary for none found", async () => {
       const input: BatchMetadataInput = {
-        isrcs: ['GBDCA1234567'],
+        isrcs: ["GBDCA1234567"],
       };
 
       const result = await executeBatchMetadata(input, mockContext);
 
-      expect(result.summary).toBe('No tracks found for 1 ISRC');
+      expect(result.summary).toBe("No tracks found for 1 ISRC");
     });
 
-    it('generates correct summary for partial found', async () => {
+    it("generates correct summary for partial found", async () => {
       const input: BatchMetadataInput = {
-        isrcs: ['USRC17607839', 'GBDCA1234567'],
+        isrcs: ["USRC17607839", "GBDCA1234567"],
       };
 
       const result = await executeBatchMetadata(input, mockContext);
 
-      expect(result.summary).toBe('Found 1 of 2 tracks (1 not indexed)');
+      expect(result.summary).toBe("Found 1 of 2 tracks (1 not indexed)");
     });
 
-    it('uses plural for multiple tracks', async () => {
+    it("uses plural for multiple tracks", async () => {
       mockQdrantClient.getTrackPayload.mockImplementation((isrc: string) => {
-        if (isrc.startsWith('FOUND')) {
+        if (isrc.startsWith("FOUND")) {
           return Promise.resolve({
             isrc,
-            title: 'Test',
-            artist: 'Test',
-            album: 'Test',
+            title: "Test",
+            artist: "Test",
+            album: "Test",
             lyrics: null,
             interpretation: null,
             acousticness: null,
@@ -419,19 +440,19 @@ describe('executeBatchMetadata', () => {
       });
 
       const input: BatchMetadataInput = {
-        isrcs: ['FOUND1234567', 'FOUND2345678'],
+        isrcs: ["FOUND1234567", "FOUND2345678"],
       };
 
       const result = await executeBatchMetadata(input, mockContext);
 
-      expect(result.summary).toBe('Found metadata for all 2 tracks');
+      expect(result.summary).toBe("Found metadata for all 2 tracks");
     });
   });
 
-  describe('output structure', () => {
-    it('includes durationMs in output', async () => {
+  describe("output structure", () => {
+    it("includes durationMs in output", async () => {
       const input: BatchMetadataInput = {
-        isrcs: ['USRC17607839'],
+        isrcs: ["USRC17607839"],
       };
 
       const result = await executeBatchMetadata(input, mockContext);
@@ -439,9 +460,9 @@ describe('executeBatchMetadata', () => {
       expect(result.durationMs).toBeGreaterThanOrEqual(0);
     });
 
-    it('sets isIndexed=true for all found tracks', async () => {
+    it("sets isIndexed=true for all found tracks", async () => {
       const input: BatchMetadataInput = {
-        isrcs: ['USRC17607839'],
+        isrcs: ["USRC17607839"],
       };
 
       const result = await executeBatchMetadata(input, mockContext);
@@ -449,9 +470,9 @@ describe('executeBatchMetadata', () => {
       expect(result.tracks[0].isIndexed).toBe(true);
     });
 
-    it('sets score=1.0 for direct lookups', async () => {
+    it("sets score=1.0 for direct lookups", async () => {
       const input: BatchMetadataInput = {
-        isrcs: ['USRC17607839'],
+        isrcs: ["USRC17607839"],
       };
 
       const result = await executeBatchMetadata(input, mockContext);
@@ -460,18 +481,22 @@ describe('executeBatchMetadata', () => {
     });
   });
 
-  describe('error handling', () => {
-    it('throws retryable error on service failure', async () => {
-      mockQdrantClient.getTrackPayload.mockRejectedValue(new Error('Service unavailable'));
+  describe("error handling", () => {
+    it("throws retryable error on service failure", async () => {
+      mockQdrantClient.getTrackPayload.mockRejectedValue(
+        new Error("Service unavailable"),
+      );
 
       const input: BatchMetadataInput = {
-        isrcs: ['USRC17607839'],
+        isrcs: ["USRC17607839"],
       };
 
-      await expect(executeBatchMetadata(input, mockContext)).rejects.toMatchObject({
-        message: expect.stringContaining('temporarily unavailable'),
+      await expect(
+        executeBatchMetadata(input, mockContext),
+      ).rejects.toMatchObject({
+        message: expect.stringContaining("temporarily unavailable"),
         retryable: true,
-        code: 'INTERNAL_ERROR',
+        code: "INTERNAL_ERROR",
       });
     });
   });
@@ -480,31 +505,36 @@ describe('executeBatchMetadata', () => {
   // Feature 013-agent-tool-optimization: Short Description Support
   // ---------------------------------------------------------------------------
 
-  describe('short description (feature 013)', () => {
-    it('T011: preserves interpretation and lyrics in output', async () => {
+  describe("short description (feature 013)", () => {
+    it("T011: preserves interpretation and lyrics in output", async () => {
       // Verifies that batch metadata still returns full interpretation/lyrics
       // This is critical for the two-tier metadata approach
       const input: BatchMetadataInput = {
-        isrcs: ['USRC17607839'],
+        isrcs: ["USRC17607839"],
       };
 
       const result = await executeBatchMetadata(input, mockContext);
 
       // Full interpretation and lyrics MUST be present
-      expect(result.tracks[0].interpretation).toBe('A song about alienation and technology.');
-      expect(result.tracks[0].lyrics).toBe('Please could you stop the noise...');
+      expect(result.tracks[0].interpretation).toBe(
+        "A song about alienation and technology.",
+      );
+      expect(result.tracks[0].lyrics).toBe(
+        "Please could you stop the noise...",
+      );
     });
 
-    it('T012: includes shortDescription when available', async () => {
+    it("T012: includes shortDescription when available", async () => {
       // Mock response with short_description
       mockQdrantClient.getTrackPayload.mockResolvedValue({
-        isrc: 'USRC17607839',
-        title: 'Paranoid Android',
-        artist: 'Radiohead',
-        album: 'OK Computer',
-        lyrics: 'Please could you stop the noise...',
-        interpretation: 'A song about alienation and technology.',
-        short_description: 'Epic 6-minute alt-rock masterpiece about alienation and dystopia.',
+        isrc: "USRC17607839",
+        title: "Paranoid Android",
+        artist: "Radiohead",
+        album: "OK Computer",
+        lyrics: "Please could you stop the noise...",
+        interpretation: "A song about alienation and technology.",
+        short_description:
+          "Epic 6-minute alt-rock masterpiece about alienation and dystopia.",
         acousticness: 0.02,
         danceability: 0.35,
         energy: 0.65,
@@ -519,19 +549,21 @@ describe('executeBatchMetadata', () => {
       });
 
       const input: BatchMetadataInput = {
-        isrcs: ['USRC17607839'],
+        isrcs: ["USRC17607839"],
       };
 
       const result = await executeBatchMetadata(input, mockContext);
 
       // Short description should be included when available
-      expect(result.tracks[0].shortDescription).toBe('Epic 6-minute alt-rock masterpiece about alienation and dystopia.');
+      expect(result.tracks[0].shortDescription).toBe(
+        "Epic 6-minute alt-rock masterpiece about alienation and dystopia.",
+      );
     });
 
-    it('T012: shortDescription is undefined when not in payload', async () => {
+    it("T012: shortDescription is undefined when not in payload", async () => {
       // Original payload without short_description (pre-feature-012 track)
       const input: BatchMetadataInput = {
-        isrcs: ['USRC17607839'],
+        isrcs: ["USRC17607839"],
       };
 
       const result = await executeBatchMetadata(input, mockContext);
@@ -540,18 +572,18 @@ describe('executeBatchMetadata', () => {
       expect(result.tracks[0].shortDescription).toBeUndefined();
     });
 
-    it('returns full data for on-demand metadata retrieval', async () => {
+    it("returns full data for on-demand metadata retrieval", async () => {
       // This validates the two-tier approach:
       // - semanticSearch returns shortDescription only
       // - batchMetadata returns full interpretation + lyrics + shortDescription
       mockQdrantClient.getTrackPayload.mockResolvedValue({
-        isrc: 'USRC17607839',
-        title: 'Paranoid Android',
-        artist: 'Radiohead',
-        album: 'OK Computer',
-        lyrics: 'Please could you stop the noise...',
-        interpretation: 'A song about alienation and technology.',
-        short_description: 'Epic alt-rock masterpiece.',
+        isrc: "USRC17607839",
+        title: "Paranoid Android",
+        artist: "Radiohead",
+        album: "OK Computer",
+        lyrics: "Please could you stop the noise...",
+        interpretation: "A song about alienation and technology.",
+        short_description: "Epic alt-rock masterpiece.",
         acousticness: 0.02,
         danceability: 0.35,
         energy: 0.65,
@@ -566,7 +598,7 @@ describe('executeBatchMetadata', () => {
       });
 
       const input: BatchMetadataInput = {
-        isrcs: ['USRC17607839'],
+        isrcs: ["USRC17607839"],
       };
 
       const result = await executeBatchMetadata(input, mockContext);
@@ -578,8 +610,10 @@ describe('executeBatchMetadata', () => {
       expect(track.shortDescription).toBeDefined();
 
       // Full content should be available (not truncated)
-      expect(track.interpretation).toBe('A song about alienation and technology.');
-      expect(track.lyrics).toBe('Please could you stop the noise...');
+      expect(track.interpretation).toBe(
+        "A song about alienation and technology.",
+      );
+      expect(track.lyrics).toBe("Please could you stop the noise...");
     });
   });
 });

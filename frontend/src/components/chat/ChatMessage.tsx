@@ -8,12 +8,18 @@
  * Assistant messages render Markdown content and ToolInvocation components.
  */
 
-import React from 'react';
-import ReactMarkdown from 'react-markdown';
-import type { ChatMessage as ChatMessageType, ContentBlock } from '../../graphql/chat';
-import { ToolInvocation, type ToolInvocationProps } from './ToolInvocation';
-import type { ToolInvocationsMap, StreamingContentPart } from '../../hooks/useChatStream';
-import './ChatMessage.css';
+import React from "react";
+import ReactMarkdown from "react-markdown";
+import type {
+  ChatMessage as ChatMessageType,
+  ContentBlock,
+} from "../../graphql/chat";
+import { ToolInvocation, type ToolInvocationProps } from "./ToolInvocation";
+import type {
+  ToolInvocationsMap,
+  StreamingContentPart,
+} from "../../hooks/useChatStream";
+import "./ChatMessage.css";
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -30,9 +36,9 @@ interface ChatMessageProps {
  */
 function extractTextContent(content: ContentBlock[]): string {
   return content
-    .filter((block) => block.type === 'text' && block.text)
+    .filter((block) => block.type === "text" && block.text)
     .map((block) => block.text)
-    .join('\n');
+    .join("\n");
 }
 
 /**
@@ -40,7 +46,7 @@ function extractTextContent(content: ContentBlock[]): string {
  */
 function formatTime(isoString: string): string {
   const date = new Date(isoString);
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
 /**
@@ -79,13 +85,15 @@ function AlgoJukeIcon() {
  * Build a map of toolId -> ToolInvocationProps from persisted content blocks.
  * Merges tool_use blocks with their corresponding tool_result blocks.
  */
-function buildToolInvocationMap(content: ContentBlock[]): Map<string, ToolInvocationProps> {
+function buildToolInvocationMap(
+  content: ContentBlock[],
+): Map<string, ToolInvocationProps> {
   const invocationMap = new Map<string, ToolInvocationProps>();
 
   // Build a map of toolId -> tool_result content
   const resultMap = new Map<string, unknown>();
   for (const block of content) {
-    if (block.type === 'tool_result' && block.toolId && block.toolResult) {
+    if (block.type === "tool_result" && block.toolId && block.toolResult) {
       try {
         resultMap.set(block.toolId, JSON.parse(block.toolResult));
       } catch {
@@ -96,7 +104,7 @@ function buildToolInvocationMap(content: ContentBlock[]): Map<string, ToolInvoca
 
   // Build invocation props from tool_use blocks, merged with results
   for (const block of content) {
-    if (block.type === 'tool_use' && block.toolId && block.toolName) {
+    if (block.type === "tool_use" && block.toolId && block.toolName) {
       let input: unknown = null;
       if (block.toolInput) {
         try {
@@ -113,7 +121,7 @@ function buildToolInvocationMap(content: ContentBlock[]): Map<string, ToolInvoca
         toolCallId: block.toolId,
         toolName: block.toolName,
         input,
-        status: 'completed', // Persisted blocks are already complete
+        status: "completed", // Persisted blocks are already complete
         output,
         resultCount,
         summary: buildSummary(block.toolName, resultCount),
@@ -131,26 +139,29 @@ function buildToolInvocationMap(content: ContentBlock[]): Map<string, ToolInvoca
 function renderPersistedContentInline(
   content: ContentBlock[],
   toolInvocationMap: Map<string, ToolInvocationProps>,
-  hasTidalConnection?: boolean
+  hasTidalConnection?: boolean,
 ): React.ReactNode[] {
   const elements: React.ReactNode[] = [];
 
   for (let i = 0; i < content.length; i++) {
     const block = content[i];
 
-    if (block.type === 'text' && block.text) {
+    if (block.type === "text" && block.text) {
       elements.push(
         <div key={`text-${i}`} className="chat-message__text">
           <ReactMarkdown>{block.text}</ReactMarkdown>
-        </div>
+        </div>,
       );
-    } else if (block.type === 'tool_use' && block.toolId) {
+    } else if (block.type === "tool_use" && block.toolId) {
       const invocation = toolInvocationMap.get(block.toolId);
       if (invocation) {
         elements.push(
           <div key={block.toolId} className="chat-message__tools">
-            <ToolInvocation {...invocation} hasTidalConnection={hasTidalConnection} />
-          </div>
+            <ToolInvocation
+              {...invocation}
+              hasTidalConnection={hasTidalConnection}
+            />
+          </div>,
         );
       }
     }
@@ -164,7 +175,7 @@ function renderPersistedContentInline(
  * Extract result count from tool output
  */
 function extractResultCount(output: unknown): number {
-  if (!output || typeof output !== 'object') return 0;
+  if (!output || typeof output !== "object") return 0;
   const data = output as Record<string, unknown>;
   if (Array.isArray(data.tracks)) return data.tracks.length;
   if (Array.isArray(data.albums)) return data.albums.length;
@@ -175,14 +186,23 @@ function extractResultCount(output: unknown): number {
  * Build summary string for tool invocation
  */
 function buildSummary(toolName: string, count: number): string {
-  if (count === 0) return 'No results';
-  const itemType = toolName === 'albumTracks' ? 'track' :
-                   toolName === 'tidalSearch' && count > 0 ? 'result' : 'track';
-  return `Found ${count} ${itemType}${count !== 1 ? 's' : ''}`;
+  if (count === 0) return "No results";
+  const itemType =
+    toolName === "albumTracks"
+      ? "track"
+      : toolName === "tidalSearch" && count > 0
+        ? "result"
+        : "track";
+  return `Found ${count} ${itemType}${count !== 1 ? "s" : ""}`;
 }
 
-export function ChatMessage({ message, toolInvocations, streamingParts, hasTidalConnection }: ChatMessageProps) {
-  const isUser = message.role === 'user';
+export function ChatMessage({
+  message,
+  toolInvocations,
+  streamingParts,
+  hasTidalConnection,
+}: ChatMessageProps) {
+  const isUser = message.role === "user";
   const textContent = extractTextContent(message.content);
 
   // Check if we're streaming (have real-time invocations)
@@ -196,33 +216,38 @@ export function ChatMessage({ message, toolInvocations, streamingParts, hasTidal
   // 1. Streaming with ordered parts: use streamingParts for inline rendering
   // 2. Persisted with tools: render content blocks inline in order
   // 3. Simple text: just render text
-  const useStreamingInline = streamingParts && streamingParts.length > 0 && hasRealtimeInvocations;
+  const useStreamingInline =
+    streamingParts && streamingParts.length > 0 && hasRealtimeInvocations;
   const usePersistedInline = !useStreamingInline && hasPersistedTools;
 
   return (
-    <div className={`chat-message ${isUser ? 'chat-message--user' : 'chat-message--assistant'}`}>
+    <div
+      className={`chat-message ${isUser ? "chat-message--user" : "chat-message--assistant"}`}
+    >
       <div className="chat-message__avatar">
         {isUser ? <UserIcon /> : <AlgoJukeIcon />}
       </div>
       <div className="chat-message__content">
         <div className="chat-message__header">
-          <span className="chat-message__role">{isUser ? 'You' : 'AlgoJuke'}</span>
-          <span className="chat-message__time">{formatTime(message.createdAt)}</span>
+          <span className="chat-message__role">
+            {isUser ? "You" : "AlgoJuke"}
+          </span>
+          <span className="chat-message__time">
+            {formatTime(message.createdAt)}
+          </span>
         </div>
 
         {isUser ? (
           // User message: simple text
-          <div className="chat-message__text">
-            {textContent || '...'}
-          </div>
+          <div className="chat-message__text">{textContent || "..."}</div>
         ) : useStreamingInline ? (
           // Streaming assistant message: render parts inline in order
           <div className="chat-message__inline-content">
             {streamingParts.map((part, index) => {
-              if (part.type === 'text') {
+              if (part.type === "text") {
                 return (
                   <div key={`text-${index}`} className="chat-message__text">
-                    <ReactMarkdown>{part.content || '...'}</ReactMarkdown>
+                    <ReactMarkdown>{part.content || "..."}</ReactMarkdown>
                   </div>
                 );
               } else {
@@ -231,7 +256,10 @@ export function ChatMessage({ message, toolInvocations, streamingParts, hasTidal
                 if (invocation) {
                   return (
                     <div key={part.toolId} className="chat-message__tools">
-                      <ToolInvocation {...invocation} hasTidalConnection={hasTidalConnection} />
+                      <ToolInvocation
+                        {...invocation}
+                        hasTidalConnection={hasTidalConnection}
+                      />
                     </div>
                   );
                 }
@@ -242,12 +270,16 @@ export function ChatMessage({ message, toolInvocations, streamingParts, hasTidal
         ) : usePersistedInline ? (
           // Persisted assistant message with tools: render content blocks inline in order
           <div className="chat-message__inline-content">
-            {renderPersistedContentInline(message.content, persistedToolMap, hasTidalConnection)}
+            {renderPersistedContentInline(
+              message.content,
+              persistedToolMap,
+              hasTidalConnection,
+            )}
           </div>
         ) : (
           // Simple assistant message: just text
           <div className="chat-message__text">
-            <ReactMarkdown>{textContent || '...'}</ReactMarkdown>
+            <ReactMarkdown>{textContent || "..."}</ReactMarkdown>
           </div>
         )}
       </div>

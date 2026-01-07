@@ -1,9 +1,9 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { AudioFeaturesDisplay } from './AudioFeaturesDisplay';
-import { AudioFeatures } from '../../graphql/trackMetadata';
+import { describe, it, expect } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { AudioFeaturesDisplay } from "./AudioFeaturesDisplay";
+import { AudioFeatures } from "../../graphql/trackMetadata";
 
-describe('AudioFeaturesDisplay', () => {
+describe("AudioFeaturesDisplay", () => {
   const fullAudioFeatures: AudioFeatures = {
     acousticness: 0.5,
     danceability: 0.75,
@@ -18,15 +18,17 @@ describe('AudioFeaturesDisplay', () => {
     valence: 0.7,
   };
 
-  describe('when audioFeatures is null', () => {
-    it('shows unavailable message', () => {
+  describe("when audioFeatures is null", () => {
+    it("shows unavailable message", () => {
       render(<AudioFeaturesDisplay audioFeatures={null} />);
-      expect(screen.getByText('Audio features not available')).toBeInTheDocument();
+      expect(
+        screen.getByText("Audio features not available"),
+      ).toBeInTheDocument();
     });
   });
 
-  describe('when all features are null', () => {
-    it('shows unavailable message', () => {
+  describe("when all features are null", () => {
+    it("shows unavailable message", () => {
       const emptyFeatures: AudioFeatures = {
         acousticness: null,
         danceability: null,
@@ -41,51 +43,53 @@ describe('AudioFeaturesDisplay', () => {
         valence: null,
       };
       render(<AudioFeaturesDisplay audioFeatures={emptyFeatures} />);
-      expect(screen.getByText('Audio features not available')).toBeInTheDocument();
+      expect(
+        screen.getByText("Audio features not available"),
+      ).toBeInTheDocument();
     });
   });
 
-  describe('when features are present', () => {
-    it('displays key with mode formatted correctly', () => {
+  describe("when features are present", () => {
+    it("displays key with mode formatted correctly", () => {
       render(<AudioFeaturesDisplay audioFeatures={fullAudioFeatures} />);
-      expect(screen.getByText('Key')).toBeInTheDocument();
-      expect(screen.getByText('F major')).toBeInTheDocument(); // key 5 = F, mode 1 = major
+      expect(screen.getByText("Key")).toBeInTheDocument();
+      expect(screen.getByText("F major")).toBeInTheDocument(); // key 5 = F, mode 1 = major
     });
 
-    it('displays tempo formatted with BPM', () => {
+    it("displays tempo formatted with BPM", () => {
       render(<AudioFeaturesDisplay audioFeatures={fullAudioFeatures} />);
-      expect(screen.getByText('Tempo')).toBeInTheDocument();
-      expect(screen.getByText('120 BPM')).toBeInTheDocument();
+      expect(screen.getByText("Tempo")).toBeInTheDocument();
+      expect(screen.getByText("120 BPM")).toBeInTheDocument();
     });
 
-    it('displays energy as percentage', () => {
+    it("displays energy as percentage", () => {
       render(<AudioFeaturesDisplay audioFeatures={fullAudioFeatures} />);
-      expect(screen.getByText('Energy')).toBeInTheDocument();
-      expect(screen.getByText('80%')).toBeInTheDocument();
+      expect(screen.getByText("Energy")).toBeInTheDocument();
+      expect(screen.getByText("80%")).toBeInTheDocument();
     });
 
-    it('displays danceability as percentage', () => {
+    it("displays danceability as percentage", () => {
       render(<AudioFeaturesDisplay audioFeatures={fullAudioFeatures} />);
-      expect(screen.getByText('Danceability')).toBeInTheDocument();
-      expect(screen.getByText('75%')).toBeInTheDocument();
+      expect(screen.getByText("Danceability")).toBeInTheDocument();
+      expect(screen.getByText("75%")).toBeInTheDocument();
     });
 
-    it('displays mood/valence with descriptive text', () => {
+    it("displays mood/valence with descriptive text", () => {
       render(<AudioFeaturesDisplay audioFeatures={fullAudioFeatures} />);
-      expect(screen.getByText('Mood')).toBeInTheDocument();
+      expect(screen.getByText("Mood")).toBeInTheDocument();
       // valence 0.7 = "Uplifting"
       expect(screen.getByText(/Uplifting/)).toBeInTheDocument();
     });
 
-    it('displays loudness with dB unit', () => {
+    it("displays loudness with dB unit", () => {
       render(<AudioFeaturesDisplay audioFeatures={fullAudioFeatures} />);
-      expect(screen.getByText('Loudness')).toBeInTheDocument();
-      expect(screen.getByText('-5.5 dB')).toBeInTheDocument();
+      expect(screen.getByText("Loudness")).toBeInTheDocument();
+      expect(screen.getByText("-5.5 dB")).toBeInTheDocument();
     });
   });
 
-  describe('partial features', () => {
-    it('only displays features that are present', () => {
+  describe("partial features", () => {
+    it("only displays features that are present", () => {
       const partialFeatures: AudioFeatures = {
         acousticness: null,
         danceability: null,
@@ -102,35 +106,35 @@ describe('AudioFeaturesDisplay', () => {
       render(<AudioFeaturesDisplay audioFeatures={partialFeatures} />);
 
       // Present features
-      expect(screen.getByText('Energy')).toBeInTheDocument();
-      expect(screen.getByText('Tempo')).toBeInTheDocument();
+      expect(screen.getByText("Energy")).toBeInTheDocument();
+      expect(screen.getByText("Tempo")).toBeInTheDocument();
 
       // Absent features should not be rendered
-      expect(screen.queryByText('Danceability')).not.toBeInTheDocument();
-      expect(screen.queryByText('Key')).not.toBeInTheDocument();
-      expect(screen.queryByText('Mood')).not.toBeInTheDocument();
+      expect(screen.queryByText("Danceability")).not.toBeInTheDocument();
+      expect(screen.queryByText("Key")).not.toBeInTheDocument();
+      expect(screen.queryByText("Mood")).not.toBeInTheDocument();
     });
   });
 
-  describe('key formatting edge cases', () => {
-    it('formats minor key correctly', () => {
+  describe("key formatting edge cases", () => {
+    it("formats minor key correctly", () => {
       const minorKey: AudioFeatures = {
         ...fullAudioFeatures,
         key: 0,
         mode: 0,
       };
       render(<AudioFeaturesDisplay audioFeatures={minorKey} />);
-      expect(screen.getByText('C minor')).toBeInTheDocument();
+      expect(screen.getByText("C minor")).toBeInTheDocument();
     });
 
-    it('shows Unknown for invalid key', () => {
+    it("shows Unknown for invalid key", () => {
       const invalidKey: AudioFeatures = {
         ...fullAudioFeatures,
         key: -1,
         mode: 1,
       };
       render(<AudioFeaturesDisplay audioFeatures={invalidKey} />);
-      expect(screen.getByText('Unknown')).toBeInTheDocument();
+      expect(screen.getByText("Unknown")).toBeInTheDocument();
     });
   });
 });

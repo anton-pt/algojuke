@@ -16,6 +16,7 @@ This document captures technical decisions and patterns for implementing the Dis
 **Rationale**: The existing Apollo Server setup doesn't include GraphQL Subscriptions infrastructure. SSE provides a simpler, well-supported alternative for server-to-client streaming that works with the existing Express-compatible stack.
 
 **Alternatives Considered**:
+
 - **WebSockets**: More complex, requires additional infrastructure, overkill for unidirectional streaming
 - **GraphQL Subscriptions**: Would require adding subscription support to Apollo Server and client
 - **Long polling**: Less efficient, higher latency
@@ -29,11 +30,11 @@ const app = express();
 app.use(express.json());
 
 // SSE endpoint pattern
-app.post('/api/chat/stream', async (req, res) => {
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.setHeader('X-Accel-Buffering', 'no');
+app.post("/api/chat/stream", async (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
   // ... stream handling
 });
 ```
@@ -47,6 +48,7 @@ app.post('/api/chat/stream', async (req, res) => {
 **Rationale**: The codebase already uses these packages for LLM interactions. The `streamText` function provides built-in streaming support with the same model initialization pattern.
 
 **Alternatives Considered**:
+
 - **Direct Anthropic SDK**: Would require custom stream handling
 - **Fetch with manual parsing**: More error-prone, less features
 
@@ -70,11 +72,13 @@ const stream = await streamText({
   model: anthropic("claude-sonnet-4-5-20250929"),
   messages: conversationMessages,
   maxTokens: 4096,
-  abortSignal: controller.signal,  // For interruption
+  abortSignal: controller.signal, // For interruption
 });
 
 for await (const chunk of stream.textStream) {
-  res.write(`data: ${JSON.stringify({ type: 'text_delta', content: chunk })}\n\n`);
+  res.write(
+    `data: ${JSON.stringify({ type: "text_delta", content: chunk })}\n\n`,
+  );
 }
 ```
 
@@ -91,13 +95,13 @@ for await (const chunk of stream.textStream) {
 ```typescript
 export function createDiscoveryTrace(
   query: string,
-  sessionId?: string
+  sessionId?: string,
 ): DiscoveryTrace | null {
   const client = getLangfuseClient();
   return client.trace({
     name: "discovery-search",
     metadata: { query },
-    sessionId,  // Already supported!
+    sessionId, // Already supported!
     tags: ["discovery", "search"],
   });
 }
@@ -108,12 +112,12 @@ export function createDiscoveryTrace(
 ```typescript
 export function createChatTrace(
   conversationId: string,
-  messageContent: string
+  messageContent: string,
 ): ChatTrace | null {
   const client = getLangfuseClient();
   return client.trace({
     name: "chat-message",
-    sessionId: conversationId,  // Conversation UUID groups all messages
+    sessionId: conversationId, // Conversation UUID groups all messages
     metadata: {
       messageContent,
       timestamp: new Date().toISOString(),
@@ -132,6 +136,7 @@ export function createChatTrace(
 **Rationale**: Following Claude's message format allows storing text, tool_use, and tool_result blocks in a unified structure. This enables future tool integration without schema changes.
 
 **Alternatives Considered**:
+
 - **Simple text column**: Would require migration for tool support
 - **Separate tool tables**: More complex queries, harder to maintain order
 
@@ -140,13 +145,13 @@ export function createChatTrace(
 ```typescript
 // Matches Claude API message structure
 interface ContentBlock {
-  type: 'text' | 'tool_use' | 'tool_result';
+  type: "text" | "tool_use" | "tool_result";
   text?: string;
-  id?: string;           // For tool_use
-  name?: string;         // For tool_use
-  input?: unknown;       // For tool_use
-  tool_use_id?: string;  // For tool_result
-  content?: unknown;     // For tool_result
+  id?: string; // For tool_use
+  name?: string; // For tool_use
+  input?: unknown; // For tool_use
+  tool_use_id?: string; // For tool_result
+  content?: unknown; // For tool_result
 }
 
 // Database column: content JSONB NOT NULL DEFAULT '[]'
@@ -163,12 +168,12 @@ interface ContentBlock {
 ```typescript
 // SSE Event Types
 type SSEEvent =
-  | { type: 'text_delta'; content: string }
-  | { type: 'message_start'; messageId: string }
-  | { type: 'message_end'; usage: { input: number; output: number } }
-  | { type: 'tool_call'; id: string; name: string; input: unknown }
-  | { type: 'tool_result'; toolCallId: string; result: unknown }
-  | { type: 'error'; code: string; message: string; retryable: boolean };
+  | { type: "text_delta"; content: string }
+  | { type: "message_start"; messageId: string }
+  | { type: "message_end"; usage: { input: number; output: number } }
+  | { type: "tool_call"; id: string; name: string; input: unknown }
+  | { type: "tool_result"; toolCallId: string; result: unknown }
+  | { type: "error"; code: string; message: string; retryable: boolean };
 
 // Wire format: data: {"type":"text_delta","content":"Hello"}\n\n
 ```
@@ -187,29 +192,29 @@ type SSEEvent =
 async function* consumeSSEStream(
   url: string,
   body: object,
-  signal: AbortSignal
+  signal: AbortSignal,
 ): AsyncGenerator<SSEEvent> {
   const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
     signal,
   });
 
   const reader = response.body?.getReader();
   const decoder = new TextDecoder();
-  let buffer = '';
+  let buffer = "";
 
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
 
     buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() || '';
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
 
     for (const line of lines) {
-      if (line.startsWith('data: ')) {
+      if (line.startsWith("data: ")) {
         yield JSON.parse(line.slice(6));
       }
     }
@@ -246,8 +251,8 @@ const cancel = useCallback(() => {
 }, []);
 
 // Backend handler
-app.post('/api/chat/stream', async (req, res) => {
-  req.on('close', () => {
+app.post("/api/chat/stream", async (req, res) => {
+  req.on("close", () => {
     // Client disconnected, abort LLM stream
     llmAbortController.abort();
     // Save partial message if any content was generated
@@ -310,6 +315,7 @@ export function DiscoverNav() {
 ### Decision: Focus on music discovery and mood-based recommendations
 
 **System Prompt Focus Areas**:
+
 1. Music discovery that matches user's current mood
 2. Leveraging knowledge of existing music tastes (from library)
 3. Semantic search of lyric interpretations
@@ -343,14 +349,14 @@ Note: In this version, you don't have access to search tools. Engage in conversa
 **Pattern from Codebase** (`/backend/src/entities/LibraryTrack.ts`):
 
 ```typescript
-@Entity('library_tracks')
-@Index(['tidalTrackId'], { unique: true })
-@Index(['userId'])
+@Entity("library_tracks")
+@Index(["tidalTrackId"], { unique: true })
+@Index(["userId"])
 export class LibraryTrack {
-  @PrimaryGeneratedColumn('uuid') id!: string;
-  @Column({ name: 'user_id', type: 'uuid' }) userId!: string;
-  @CreateDateColumn({ name: 'created_at' }) createdAt!: Date;
-  @UpdateDateColumn({ name: 'updated_at' }) updatedAt!: Date;
+  @PrimaryGeneratedColumn("uuid") id!: string;
+  @Column({ name: "user_id", type: "uuid" }) userId!: string;
+  @CreateDateColumn({ name: "created_at" }) createdAt!: Date;
+  @UpdateDateColumn({ name: "updated_at" }) updatedAt!: Date;
   // ...
 }
 ```
@@ -358,29 +364,29 @@ export class LibraryTrack {
 **Chat Entity Pattern**:
 
 ```typescript
-@Entity('conversations')
-@Index(['userId'])
-@Index(['updatedAt'])
+@Entity("conversations")
+@Index(["userId"])
+@Index(["updatedAt"])
 export class Conversation {
-  @PrimaryGeneratedColumn('uuid') id!: string;
-  @Column({ name: 'user_id', type: 'uuid' }) userId!: string;
-  @CreateDateColumn({ name: 'created_at' }) createdAt!: Date;
-  @UpdateDateColumn({ name: 'updated_at' }) updatedAt!: Date;
-  @OneToMany(() => Message, message => message.conversation)
+  @PrimaryGeneratedColumn("uuid") id!: string;
+  @Column({ name: "user_id", type: "uuid" }) userId!: string;
+  @CreateDateColumn({ name: "created_at" }) createdAt!: Date;
+  @UpdateDateColumn({ name: "updated_at" }) updatedAt!: Date;
+  @OneToMany(() => Message, (message) => message.conversation)
   messages!: Message[];
 }
 
-@Entity('messages')
-@Index(['conversationId'])
-@Index(['createdAt'])
+@Entity("messages")
+@Index(["conversationId"])
+@Index(["createdAt"])
 export class Message {
-  @PrimaryGeneratedColumn('uuid') id!: string;
-  @Column({ name: 'conversation_id', type: 'uuid' }) conversationId!: string;
-  @Column({ type: 'varchar', length: 20 }) role!: 'user' | 'assistant';
-  @Column({ type: 'jsonb', default: '[]' }) content!: ContentBlock[];
-  @CreateDateColumn({ name: 'created_at' }) createdAt!: Date;
-  @ManyToOne(() => Conversation, conversation => conversation.messages)
-  @JoinColumn({ name: 'conversation_id' })
+  @PrimaryGeneratedColumn("uuid") id!: string;
+  @Column({ name: "conversation_id", type: "uuid" }) conversationId!: string;
+  @Column({ type: "varchar", length: 20 }) role!: "user" | "assistant";
+  @Column({ type: "jsonb", default: "[]" }) content!: ContentBlock[];
+  @CreateDateColumn({ name: "created_at" }) createdAt!: Date;
+  @ManyToOne(() => Conversation, (conversation) => conversation.messages)
+  @JoinColumn({ name: "conversation_id" })
   conversation!: Conversation;
 }
 ```
@@ -389,13 +395,13 @@ export class Message {
 
 ## Dependencies Summary
 
-| Dependency | Version | Purpose |
-|------------|---------|---------|
-| ai | ^4.3.19 | Vercel AI SDK (streamText) |
-| @ai-sdk/anthropic | ^1.2.12 | Claude provider |
-| langfuse | ^3.38.6 | Observability |
-| express | ^4.x | SSE endpoint |
-| typeorm | ^0.3.28 | Database ORM |
+| Dependency        | Version | Purpose                    |
+| ----------------- | ------- | -------------------------- |
+| ai                | ^4.3.19 | Vercel AI SDK (streamText) |
+| @ai-sdk/anthropic | ^1.2.12 | Claude provider            |
+| langfuse          | ^3.38.6 | Observability              |
+| express           | ^4.x    | SSE endpoint               |
+| typeorm           | ^0.3.28 | Database ORM               |
 
 All dependencies are already available in the project.
 
@@ -403,10 +409,10 @@ All dependencies are already available in the project.
 
 ## Open Questions Resolved
 
-| Question | Resolution |
-|----------|------------|
+| Question                           | Resolution                                          |
+| ---------------------------------- | --------------------------------------------------- |
 | How to handle GraphQL + streaming? | Hybrid: GraphQL for queries, REST+SSE for streaming |
-| Session tracking in Langfuse? | sessionId parameter = conversation UUID |
-| Message format for tools? | JSONB array of content blocks matching Claude API |
-| Tab styling consistency? | Follow LibraryNav pattern with NavLink |
-| Interruption handling? | AbortController with partial message preservation |
+| Session tracking in Langfuse?      | sessionId parameter = conversation UUID             |
+| Message format for tools?          | JSONB array of content blocks matching Claude API   |
+| Tab styling consistency?           | Follow LibraryNav pattern with NavLink              |
+| Interruption handling?             | AbortController with partial message preservation   |

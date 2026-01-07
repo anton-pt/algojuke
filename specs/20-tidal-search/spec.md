@@ -17,7 +17,7 @@
 
 **Note on Batch API Optimization**: The implementation includes a "User Story 4 - Batch API Optimization" (tasks.md Phase 6, 16 tasks) that was implemented as a performance enhancement to achieve SC-001 (<3s response time). This is documented in plan.md as an implementation-level optimization, not a user-facing feature story. The batch approach reduces API calls from 2N+1 to 3 total calls, achieving ~2s response times.
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - Basic Music Search (Priority: P1)
 
@@ -76,7 +76,7 @@ Users want search results organized by type (albums vs tracks) so they can quick
 - How does the system handle searches with only whitespace or empty strings?
 - What happens when album artwork is unavailable or fails to load?
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -101,7 +101,7 @@ Users want search results organized by type (albums vs tracks) so they can quick
 - **Track Result**: Represents a track/song returned from Tidal API; attributes include track title, artist name, album artwork URL (from parent album), track duration, and unique Tidal track identifier
 - **Album Artwork** (also referred to as "cover art" in technical documentation and Tidal API field names): Visual image representing an album; attributes include image URL, dimensions, and format
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 

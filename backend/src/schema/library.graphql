@@ -6,31 +6,49 @@
 Represents an album in the user's personal library
 """
 type LibraryAlbum {
-  """Unique identifier"""
+  """
+  Unique identifier
+  """
   id: ID!
 
-  """Tidal album identifier"""
+  """
+  Tidal album identifier
+  """
   tidalAlbumId: String!
 
-  """Album title"""
+  """
+  Album title
+  """
   title: String!
 
-  """Primary artist name"""
+  """
+  Primary artist name
+  """
   artistName: String!
 
-  """URL to album cover art"""
+  """
+  URL to album cover art
+  """
   coverArtUrl: String
 
-  """Album release date (ISO 8601 format)"""
+  """
+  Album release date (ISO 8601 format)
+  """
   releaseDate: String
 
-  """Number of tracks on the album"""
+  """
+  Number of tracks on the album
+  """
   trackCount: Int!
 
-  """Track listing with titles and durations"""
+  """
+  Track listing with titles and durations
+  """
   trackListing: [TrackInfo!]!
 
-  """When the album was added to the library (ISO 8601 timestamp)"""
+  """
+  When the album was added to the library (ISO 8601 timestamp)
+  """
   createdAt: String!
 }
 
@@ -38,25 +56,39 @@ type LibraryAlbum {
 Information about a track within an album
 """
 type TrackInfo {
-  """Position on the album"""
+  """
+  Position on the album
+  """
   position: Int!
 
-  """Track title"""
+  """
+  Track title
+  """
   title: String!
 
-  """Duration in seconds"""
+  """
+  Duration in seconds
+  """
   duration: Int!
 
-  """Tidal track identifier (if available)"""
+  """
+  Tidal track identifier (if available)
+  """
   tidalId: String
 
-  """Whether track contains explicit content"""
+  """
+  Whether track contains explicit content
+  """
   explicit: Boolean
 
-  """ISRC identifier for the track (ISO 3901)"""
+  """
+  ISRC identifier for the track (ISO 3901)
+  """
   isrc: String
 
-  """Whether this track has been indexed in the vector search (computed from Qdrant)"""
+  """
+  Whether this track has been indexed in the vector search (computed from Qdrant)
+  """
   isIndexed: Boolean!
 }
 
@@ -64,34 +96,54 @@ type TrackInfo {
 Represents an individual track in the user's personal library
 """
 type LibraryTrack {
-  """Unique identifier"""
+  """
+  Unique identifier
+  """
   id: ID!
 
-  """Tidal track identifier"""
+  """
+  Tidal track identifier
+  """
   tidalTrackId: String!
 
-  """Track title"""
+  """
+  Track title
+  """
   title: String!
 
-  """Primary artist name"""
+  """
+  Primary artist name
+  """
   artistName: String!
 
-  """Album name (if track belongs to an album)"""
+  """
+  Album name (if track belongs to an album)
+  """
   albumName: String
 
-  """Track duration in seconds"""
+  """
+  Track duration in seconds
+  """
   duration: Int!
 
-  """URL to track/album cover art"""
+  """
+  URL to track/album cover art
+  """
   coverArtUrl: String
 
-  """When the track was added to the library (ISO 8601 timestamp)"""
+  """
+  When the track was added to the library (ISO 8601 timestamp)
+  """
   createdAt: String!
 
-  """Track metadata including ISRC"""
+  """
+  Track metadata including ISRC
+  """
   metadata: TrackMetadata
 
-  """Whether this track has been indexed in the vector search (computed from Qdrant)"""
+  """
+  Whether this track has been indexed in the vector search (computed from Qdrant)
+  """
   isIndexed: Boolean!
 }
 
@@ -99,7 +151,9 @@ type LibraryTrack {
 Track metadata containing ISRC and other optional fields
 """
 type TrackMetadata {
-  """ISRC identifier for the track (ISO 3901)"""
+  """
+  ISRC identifier for the track (ISO 3901)
+  """
   isrc: String
 }
 
@@ -107,7 +161,9 @@ type TrackMetadata {
 Input for adding an album to the library
 """
 input AddAlbumToLibraryInput {
-  """Tidal album identifier"""
+  """
+  Tidal album identifier
+  """
   tidalAlbumId: String!
 }
 
@@ -115,7 +171,9 @@ input AddAlbumToLibraryInput {
 Input for adding a track to the library
 """
 input AddTrackToLibraryInput {
-  """Tidal track identifier"""
+  """
+  Tidal track identifier
+  """
   tidalTrackId: String!
 }
 
@@ -123,10 +181,14 @@ input AddTrackToLibraryInput {
 Error returned when an item already exists in the library
 """
 type DuplicateLibraryItemError {
-  """Error message"""
+  """
+  Error message
+  """
   message: String!
 
-  """ID of the existing item"""
+  """
+  ID of the existing item
+  """
   existingItemId: ID!
 }
 
@@ -134,22 +196,32 @@ type DuplicateLibraryItemError {
 Error returned when Tidal API is unavailable
 """
 type TidalApiUnavailableError {
-  """Error message"""
+  """
+  Error message
+  """
   message: String!
 
-  """Whether the operation can be retryable"""
+  """
+  Whether the operation can be retryable
+  """
   retryable: Boolean!
 }
 
 """
 Result of adding an album to the library
 """
-union AddAlbumToLibraryResult = LibraryAlbum | DuplicateLibraryItemError | TidalApiUnavailableError
+union AddAlbumToLibraryResult =
+  | LibraryAlbum
+  | DuplicateLibraryItemError
+  | TidalApiUnavailableError
 
 """
 Result of adding a track to the library
 """
-union AddTrackToLibraryResult = LibraryTrack | DuplicateLibraryItemError | TidalApiUnavailableError
+union AddTrackToLibraryResult =
+  | LibraryTrack
+  | DuplicateLibraryItemError
+  | TidalApiUnavailableError
 
 type Query {
   """

@@ -7,17 +7,28 @@
  * Returns results with library membership and vector index status flags.
  */
 
-import { Repository } from 'typeorm';
-import { TidalService } from '../tidalService.js';
-import { BackendQdrantClient } from '../../clients/qdrantClient.js';
-import { LibraryTrack } from '../../entities/LibraryTrack.js';
-import { LibraryAlbum } from '../../entities/LibraryAlbum.js';
-import { TidalSearchInputSchema, type TidalSearchInput } from '../../schemas/agentTools.js';
-import type { TidalSearchOutput, TrackResult, AlbumResult } from '../../types/agentTools.js';
-import { createToolError, type ToolError } from '../../types/agentTools.js';
-import { getLibraryIsrcs, getLibraryAlbumIds } from './libraryStatus.js';
-import { logger } from '../../utils/logger.js';
-import type { SearchResults, TrackResult as TidalTrackResult, AlbumResult as TidalAlbumResult } from '../../types/graphql.js';
+import { Repository } from "typeorm";
+import { TidalService } from "../tidalService.js";
+import { BackendQdrantClient } from "../../clients/qdrantClient.js";
+import { LibraryTrack } from "../../entities/LibraryTrack.js";
+import { LibraryAlbum } from "../../entities/LibraryAlbum.js";
+import {
+  TidalSearchInputSchema,
+  type TidalSearchInput,
+} from "../../schemas/agentTools.js";
+import type {
+  TidalSearchOutput,
+  TrackResult,
+  AlbumResult,
+} from "../../types/agentTools.js";
+import { createToolError, type ToolError } from "../../types/agentTools.js";
+import { getLibraryIsrcs, getLibraryAlbumIds } from "./libraryStatus.js";
+import { logger } from "../../utils/logger.js";
+import type {
+  SearchResults,
+  TrackResult as TidalTrackResult,
+  AlbumResult as TidalAlbumResult,
+} from "../../types/graphql.js";
 
 // -----------------------------------------------------------------------------
 // Types
@@ -45,11 +56,11 @@ function transformTrackResults(
   tidalTracks: TidalTrackResult[],
   isrcMap: Map<string, string | undefined>,
   libraryIsrcs: Set<string>,
-  indexedIsrcs: Map<string, boolean>
+  indexedIsrcs: Map<string, boolean>,
 ): TrackResult[] {
   return tidalTracks.map((track) => {
     // Get ISRC from the batch-fetched map
-    const isrc = isrcMap.get(track.id) ?? '';
+    const isrc = isrcMap.get(track.id) ?? "";
     const normalizedIsrc = isrc.toUpperCase();
 
     return {
@@ -57,12 +68,16 @@ function transformTrackResults(
       isrc,
       title: track.title,
       artist: track.artist,
-      album: track.albumTitle || '',
+      album: track.albumTitle || "",
       artworkUrl: track.artworkUrl,
       duration: track.duration,
       explicit: track.explicit,
-      inLibrary: normalizedIsrc.length > 0 ? libraryIsrcs.has(normalizedIsrc) : false,
-      isIndexed: normalizedIsrc.length > 0 ? (indexedIsrcs.get(normalizedIsrc) ?? false) : false,
+      inLibrary:
+        normalizedIsrc.length > 0 ? libraryIsrcs.has(normalizedIsrc) : false,
+      isIndexed:
+        normalizedIsrc.length > 0
+          ? (indexedIsrcs.get(normalizedIsrc) ?? false)
+          : false,
     };
   });
 }
@@ -72,7 +87,7 @@ function transformTrackResults(
  */
 function transformAlbumResults(
   tidalAlbums: TidalAlbumResult[],
-  libraryAlbumIds: Set<string>
+  libraryAlbumIds: Set<string>,
 ): AlbumResult[] {
   return tidalAlbums.map((album) => ({
     tidalId: album.id,
@@ -92,16 +107,16 @@ function buildSummary(
   query: string,
   tracksCount: number,
   albumsCount: number,
-  searchType: 'tracks' | 'albums' | 'both'
+  searchType: "tracks" | "albums" | "both",
 ): string {
   const parts: string[] = [];
 
-  if (searchType === 'both' || searchType === 'tracks') {
-    parts.push(`${tracksCount} track${tracksCount === 1 ? '' : 's'}`);
+  if (searchType === "both" || searchType === "tracks") {
+    parts.push(`${tracksCount} track${tracksCount === 1 ? "" : "s"}`);
   }
 
-  if (searchType === 'both' || searchType === 'albums') {
-    parts.push(`${albumsCount} album${albumsCount === 1 ? '' : 's'}`);
+  if (searchType === "both" || searchType === "albums") {
+    parts.push(`${albumsCount} album${albumsCount === 1 ? "" : "s"}`);
   }
 
   const total = tracksCount + albumsCount;
@@ -109,7 +124,7 @@ function buildSummary(
     return `No results found for "${query}"`;
   }
 
-  return `Found ${parts.join(' and ')} for "${query}"`;
+  return `Found ${parts.join(" and ")} for "${query}"`;
 }
 
 // -----------------------------------------------------------------------------
@@ -126,12 +141,12 @@ function buildSummary(
  */
 export async function executeTidalSearch(
   input: TidalSearchInput,
-  context: TidalSearchContext
+  context: TidalSearchContext,
 ): Promise<TidalSearchOutput> {
   const startTime = Date.now();
   const { userId } = context;
 
-  logger.info('tidal_search_tool_start', {
+  logger.info("tidal_search_tool_start", {
     query: input.query.slice(0, 100),
     searchType: input.searchType,
     limit: input.limit,
@@ -142,8 +157,8 @@ export async function executeTidalSearch(
   if (!validationResult.success) {
     const errorMessage = validationResult.error.issues
       .map((e) => e.message)
-      .join(', ');
-    throw createToolError(errorMessage, false, false, 'VALIDATION_ERROR');
+      .join(", ");
+    throw createToolError(errorMessage, false, false, "VALIDATION_ERROR");
   }
 
   const { query, searchType, limit } = validationResult.data;
@@ -154,17 +169,17 @@ export async function executeTidalSearch(
       query,
       limit,
       0, // offset
-      'US' // countryCode
+      "US", // countryCode
     );
 
     // Filter results based on searchType
     let tracks: TidalTrackResult[] = [];
     let albums: TidalAlbumResult[] = [];
 
-    if (searchType === 'tracks' || searchType === 'both') {
+    if (searchType === "tracks" || searchType === "both") {
       tracks = searchResults.tracks;
     }
-    if (searchType === 'albums' || searchType === 'both') {
+    if (searchType === "albums" || searchType === "both") {
       albums = searchResults.albums;
     }
 
@@ -175,13 +190,14 @@ export async function executeTidalSearch(
 
     if (trackTidalIds.length > 0) {
       try {
-        isrcMap = await context.tidalService.batchFetchTrackIsrcs(trackTidalIds);
-        logger.debug('tidal_search_isrcs_fetched', {
+        isrcMap =
+          await context.tidalService.batchFetchTrackIsrcs(trackTidalIds);
+        logger.debug("tidal_search_isrcs_fetched", {
           trackCount: trackTidalIds.length,
           isrcCount: Array.from(isrcMap.values()).filter(Boolean).length,
         });
       } catch (error) {
-        logger.warn('tidal_search_isrc_fetch_failed', {
+        logger.warn("tidal_search_isrc_fetch_failed", {
           trackCount: trackTidalIds.length,
           error: error instanceof Error ? error.message : String(error),
         });
@@ -204,7 +220,7 @@ export async function executeTidalSearch(
       context.libraryTrackRepository,
       context.libraryAlbumRepository,
       userId,
-      'tidal_search'
+      "tidal_search",
     );
 
     // Check index status for tracks (by ISRC)
@@ -213,7 +229,7 @@ export async function executeTidalSearch(
       try {
         indexedIsrcs = await context.qdrantClient.checkTracksExist(trackIsrcs);
       } catch (error) {
-        logger.warn('tidal_search_index_check_failed', {
+        logger.warn("tidal_search_index_check_failed", {
           isrcCount: trackIsrcs.length,
           error: error instanceof Error ? error.message : String(error),
         });
@@ -227,22 +243,27 @@ export async function executeTidalSearch(
       albumTidalIds,
       context.libraryAlbumRepository,
       userId,
-      'tidal_search'
+      "tidal_search",
     );
 
     // Transform results with enrichment
-    const enrichedTracks = transformTrackResults(tracks, isrcMap, libraryIsrcs, indexedIsrcs);
+    const enrichedTracks = transformTrackResults(
+      tracks,
+      isrcMap,
+      libraryIsrcs,
+      indexedIsrcs,
+    );
     const enrichedAlbums = transformAlbumResults(albums, libraryAlbumIds);
 
     const durationMs = Date.now() - startTime;
     const summary = buildSummary(
       query,
-      searchType === 'albums' ? 0 : enrichedTracks.length,
-      searchType === 'tracks' ? 0 : enrichedAlbums.length,
-      searchType
+      searchType === "albums" ? 0 : enrichedTracks.length,
+      searchType === "tracks" ? 0 : enrichedAlbums.length,
+      searchType,
     );
 
-    logger.info('tidal_search_tool_complete', {
+    logger.info("tidal_search_tool_complete", {
       query: query.slice(0, 100),
       searchType,
       tracksFound: enrichedTracks.length,
@@ -254,18 +275,18 @@ export async function executeTidalSearch(
     const output: TidalSearchOutput = {
       query,
       totalFound: {
-        tracks: searchType === 'albums' ? 0 : searchResults.total.tracks,
-        albums: searchType === 'tracks' ? 0 : searchResults.total.albums,
+        tracks: searchType === "albums" ? 0 : searchResults.total.tracks,
+        albums: searchType === "tracks" ? 0 : searchResults.total.albums,
       },
       summary,
       durationMs,
     };
 
     // Only include arrays based on search type
-    if (searchType === 'tracks' || searchType === 'both') {
+    if (searchType === "tracks" || searchType === "both") {
       output.tracks = enrichedTracks;
     }
-    if (searchType === 'albums' || searchType === 'both') {
+    if (searchType === "albums" || searchType === "both") {
       output.albums = enrichedAlbums;
     }
 
@@ -274,8 +295,8 @@ export async function executeTidalSearch(
     const durationMs = Date.now() - startTime;
 
     // Re-throw ToolErrors
-    if (error instanceof Error && 'retryable' in error) {
-      logger.error('tidal_search_tool_error', {
+    if (error instanceof Error && "retryable" in error) {
+      logger.error("tidal_search_tool_error", {
         query: query.slice(0, 100),
         durationMs,
         error: error.message,
@@ -286,11 +307,13 @@ export async function executeTidalSearch(
 
     // Check for specific Tidal API errors
     const errorMessage = error instanceof Error ? error.message : String(error);
-    const isRateLimitError = errorMessage.toLowerCase().includes('rate limit');
-    const isTimeoutError = errorMessage.toLowerCase().includes('timeout');
-    const isUnavailableError = errorMessage.toLowerCase().includes('unavailable');
+    const isRateLimitError = errorMessage.toLowerCase().includes("rate limit");
+    const isTimeoutError = errorMessage.toLowerCase().includes("timeout");
+    const isUnavailableError = errorMessage
+      .toLowerCase()
+      .includes("unavailable");
 
-    logger.error('tidal_search_tool_unexpected_error', {
+    logger.error("tidal_search_tool_unexpected_error", {
       query: query.slice(0, 100),
       durationMs,
       error: errorMessage,
@@ -298,13 +321,17 @@ export async function executeTidalSearch(
 
     throw createToolError(
       isRateLimitError
-        ? 'Rate limit exceeded. Please wait a moment and try again.'
+        ? "Rate limit exceeded. Please wait a moment and try again."
         : isTimeoutError
-          ? 'Tidal search timed out. Please try again.'
-          : 'Tidal search is temporarily unavailable',
+          ? "Tidal search timed out. Please try again."
+          : "Tidal search is temporarily unavailable",
       isRateLimitError || isTimeoutError || isUnavailableError,
       false,
-      isRateLimitError ? 'RATE_LIMIT' : isTimeoutError ? 'TIMEOUT' : 'INTERNAL_ERROR'
+      isRateLimitError
+        ? "RATE_LIMIT"
+        : isTimeoutError
+          ? "TIMEOUT"
+          : "INTERNAL_ERROR",
     );
   }
 }

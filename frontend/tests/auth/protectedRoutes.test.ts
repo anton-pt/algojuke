@@ -10,17 +10,17 @@
  * - Protected routes require authentication
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Mock Clerk hooks
 const mockGetToken = vi.fn();
 const mockSignOut = vi.fn();
 
-vi.mock('@clerk/clerk-react', () => ({
+vi.mock("@clerk/clerk-react", () => ({
   useAuth: () => ({
     getToken: mockGetToken,
     isSignedIn: true,
-    userId: 'user_testUser123',
+    userId: "user_testUser123",
   }),
   useClerk: () => ({
     signOut: mockSignOut,
@@ -30,14 +30,14 @@ vi.mock('@clerk/clerk-react', () => ({
   SignedOut: ({ children }: { children: React.ReactNode }) => null,
 }));
 
-describe('Frontend Auth Enforcement', () => {
+describe("Frontend Auth Enforcement", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('Apollo Client Auth Headers (T031)', () => {
-    it('should include Authorization header when token is available', async () => {
-      const mockToken = 'test-jwt-token-123';
+  describe("Apollo Client Auth Headers (T031)", () => {
+    it("should include Authorization header when token is available", async () => {
+      const mockToken = "test-jwt-token-123";
       mockGetToken.mockResolvedValue(mockToken);
 
       // Simulate the authLink behavior
@@ -56,7 +56,7 @@ describe('Frontend Auth Enforcement', () => {
       expect(mockGetToken).toHaveBeenCalled();
     });
 
-    it('should not include Authorization header when token is null', async () => {
+    it("should not include Authorization header when token is null", async () => {
       mockGetToken.mockResolvedValue(null);
 
       const getAuthHeaders = async () => {
@@ -73,8 +73,8 @@ describe('Frontend Auth Enforcement', () => {
       expect(result.headers.Authorization).toBeUndefined();
     });
 
-    it('should handle token retrieval errors gracefully', async () => {
-      mockGetToken.mockRejectedValue(new Error('Token retrieval failed'));
+    it("should handle token retrieval errors gracefully", async () => {
+      mockGetToken.mockRejectedValue(new Error("Token retrieval failed"));
 
       const getAuthHeaders = async () => {
         try {
@@ -96,35 +96,39 @@ describe('Frontend Auth Enforcement', () => {
     });
   });
 
-  describe('UNAUTHENTICATED Error Handling (T032)', () => {
-    it('should call signOut when receiving UNAUTHENTICATED error', () => {
+  describe("UNAUTHENTICATED Error Handling (T032)", () => {
+    it("should call signOut when receiving UNAUTHENTICATED error", () => {
       // Simulate the errorLink behavior
-      const handleGraphQLError = (error: { extensions?: { code?: string } }) => {
-        if (error.extensions?.code === 'UNAUTHENTICATED') {
-          mockSignOut({ redirectUrl: '/' });
+      const handleGraphQLError = (error: {
+        extensions?: { code?: string };
+      }) => {
+        if (error.extensions?.code === "UNAUTHENTICATED") {
+          mockSignOut({ redirectUrl: "/" });
         }
       };
 
       const unauthenticatedError = {
-        extensions: { code: 'UNAUTHENTICATED' },
-        message: 'Authentication required',
+        extensions: { code: "UNAUTHENTICATED" },
+        message: "Authentication required",
       };
 
       handleGraphQLError(unauthenticatedError);
 
-      expect(mockSignOut).toHaveBeenCalledWith({ redirectUrl: '/' });
+      expect(mockSignOut).toHaveBeenCalledWith({ redirectUrl: "/" });
     });
 
-    it('should not call signOut for other error codes', () => {
-      const handleGraphQLError = (error: { extensions?: { code?: string } }) => {
-        if (error.extensions?.code === 'UNAUTHENTICATED') {
-          mockSignOut({ redirectUrl: '/' });
+    it("should not call signOut for other error codes", () => {
+      const handleGraphQLError = (error: {
+        extensions?: { code?: string };
+      }) => {
+        if (error.extensions?.code === "UNAUTHENTICATED") {
+          mockSignOut({ redirectUrl: "/" });
         }
       };
 
       const otherError = {
-        extensions: { code: 'INTERNAL_SERVER_ERROR' },
-        message: 'Something went wrong',
+        extensions: { code: "INTERNAL_SERVER_ERROR" },
+        message: "Something went wrong",
       };
 
       handleGraphQLError(otherError);
@@ -132,15 +136,17 @@ describe('Frontend Auth Enforcement', () => {
       expect(mockSignOut).not.toHaveBeenCalled();
     });
 
-    it('should not call signOut for errors without code', () => {
-      const handleGraphQLError = (error: { extensions?: { code?: string } }) => {
-        if (error.extensions?.code === 'UNAUTHENTICATED') {
-          mockSignOut({ redirectUrl: '/' });
+    it("should not call signOut for errors without code", () => {
+      const handleGraphQLError = (error: {
+        extensions?: { code?: string };
+      }) => {
+        if (error.extensions?.code === "UNAUTHENTICATED") {
+          mockSignOut({ redirectUrl: "/" });
         }
       };
 
       const errorWithoutCode = {
-        message: 'Some error',
+        message: "Some error",
       };
 
       handleGraphQLError(errorWithoutCode);
@@ -149,43 +155,39 @@ describe('Frontend Auth Enforcement', () => {
     });
   });
 
-  describe('Protected Route Contract', () => {
-    it('should require authentication for library routes', () => {
+  describe("Protected Route Contract", () => {
+    it("should require authentication for library routes", () => {
       const protectedRoutes = [
-        '/library',
-        '/library/albums',
-        '/library/tracks',
-        '/search',
-        '/discover',
-        '/chat',
+        "/library",
+        "/library/albums",
+        "/library/tracks",
+        "/search",
+        "/discover",
+        "/chat",
       ];
 
       // All routes should be protected
-      protectedRoutes.forEach(route => {
+      protectedRoutes.forEach((route) => {
         expect(route).toBeDefined();
         // In actual implementation, these routes are wrapped in SignedIn component
       });
     });
 
-    it('should allow access to landing page without auth', () => {
-      const publicRoutes = [
-        '/',
-        '/sign-in',
-        '/sign-up',
-      ];
+    it("should allow access to landing page without auth", () => {
+      const publicRoutes = ["/", "/sign-in", "/sign-up"];
 
-      publicRoutes.forEach(route => {
+      publicRoutes.forEach((route) => {
         expect(route).toBeDefined();
       });
     });
   });
 
-  describe('Auth State Contract', () => {
-    it('should provide userId from auth context', () => {
+  describe("Auth State Contract", () => {
+    it("should provide userId from auth context", () => {
       // Simulate useAuth hook return value
       const authState = {
         isSignedIn: true,
-        userId: 'user_testUser123',
+        userId: "user_testUser123",
         getToken: mockGetToken,
       };
 
@@ -194,7 +196,7 @@ describe('Frontend Auth Enforcement', () => {
       expect(authState.userId).toMatch(/^user_/);
     });
 
-    it('should indicate signed out state', () => {
+    it("should indicate signed out state", () => {
       const authState = {
         isSignedIn: false,
         userId: null,
@@ -206,16 +208,16 @@ describe('Frontend Auth Enforcement', () => {
     });
   });
 
-  describe('Chat SSE Authentication', () => {
-    it('should include auth token in chat stream requests', async () => {
-      const mockToken = 'chat-jwt-token';
+  describe("Chat SSE Authentication", () => {
+    it("should include auth token in chat stream requests", async () => {
+      const mockToken = "chat-jwt-token";
       mockGetToken.mockResolvedValue(mockToken);
 
       // Simulate fetching auth header for SSE request
       const getChatAuthHeaders = async () => {
         const token = await mockGetToken();
         return {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         };
       };
@@ -225,11 +227,11 @@ describe('Frontend Auth Enforcement', () => {
       expect(headers.Authorization).toBe(`Bearer ${mockToken}`);
     });
 
-    it('should handle chat stream 401 response', () => {
+    it("should handle chat stream 401 response", () => {
       // Simulate handling 401 response from chat endpoint
       const handleChatError = (status: number) => {
         if (status === 401) {
-          mockSignOut({ redirectUrl: '/' });
+          mockSignOut({ redirectUrl: "/" });
           return true;
         }
         return false;
@@ -238,30 +240,30 @@ describe('Frontend Auth Enforcement', () => {
       const handled = handleChatError(401);
 
       expect(handled).toBe(true);
-      expect(mockSignOut).toHaveBeenCalledWith({ redirectUrl: '/' });
+      expect(mockSignOut).toHaveBeenCalledWith({ redirectUrl: "/" });
     });
   });
 });
 
-describe('Apollo Client Configuration Contract', () => {
-  describe('Link Chain Order', () => {
-    it('should have correct link chain: errorLink -> authLink -> httpLink', () => {
+describe("Apollo Client Configuration Contract", () => {
+  describe("Link Chain Order", () => {
+    it("should have correct link chain: errorLink -> authLink -> httpLink", () => {
       // The link chain order matters:
       // 1. errorLink - catches errors from downstream links
       // 2. authLink - adds auth headers before sending request
       // 3. httpLink - sends the actual HTTP request
-      const linkOrder = ['errorLink', 'authLink', 'httpLink'];
+      const linkOrder = ["errorLink", "authLink", "httpLink"];
 
-      expect(linkOrder[0]).toBe('errorLink');
-      expect(linkOrder[1]).toBe('authLink');
-      expect(linkOrder[2]).toBe('httpLink');
+      expect(linkOrder[0]).toBe("errorLink");
+      expect(linkOrder[1]).toBe("authLink");
+      expect(linkOrder[2]).toBe("httpLink");
     });
   });
 
-  describe('HTTP Link Configuration', () => {
-    it('should use configured graphql endpoint', () => {
+  describe("HTTP Link Configuration", () => {
+    it("should use configured graphql endpoint", () => {
       // Default endpoint is /graphql (relative, goes through Vite proxy)
-      const defaultEndpoint = '/graphql';
+      const defaultEndpoint = "/graphql";
       const envEndpoint = process.env.VITE_GRAPHQL_ENDPOINT;
 
       const endpoint = envEndpoint || defaultEndpoint;
@@ -269,31 +271,31 @@ describe('Apollo Client Configuration Contract', () => {
       expect(endpoint).toBeDefined();
     });
 
-    it('should include credentials for cookie-based auth', () => {
+    it("should include credentials for cookie-based auth", () => {
       const httpLinkConfig = {
-        uri: '/graphql',
-        credentials: 'include',
+        uri: "/graphql",
+        credentials: "include",
       };
 
-      expect(httpLinkConfig.credentials).toBe('include');
+      expect(httpLinkConfig.credentials).toBe("include");
     });
   });
 
-  describe('Cache Configuration', () => {
-    it('should use InMemoryCache', () => {
+  describe("Cache Configuration", () => {
+    it("should use InMemoryCache", () => {
       // Cache type verification
-      const cacheType = 'InMemoryCache';
-      expect(cacheType).toBe('InMemoryCache');
+      const cacheType = "InMemoryCache";
+      expect(cacheType).toBe("InMemoryCache");
     });
 
-    it('should have cache-and-network fetch policy for watchQuery', () => {
+    it("should have cache-and-network fetch policy for watchQuery", () => {
       const defaultOptions = {
         watchQuery: {
-          fetchPolicy: 'cache-and-network',
+          fetchPolicy: "cache-and-network",
         },
       };
 
-      expect(defaultOptions.watchQuery.fetchPolicy).toBe('cache-and-network');
+      expect(defaultOptions.watchQuery.fetchPolicy).toBe("cache-and-network");
     });
   });
 });

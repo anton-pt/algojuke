@@ -5,7 +5,7 @@
  * but we declare it explicitly for better type inference.
  */
 
-import { AuthObject } from '@clerk/express';
+import { AuthObject } from "@clerk/express";
 
 declare global {
   namespace Express {

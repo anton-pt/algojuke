@@ -7,8 +7,8 @@
  * Includes validation and disable state during streaming.
  */
 
-import { useState, useCallback, useRef, KeyboardEvent } from 'react';
-import './ChatInput.css';
+import { useState, useCallback, useRef, KeyboardEvent } from "react";
+import "./ChatInput.css";
 
 interface ChatInputProps {
   /** Callback when user submits a message */
@@ -28,9 +28,9 @@ export function ChatInput({
   disabled = false,
   isStreaming = false,
   onCancel,
-  placeholder = 'Describe the mood or feeling you\'re looking for...',
+  placeholder = "Describe the mood or feeling you're looking for...",
 }: ChatInputProps) {
-  const [value, setValue] = useState('');
+  const [value, setValue] = useState("");
   const [showValidationError, setShowValidationError] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -50,12 +50,12 @@ export function ChatInput({
     if (disabled || isStreaming) return;
 
     onSend(trimmedValue);
-    setValue('');
+    setValue("");
     setShowValidationError(false);
 
     // Reset textarea height
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = "auto";
     }
   }, [value, disabled, isStreaming, onSend]);
 
@@ -63,35 +63,38 @@ export function ChatInput({
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
       // Submit on Enter (without Shift)
-      if (e.key === 'Enter' && !e.shiftKey) {
+      if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         handleSubmit();
       }
 
       // Cancel streaming on Escape
-      if (e.key === 'Escape' && isStreaming && onCancel) {
+      if (e.key === "Escape" && isStreaming && onCancel) {
         e.preventDefault();
         onCancel();
       }
     },
-    [handleSubmit, isStreaming, onCancel]
+    [handleSubmit, isStreaming, onCancel],
   );
 
   // Auto-resize textarea
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const textarea = e.target;
-    setValue(textarea.value);
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const textarea = e.target;
+      setValue(textarea.value);
 
-    // Clear validation error when user starts typing
-    if (showValidationError && textarea.value.trim().length > 0) {
-      setShowValidationError(false);
-    }
+      // Clear validation error when user starts typing
+      if (showValidationError && textarea.value.trim().length > 0) {
+        setShowValidationError(false);
+      }
 
-    // Reset height to auto to calculate new height
-    textarea.style.height = 'auto';
-    // Set height to scrollHeight (capped at max)
-    textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
-  }, [showValidationError]);
+      // Reset height to auto to calculate new height
+      textarea.style.height = "auto";
+      // Set height to scrollHeight (capped at max)
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+    },
+    [showValidationError],
+  );
 
   return (
     <div className="chat-input">

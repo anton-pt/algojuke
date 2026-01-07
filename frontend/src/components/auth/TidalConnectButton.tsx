@@ -4,7 +4,7 @@
  * Button component that initiates the Tidal OAuth flow.
  */
 
-import { useTidalAuth } from '../../hooks/useTidalAuth';
+import { useTidalAuth } from "../../hooks/useTidalAuth";
 
 interface TidalConnectButtonProps {
   disabled?: boolean;

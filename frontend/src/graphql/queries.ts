@@ -1,8 +1,18 @@
-import { gql } from '@apollo/client';
+import { gql } from "@apollo/client";
 
 export const SEARCH_QUERY = gql`
-  query Search($query: String!, $limit: Int, $offset: Int, $countryCode: String) {
-    search(query: $query, limit: $limit, offset: $offset, countryCode: $countryCode) {
+  query Search(
+    $query: String!
+    $limit: Int
+    $offset: Int
+    $countryCode: String
+  ) {
+    search(
+      query: $query
+      limit: $limit
+      offset: $offset
+      countryCode: $countryCode
+    ) {
       albums {
         id
         title

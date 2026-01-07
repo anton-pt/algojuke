@@ -194,7 +194,7 @@ export const demoTask = inngest.createFunction(
     };
 
     console.log(
-      `[${taskId}] Task completed successfully in ${result.totalDuration}ms`
+      `[${taskId}] Task completed successfully in ${result.totalDuration}ms`,
     );
 
     // Optionally emit completion event (for future workflow integration)
@@ -217,5 +217,5 @@ export const demoTask = inngest.createFunction(
       totalDuration: result.totalDuration,
       steps: result.steps,
     };
-  }
+  },
 );

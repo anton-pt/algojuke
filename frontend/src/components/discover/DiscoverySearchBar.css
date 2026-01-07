@@ -28,7 +28,9 @@
   min-height: 80px;
   font-family: inherit;
   line-height: 1.5;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .discovery-search-input:focus {
@@ -84,7 +86,9 @@
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: opacity 0.2s, transform 0.2s;
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
   align-self: center;
 }
 

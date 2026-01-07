@@ -48,7 +48,9 @@ describe("Track Ingestion Observability", () => {
       });
 
       // Should not throw
-      expect(() => httpSpan.end({ statusCode: 200, durationMs: 100 })).not.toThrow();
+      expect(() =>
+        httpSpan.end({ statusCode: 200, durationMs: 100 }),
+      ).not.toThrow();
     });
   });
 
@@ -113,7 +115,7 @@ describe("Track Ingestion Observability", () => {
           completion: "Test completion",
           inputTokens: 100,
           outputTokens: 50,
-        })
+        }),
       ).not.toThrow();
     });
   });
@@ -142,7 +144,7 @@ describe("Track Ingestion Observability", () => {
         span.end({
           pointCount: 1,
           durationMs: 50,
-        })
+        }),
       ).not.toThrow();
     });
   });

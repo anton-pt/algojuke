@@ -12,7 +12,7 @@
 - Q: Which observability platform approach should the infrastructure use? → A: Langfuse (open-source LLM observability platform with built-in prompt/completion tracking)
 - Q: Which LLM provider will the instrumentation primarily target? → A: Anthropic Claude (Claude 4.x family)
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - Track LLM Invocations (Priority: P1)
 
@@ -81,7 +81,7 @@ As a developer debugging end-to-end flows, I need to see correlated traces that 
 - What happens when trace volume is very high? The system should handle high throughput without significantly impacting application performance.
 - How is storage managed over time? For local development, storage can be cleared via Docker volume management or Langfuse dashboard retention settings. Data persists indefinitely by default.
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -105,7 +105,7 @@ As a developer debugging end-to-end flows, I need to see correlated traces that 
 - **Search Span**: Specialized span for vector search operations with query parameters and result metadata.
 - **HTTP Span**: Specialized span for external API calls with request/response details.
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 

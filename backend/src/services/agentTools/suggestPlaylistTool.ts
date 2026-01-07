@@ -7,18 +7,18 @@
  * Returns enriched tracks for display in the PlaylistCard component.
  */
 
-import { TidalService } from '../tidalService.js';
+import { TidalService } from "../tidalService.js";
 import {
   SuggestPlaylistInputSchema,
   type SuggestPlaylistInput,
   type PlaylistInputTrack,
-} from '../../schemas/agentTools.js';
+} from "../../schemas/agentTools.js";
 import type {
   SuggestPlaylistOutput,
   EnrichedPlaylistTrack,
-} from '../../types/agentTools.js';
-import { createToolError } from '../../types/agentTools.js';
-import { logger } from '../../utils/logger.js';
+} from "../../types/agentTools.js";
+import { createToolError } from "../../types/agentTools.js";
+import { logger } from "../../utils/logger.js";
 
 // -----------------------------------------------------------------------------
 // Types
@@ -68,13 +68,17 @@ const ISRC_PATTERN = /^[A-Z0-9]{12}$/i;
  * @param title - Track title (for logging context)
  * @returns true if valid, false if invalid
  */
-function validateIsrc(isrc: string, trackIndex: number, title: string): boolean {
+function validateIsrc(
+  isrc: string,
+  trackIndex: number,
+  title: string,
+): boolean {
   if (!ISRC_PATTERN.test(isrc)) {
-    logger.warn('suggest_playlist_invalid_isrc', {
+    logger.warn("suggest_playlist_invalid_isrc", {
       trackIndex,
       title,
       isrc,
-      reason: 'ISRC must be exactly 12 alphanumeric characters',
+      reason: "ISRC must be exactly 12 alphanumeric characters",
     });
     return false;
   }
@@ -99,7 +103,7 @@ function validateIsrc(isrc: string, trackIndex: number, title: string): boolean 
 export async function enrichPlaylistTracks(
   tracks: PlaylistInputTrack[],
   tidalService: TidalService,
-  retryOnFailure: boolean = true
+  retryOnFailure: boolean = true,
 ): Promise<EnrichedPlaylistTrack[]> {
   // Validate ISRCs and filter valid ones for batch lookup
   const validTracks: Array<{ track: PlaylistInputTrack; index: number }> = [];
@@ -113,7 +117,7 @@ export async function enrichPlaylistTracks(
     }
   });
 
-  logger.info('suggest_playlist_validation', {
+  logger.info("suggest_playlist_validation", {
     totalTracks: tracks.length,
     validTracks: validTracks.length,
     invalidTracks: invalidTracks.length,
@@ -129,23 +133,26 @@ export async function enrichPlaylistTracks(
       trackDataMap = await tidalService.batchFetchTracksByIsrc(validIsrcs);
     } catch (error) {
       if (retryOnFailure) {
-        logger.info('suggest_playlist_tracks_retry', {
+        logger.info("suggest_playlist_tracks_retry", {
           isrcCount: validIsrcs.length,
           error: error instanceof Error ? error.message : String(error),
         });
         // Wait 1 second before retry per spec
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
         try {
           trackDataMap = await tidalService.batchFetchTracksByIsrc(validIsrcs);
         } catch (retryError) {
-          logger.warn('suggest_playlist_tracks_retry_failed', {
+          logger.warn("suggest_playlist_tracks_retry_failed", {
             isrcCount: validIsrcs.length,
-            error: retryError instanceof Error ? retryError.message : String(retryError),
+            error:
+              retryError instanceof Error
+                ? retryError.message
+                : String(retryError),
           });
           // Continue with empty map (fallback to agent data)
         }
       } else {
-        logger.warn('suggest_playlist_tracks_failed', {
+        logger.warn("suggest_playlist_tracks_failed", {
           isrcCount: validIsrcs.length,
           error: error instanceof Error ? error.message : String(error),
         });
@@ -165,26 +172,33 @@ export async function enrichPlaylistTracks(
   let albumDataMap = new Map<string, TidalAlbumData>();
   if (albumIds.size > 0) {
     try {
-      albumDataMap = await tidalService.batchFetchAlbumsById(Array.from(albumIds));
+      albumDataMap = await tidalService.batchFetchAlbumsById(
+        Array.from(albumIds),
+      );
     } catch (error) {
       if (retryOnFailure) {
-        logger.info('suggest_playlist_albums_retry', {
+        logger.info("suggest_playlist_albums_retry", {
           albumCount: albumIds.size,
           error: error instanceof Error ? error.message : String(error),
         });
         // Wait 1 second before retry per spec
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
         try {
-          albumDataMap = await tidalService.batchFetchAlbumsById(Array.from(albumIds));
+          albumDataMap = await tidalService.batchFetchAlbumsById(
+            Array.from(albumIds),
+          );
         } catch (retryError) {
-          logger.warn('suggest_playlist_albums_retry_failed', {
+          logger.warn("suggest_playlist_albums_retry_failed", {
             albumCount: albumIds.size,
-            error: retryError instanceof Error ? retryError.message : String(retryError),
+            error:
+              retryError instanceof Error
+                ? retryError.message
+                : String(retryError),
           });
           // Continue with empty map (fallback to agent data)
         }
       } else {
-        logger.warn('suggest_playlist_albums_failed', {
+        logger.warn("suggest_playlist_albums_failed", {
           albumCount: albumIds.size,
           error: error instanceof Error ? error.message : String(error),
         });
@@ -201,7 +215,9 @@ export async function enrichPlaylistTracks(
 
     if (tidalTrack) {
       // Track found in Tidal - enrich with metadata
-      const album = tidalTrack.albumId ? albumDataMap.get(tidalTrack.albumId) : null;
+      const album = tidalTrack.albumId
+        ? albumDataMap.get(tidalTrack.albumId)
+        : null;
 
       enrichedTracks.push({
         isrc: normalizedIsrc,
@@ -244,12 +260,12 @@ function buildSummary(
   title: string,
   totalTracks: number,
   enrichedTracks: number,
-  failedTracks: number
+  failedTracks: number,
 ): string {
   if (failedTracks === 0) {
-    return `Created playlist '${title}' with ${totalTracks} track${totalTracks === 1 ? '' : 's'}`;
+    return `Created playlist '${title}' with ${totalTracks} track${totalTracks === 1 ? "" : "s"}`;
   }
-  return `Created playlist '${title}' with ${totalTracks} track${totalTracks === 1 ? '' : 's'} (${failedTracks} without artwork)`;
+  return `Created playlist '${title}' with ${totalTracks} track${totalTracks === 1 ? "" : "s"} (${failedTracks} without artwork)`;
 }
 
 /**
@@ -262,11 +278,11 @@ function buildSummary(
  */
 export async function executeSuggestPlaylist(
   input: SuggestPlaylistInput,
-  context: SuggestPlaylistContext
+  context: SuggestPlaylistContext,
 ): Promise<SuggestPlaylistOutput> {
   const startTime = Date.now();
 
-  logger.info('suggest_playlist_tool_start', {
+  logger.info("suggest_playlist_tool_start", {
     title: input.title.slice(0, 100),
     trackCount: input.tracks.length,
   });
@@ -276,24 +292,24 @@ export async function executeSuggestPlaylist(
   if (!validationResult.success) {
     const errorMessage = validationResult.error.issues
       .map((e) => e.message)
-      .join(', ');
+      .join(", ");
 
-    logger.warn('suggest_playlist_validation_failed', {
+    logger.warn("suggest_playlist_validation_failed", {
       title: input.title?.slice(0, 100),
-      errors: validationResult.error.issues.map(e => ({
-        path: e.path.join('.'),
+      errors: validationResult.error.issues.map((e) => ({
+        path: e.path.join("."),
         message: e.message,
       })),
     });
 
-    throw createToolError(errorMessage, false, false, 'VALIDATION_ERROR');
+    throw createToolError(errorMessage, false, false, "VALIDATION_ERROR");
   }
 
   const { title, tracks } = validationResult.data;
 
   // Log empty playlist warning (still valid per schema, but unusual)
   if (tracks.length === 0) {
-    logger.warn('suggest_playlist_empty', { title });
+    logger.warn("suggest_playlist_empty", { title });
   }
 
   try {
@@ -301,17 +317,22 @@ export async function executeSuggestPlaylist(
     const enrichedTracks = await enrichPlaylistTracks(
       tracks,
       context.tidalService,
-      true // retry on failure
+      true, // retry on failure
     );
 
     // Calculate stats
-    const enrichedCount = enrichedTracks.filter(t => t.enriched).length;
+    const enrichedCount = enrichedTracks.filter((t) => t.enriched).length;
     const failedCount = enrichedTracks.length - enrichedCount;
 
     const durationMs = Date.now() - startTime;
-    const summary = buildSummary(title, tracks.length, enrichedCount, failedCount);
+    const summary = buildSummary(
+      title,
+      tracks.length,
+      enrichedCount,
+      failedCount,
+    );
 
-    logger.info('suggest_playlist_tool_complete', {
+    logger.info("suggest_playlist_tool_complete", {
       title: title.slice(0, 100),
       totalTracks: tracks.length,
       enrichedTracks: enrichedCount,
@@ -334,7 +355,7 @@ export async function executeSuggestPlaylist(
     const durationMs = Date.now() - startTime;
     const errorMessage = error instanceof Error ? error.message : String(error);
 
-    logger.warn('suggest_playlist_enrichment_failed', {
+    logger.warn("suggest_playlist_enrichment_failed", {
       title: title.slice(0, 100),
       trackCount: tracks.length,
       durationMs,
@@ -358,7 +379,7 @@ export async function executeSuggestPlaylist(
 
     const summary = buildSummary(title, tracks.length, 0, tracks.length);
 
-    logger.info('suggest_playlist_tool_complete_unenriched', {
+    logger.info("suggest_playlist_tool_complete_unenriched", {
       title: title.slice(0, 100),
       totalTracks: tracks.length,
       enrichedTracks: 0,

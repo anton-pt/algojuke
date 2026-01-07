@@ -12,7 +12,8 @@ import { Langfuse } from "langfuse";
  */
 const LANGFUSE_PUBLIC_KEY = process.env.LANGFUSE_PUBLIC_KEY;
 const LANGFUSE_SECRET_KEY = process.env.LANGFUSE_SECRET_KEY;
-const LANGFUSE_BASE_URL = process.env.LANGFUSE_BASE_URL ?? "http://localhost:3000";
+const LANGFUSE_BASE_URL =
+  process.env.LANGFUSE_BASE_URL ?? "http://localhost:3000";
 const LANGFUSE_ENABLED = process.env.LANGFUSE_ENABLED !== "false";
 
 /**
@@ -108,7 +109,7 @@ export interface HTTPSpanResult {
  */
 export function createHTTPSpan(
   trace: ReturnType<Langfuse["trace"]> | null,
-  options: HTTPSpanOptions
+  options: HTTPSpanOptions,
 ) {
   if (!trace) {
     return {
@@ -162,7 +163,7 @@ export interface GenerationSpanResult {
  */
 export function createGenerationSpan(
   trace: ReturnType<Langfuse["trace"]> | null,
-  options: GenerationSpanOptions
+  options: GenerationSpanOptions,
 ) {
   if (!trace) {
     return {
@@ -213,7 +214,7 @@ export interface SearchSpanResult {
  */
 export function createSearchSpan(
   trace: ReturnType<Langfuse["trace"]> | null,
-  options: SearchSpanOptions
+  options: SearchSpanOptions,
 ) {
   if (!trace) {
     return {

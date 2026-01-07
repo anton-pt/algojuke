@@ -12,7 +12,7 @@
 - Q: When a tool invocation times out or fails, should the agent automatically retry before reporting failure? → A: Retry once automatically (with brief delay), then report failure if still failing
 - Q: How verbose should tool invocation result summaries be in the UI? → A: Concise summary with result count and query snippet, but expandable so users can click to see full results
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - Semantic Music Discovery via Chat (Priority: P1)
 
@@ -117,7 +117,7 @@ As a music enthusiast watching the AI agent work, I want to see in real-time whi
 - What happens when the user interrupts the chat while a tool is executing? The tool execution should be cancelled, any partial results should be discarded, and the user should see that the operation was interrupted.
 - What happens when streaming is interrupted mid-tool-invocation? The user should see the last known state and an indication that the connection was lost; no incomplete results should be presented as final.
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -180,7 +180,7 @@ As a music enthusiast watching the AI agent work, I want to see in real-time whi
 - **Track Metadata**: Complete information about an indexed track including title, artist, album, ISRC, lyrics, interpretation text, and all 11 audio features from ReccoBeats.
 - **Tool Invocation Event**: A streamed event representing the lifecycle of a tool call. Attributes include tool name, input parameters, status (pending/executing/completed/failed), result summary, error message (if failed), and timestamp.
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 

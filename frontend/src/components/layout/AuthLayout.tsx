@@ -5,8 +5,8 @@
  * Provides consistent styling and branding for the auth flow.
  */
 
-import { ReactNode } from 'react';
-import './AuthLayout.css';
+import { ReactNode } from "react";
+import "./AuthLayout.css";
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -25,7 +25,9 @@ export function AuthLayout({ children }: AuthLayoutProps): ReactNode {
         </header>
         <main className="auth-content">{children}</main>
         <footer className="auth-footer">
-          <p>&copy; {new Date().getFullYear()} AlgoJuke. All rights reserved.</p>
+          <p>
+            &copy; {new Date().getFullYear()} AlgoJuke. All rights reserved.
+          </p>
         </footer>
       </div>
     </div>

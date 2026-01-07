@@ -12,7 +12,7 @@ export interface AlbumResult {
   duration: number;
   releaseDate: string;
   externalUrl: string;
-  source: 'tidal';
+  source: "tidal";
 }
 
 export interface TrackResult {
@@ -27,7 +27,7 @@ export interface TrackResult {
   explicit: boolean;
   duration: number;
   externalUrl: string;
-  source: 'tidal';
+  source: "tidal";
 }
 
 export interface SearchResultCounts {

@@ -84,31 +84,31 @@ All optional fields from reccobeats.com API:
 ### Insert Track
 
 ```typescript
-import { insertTestTrack, generateTestTrack } from './src/scripts/testUtils';
+import { insertTestTrack, generateTestTrack } from "./src/scripts/testUtils";
 
 const track = generateTestTrack({
-  isrc: 'USRC17607839',
-  title: 'My Song',
-  artist: 'Artist Name',
-  album: 'Album Name',
-  lyrics: 'Song lyrics...',
-  interpretation: 'AI-generated interpretation...',
+  isrc: "USRC17607839",
+  title: "My Song",
+  artist: "Artist Name",
+  album: "Album Name",
+  lyrics: "Song lyrics...",
+  interpretation: "AI-generated interpretation...",
   // Audio features optional
   danceability: 0.75,
   energy: 0.8,
 });
 
-await insertTestTrack('tracks', track);
+await insertTestTrack("tracks", track);
 ```
 
 ### Vector Similarity Search
 
 ```typescript
-import { qdrantClient } from './src/client/qdrant';
+import { qdrantClient } from "./src/client/qdrant";
 
-const results = await qdrantClient.query('tracks', {
+const results = await qdrantClient.query("tracks", {
   query: embedding, // 4096-dim vector
-  using: 'interpretation_embedding',
+  using: "interpretation_embedding",
   limit: 10,
   with_payload: true,
 });
@@ -117,13 +117,13 @@ const results = await qdrantClient.query('tracks', {
 ### BM25 Keyword Search
 
 ```typescript
-import { generateSparseVector } from './src/scripts/testUtils';
+import { generateSparseVector } from "./src/scripts/testUtils";
 
-const sparseVector = generateSparseVector('love song');
+const sparseVector = generateSparseVector("love song");
 
-const results = await qdrantClient.query('tracks', {
+const results = await qdrantClient.query("tracks", {
   query: sparseVector,
-  using: 'text_sparse',
+  using: "text_sparse",
   limit: 10,
   with_payload: true,
 });
@@ -132,20 +132,20 @@ const results = await qdrantClient.query('tracks', {
 ### Hybrid Search (RRF)
 
 ```typescript
-const results = await qdrantClient.query('tracks', {
+const results = await qdrantClient.query("tracks", {
   prefetch: [
     {
       query: embedding,
-      using: 'interpretation_embedding',
+      using: "interpretation_embedding",
       limit: 20,
     },
     {
-      query: generateSparseVector('blues rock'),
-      using: 'text_sparse',
+      query: generateSparseVector("blues rock"),
+      using: "text_sparse",
       limit: 20,
     },
   ],
-  query: { fusion: 'rrf' }, // Reciprocal Rank Fusion
+  query: { fusion: "rrf" }, // Reciprocal Rank Fusion
   limit: 10,
   with_payload: true,
 });
@@ -154,9 +154,9 @@ const results = await qdrantClient.query('tracks', {
 ### Retrieve by ISRC
 
 ```typescript
-import { retrieveTrackByIsrc } from './src/scripts/testUtils';
+import { retrieveTrackByIsrc } from "./src/scripts/testUtils";
 
-const track = await retrieveTrackByIsrc('tracks', 'USRC17607839');
+const track = await retrieveTrackByIsrc("tracks", "USRC17607839");
 ```
 
 ## Testing
@@ -169,7 +169,10 @@ const track = await retrieveTrackByIsrc('tracks', 'USRC17607839');
 ### Test Isolation
 
 ```typescript
-import { createTestCollection, deleteTestCollection } from './src/scripts/testUtils';
+import {
+  createTestCollection,
+  deleteTestCollection,
+} from "./src/scripts/testUtils";
 
 // Create isolated test collection
 const collectionName = await createTestCollection();

@@ -146,9 +146,15 @@
   font-weight: 600;
 }
 
-.track-metadata-interpretation h1 { font-size: 1.25rem; }
-.track-metadata-interpretation h2 { font-size: 1.125rem; }
-.track-metadata-interpretation h3 { font-size: 1rem; }
+.track-metadata-interpretation h1 {
+  font-size: 1.25rem;
+}
+.track-metadata-interpretation h2 {
+  font-size: 1.125rem;
+}
+.track-metadata-interpretation h3 {
+  font-size: 1rem;
+}
 
 .track-metadata-interpretation p {
   margin-bottom: 0.75rem;

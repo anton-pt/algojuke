@@ -5,7 +5,11 @@
  * Langfuse uses "Generation" to refer to LLM invocation spans.
  */
 
-import type { LangfuseTraceClient, LangfuseSpanClient, LangfuseGenerationClient } from "langfuse";
+import type {
+  LangfuseTraceClient,
+  LangfuseSpanClient,
+  LangfuseGenerationClient,
+} from "langfuse";
 import {
   LLMGenerationMetadataSchema,
   UsageDetailsSchema,
@@ -106,7 +110,7 @@ export interface GenerationSpan {
  */
 export function createGenerationSpan(
   parent: LangfuseTraceClient | LangfuseSpanClient,
-  options: GenerationSpanOptions
+  options: GenerationSpanOptions,
 ): GenerationSpan {
   // Validate metadata if provided
   if (options.modelParameters) {

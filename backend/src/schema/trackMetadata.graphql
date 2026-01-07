@@ -8,16 +8,24 @@ All fields are nullable as they may not be available for every track.
 Values come from the ReccoBeats API during ingestion.
 """
 type AudioFeatures {
-  """Acoustic vs electronic character (0.0 = electronic, 1.0 = acoustic)"""
+  """
+  Acoustic vs electronic character (0.0 = electronic, 1.0 = acoustic)
+  """
   acousticness: Float
 
-  """Suitability for dancing based on tempo, rhythm, beat (0.0 to 1.0)"""
+  """
+  Suitability for dancing based on tempo, rhythm, beat (0.0 to 1.0)
+  """
   danceability: Float
 
-  """Intensity and liveliness (0.0 to 1.0)"""
+  """
+  Intensity and liveliness (0.0 to 1.0)
+  """
   energy: Float
 
-  """Likelihood of no vocals (0.0 to 1.0, >0.5 = likely instrumental)"""
+  """
+  Likelihood of no vocals (0.0 to 1.0, >0.5 = likely instrumental)
+  """
   instrumentalness: Float
 
   """
@@ -25,22 +33,34 @@ type AudioFeatures {
   """
   key: Int
 
-  """Probability of live audience presence (0.0 to 1.0)"""
+  """
+  Probability of live audience presence (0.0 to 1.0)
+  """
   liveness: Float
 
-  """Average loudness in decibels (-60 to 0 dB)"""
+  """
+  Average loudness in decibels (-60 to 0 dB)
+  """
   loudness: Float
 
-  """Musical mode (0 = minor, 1 = major)"""
+  """
+  Musical mode (0 = minor, 1 = major)
+  """
   mode: Int
 
-  """Presence of spoken words (0.0 to 1.0, >0.66 = speech-like)"""
+  """
+  Presence of spoken words (0.0 to 1.0, >0.66 = speech-like)
+  """
   speechiness: Float
 
-  """Beats per minute (0 to 250)"""
+  """
+  Beats per minute (0 to 250)
+  """
   tempo: Float
 
-  """Musical positivity (0.0 = sad/dark, 1.0 = happy/uplifting)"""
+  """
+  Musical positivity (0.0 = sad/dark, 1.0 = happy/uplifting)
+  """
   valence: Float
 }
 
@@ -50,7 +70,9 @@ Contains lyrics, interpretation, and audio features populated by the
 track ingestion pipeline (spec 006).
 """
 type ExtendedTrackMetadata {
-  """ISRC identifier for the track (ISO 3901, 12 characters)"""
+  """
+  ISRC identifier for the track (ISO 3901, 12 characters)
+  """
   isrc: String!
 
   """
@@ -76,10 +98,14 @@ type ExtendedTrackMetadata {
 Result of checking indexed status for a single ISRC
 """
 type IndexedStatusResult {
-  """ISRC that was checked"""
+  """
+  ISRC that was checked
+  """
   isrc: String!
 
-  """Whether this ISRC exists in the vector search index"""
+  """
+  Whether this ISRC exists in the vector search index
+  """
   isIndexed: Boolean!
 }
 

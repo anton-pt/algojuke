@@ -28,13 +28,13 @@ cp .env.example .env
 
 Configure the following required variables:
 
-| Variable | Description |
-|----------|-------------|
-| `CLERK_PUBLISHABLE_KEY` | Clerk publishable key (pk_test_...) |
-| `CLERK_SECRET_KEY` | Clerk secret key (sk_test_...) |
-| `TIDAL_CLIENT_ID` | Tidal API client ID |
-| `TIDAL_CLIENT_SECRET` | Tidal API client secret |
-| `DATABASE_URL` | PostgreSQL connection string |
+| Variable                | Description                         |
+| ----------------------- | ----------------------------------- |
+| `CLERK_PUBLISHABLE_KEY` | Clerk publishable key (pk*test*...) |
+| `CLERK_SECRET_KEY`      | Clerk secret key (sk*test*...)      |
+| `TIDAL_CLIENT_ID`       | Tidal API client ID                 |
+| `TIDAL_CLIENT_SECRET`   | Tidal API client secret             |
+| `DATABASE_URL`          | PostgreSQL connection string        |
 
 ### Running the Server
 
@@ -83,12 +83,12 @@ The backend uses Clerk for authentication with a private beta allowlist.
 
 ### Auth Endpoints
 
-| Endpoint | Method | Auth Required | Description |
-|----------|--------|---------------|-------------|
-| `/api/auth/status` | GET | No | Get current user's auth state |
-| `/api/auth/tidal/tokens` | GET | Yes | Get Tidal token status |
-| `/api/auth/tidal/tokens` | POST | Yes + Approved | Store Tidal OAuth tokens |
-| `/api/auth/tidal/refresh` | POST | Yes + Approved | Update Tidal tokens after SDK refresh |
+| Endpoint                  | Method | Auth Required  | Description                           |
+| ------------------------- | ------ | -------------- | ------------------------------------- |
+| `/api/auth/status`        | GET    | No             | Get current user's auth state         |
+| `/api/auth/tidal/tokens`  | GET    | Yes            | Get Tidal token status                |
+| `/api/auth/tidal/tokens`  | POST   | Yes + Approved | Store Tidal OAuth tokens              |
+| `/api/auth/tidal/refresh` | POST   | Yes + Approved | Update Tidal tokens after SDK refresh |
 
 #### GET /api/auth/status
 
@@ -116,7 +116,14 @@ Stores Tidal OAuth tokens. Validates that all required scopes are present:
   "accessToken": "...",
   "refreshToken": "...",
   "expiresAt": 1704067200000,
-  "scopes": ["user.read", "collection.read", "playlists.read", "playlists.write", "recommendations.read", "search.read"]
+  "scopes": [
+    "user.read",
+    "collection.read",
+    "playlists.read",
+    "playlists.write",
+    "recommendations.read",
+    "search.read"
+  ]
 }
 ```
 
@@ -128,20 +135,20 @@ Edit `src/config/allowlist.ts`:
 
 ```typescript
 export const APPROVED_EMAILS = [
-  'anton.tcholakov@gmail.com',
-  'new.user@example.com', // Add new users here
+  "anton.tcholakov@gmail.com",
+  "new.user@example.com", // Add new users here
 ] as const;
 ```
 
 ### Key Files
 
-| File | Purpose |
-|------|---------|
-| `src/config/allowlist.ts` | Approved email addresses |
-| `src/middleware/clerkAuth.ts` | Clerk middleware and auth guards |
-| `src/routes/auth.ts` | Auth API endpoints |
-| `src/services/tidalAuthService.ts` | Tidal token storage/retrieval |
-| `src/schemas/auth.ts` | Zod schemas for auth contracts |
+| File                               | Purpose                          |
+| ---------------------------------- | -------------------------------- |
+| `src/config/allowlist.ts`          | Approved email addresses         |
+| `src/middleware/clerkAuth.ts`      | Clerk middleware and auth guards |
+| `src/routes/auth.ts`               | Auth API endpoints               |
+| `src/services/tidalAuthService.ts` | Tidal token storage/retrieval    |
+| `src/schemas/auth.ts`              | Zod schemas for auth contracts   |
 
 ## Project Structure
 

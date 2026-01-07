@@ -6,14 +6,14 @@
  * Fetches and manages the list of conversations for the current user.
  */
 
-import { useQuery } from '@apollo/client';
+import { useQuery } from "@apollo/client";
 import {
   GET_CONVERSATIONS,
   GetConversationsData,
   Conversation,
   isConversationsList,
   isChatError,
-} from '../graphql/chat';
+} from "../graphql/chat";
 
 export interface UseConversationsReturn {
   /** List of conversations */
@@ -31,13 +31,15 @@ export interface UseConversationsReturn {
 }
 
 export function useConversations(): UseConversationsReturn {
-  const { data, loading, error: apolloError, refetch } = useQuery<GetConversationsData>(
-    GET_CONVERSATIONS,
-    {
-      fetchPolicy: 'cache-and-network',
-      pollInterval: 30000, // Poll every 30 seconds for updates
-    }
-  );
+  const {
+    data,
+    loading,
+    error: apolloError,
+    refetch,
+  } = useQuery<GetConversationsData>(GET_CONVERSATIONS, {
+    fetchPolicy: "cache-and-network",
+    pollInterval: 30000, // Poll every 30 seconds for updates
+  });
 
   // Handle GraphQL response
   if (data?.conversations) {

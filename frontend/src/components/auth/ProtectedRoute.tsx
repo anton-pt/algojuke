@@ -5,10 +5,10 @@
  * Redirects users to appropriate pages based on their access level.
  */
 
-import { ReactNode, useEffect, useState, useCallback } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import { useUser, useAuth } from '@clerk/clerk-react';
-import { useTidalAuth } from '../../hooks/useTidalAuth';
+import { ReactNode, useEffect, useState, useCallback } from "react";
+import { Navigate, useLocation } from "react-router-dom";
+import { useUser, useAuth } from "@clerk/clerk-react";
+import { useTidalAuth } from "../../hooks/useTidalAuth";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -57,7 +57,7 @@ export function ProtectedRoute({
 
     try {
       const token = await getToken();
-      const response = await fetch('/api/auth/status', {
+      const response = await fetch("/api/auth/status", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -68,14 +68,19 @@ export function ProtectedRoute({
         setAuthStatus(status);
 
         // If token is expired and we have Tidal SDK ready, try to refresh
-        if (status.tidalTokenExpired && tidalSdkReady && !isRefreshing && !refreshFailed) {
+        if (
+          status.tidalTokenExpired &&
+          tidalSdkReady &&
+          !isRefreshing &&
+          !refreshFailed
+        ) {
           setIsRefreshing(true);
           const refreshSuccess = await refreshAndSyncToken();
           setIsRefreshing(false);
 
           if (refreshSuccess) {
             // Re-check auth status after successful refresh
-            const refreshedResponse = await fetch('/api/auth/status', {
+            const refreshedResponse = await fetch("/api/auth/status", {
               headers: { Authorization: `Bearer ${token}` },
             });
             if (refreshedResponse.ok) {
@@ -91,7 +96,15 @@ export function ProtectedRoute({
     } finally {
       setIsLoading(false);
     }
-  }, [isLoaded, isSignedIn, getToken, tidalSdkReady, isRefreshing, refreshFailed, refreshAndSyncToken]);
+  }, [
+    isLoaded,
+    isSignedIn,
+    getToken,
+    tidalSdkReady,
+    isRefreshing,
+    refreshFailed,
+    refreshAndSyncToken,
+  ]);
 
   useEffect(() => {
     checkAuthStatus();
@@ -134,7 +147,13 @@ export function ProtectedRoute({
 
   // Token refresh failed - need to reconnect
   if (refreshFailed) {
-    return <Navigate to="/connect-tidal" state={{ returnTo: location.pathname }} replace />;
+    return (
+      <Navigate
+        to="/connect-tidal"
+        state={{ returnTo: location.pathname }}
+        replace
+      />
+    );
   }
 
   // Signed in but not approved → Waitlist
@@ -145,7 +164,13 @@ export function ProtectedRoute({
   // Approved but no Tidal connection (when required) → Connect page
   // Pass through the original destination URL
   if (requireTidal && !authStatus.hasTidalConnection) {
-    return <Navigate to="/connect-tidal" state={{ returnTo: location.pathname }} replace />;
+    return (
+      <Navigate
+        to="/connect-tidal"
+        state={{ returnTo: location.pathname }}
+        replace
+      />
+    );
   }
 
   // All checks passed → Render children

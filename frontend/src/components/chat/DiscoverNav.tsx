@@ -8,11 +8,11 @@
  * Blocks navigation during active streaming with confirmation dialog.
  */
 
-import { useState, useCallback } from 'react';
-import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { useStreaming } from '../../contexts/StreamingContext';
-import { LeaveConfirmDialog } from './LeaveConfirmDialog';
-import './DiscoverNav.css';
+import { useState, useCallback } from "react";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import { useStreaming } from "../../contexts/StreamingContext";
+import { LeaveConfirmDialog } from "./LeaveConfirmDialog";
+import "./DiscoverNav.css";
 
 export function DiscoverNav() {
   const streaming = useStreaming();
@@ -20,18 +20,18 @@ export function DiscoverNav() {
   const location = useLocation();
   const [pendingPath, setPendingPath] = useState<string | null>(null);
 
-  const isOnChatPage = location.pathname === '/discover/chat';
+  const isOnChatPage = location.pathname === "/discover/chat";
   const shouldBlock = streaming?.isStreaming && isOnChatPage;
 
   const handleNavClick = useCallback(
     (e: React.MouseEvent<HTMLAnchorElement>, path: string) => {
       // Only block when streaming on chat page and navigating away
-      if (shouldBlock && path !== '/discover/chat') {
+      if (shouldBlock && path !== "/discover/chat") {
         e.preventDefault();
         setPendingPath(path);
       }
     },
-    [shouldBlock]
+    [shouldBlock],
   );
 
   const handleStay = useCallback(() => {
@@ -50,15 +50,19 @@ export function DiscoverNav() {
       <nav className="discover-nav">
         <NavLink
           to="/discover/search"
-          className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-          onClick={(e) => handleNavClick(e, '/discover/search')}
+          className={({ isActive }) =>
+            isActive ? "nav-link active" : "nav-link"
+          }
+          onClick={(e) => handleNavClick(e, "/discover/search")}
         >
           Search
         </NavLink>
         <NavLink
           to="/discover/chat"
-          className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-          onClick={(e) => handleNavClick(e, '/discover/chat')}
+          className={({ isActive }) =>
+            isActive ? "nav-link active" : "nav-link"
+          }
+          onClick={(e) => handleNavClick(e, "/discover/chat")}
         >
           Chat
         </NavLink>

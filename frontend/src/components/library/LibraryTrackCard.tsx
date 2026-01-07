@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { IndexedBadge } from './IndexedBadge';
-import './LibraryTrackCard.css';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { IndexedBadge } from "./IndexedBadge";
+import "./LibraryTrackCard.css";
 
 export interface LibraryTrack {
   id: string;
@@ -26,16 +26,17 @@ interface LibraryTrackCardProps {
 function formatDuration(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
 export function LibraryTrackCard({ track, onDelete }: LibraryTrackCardProps) {
   const [imageError, setImageError] = useState(false);
   const navigate = useNavigate();
 
-  const imageSrc = imageError || !track.coverArtUrl
-    ? '/images/placeholder-album.svg'
-    : track.coverArtUrl;
+  const imageSrc =
+    imageError || !track.coverArtUrl
+      ? "/images/placeholder-album.svg"
+      : track.coverArtUrl;
 
   const handleClick = () => {
     navigate(`/library/tracks/${track.id}`);

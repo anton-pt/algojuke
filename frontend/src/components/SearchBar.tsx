@@ -1,5 +1,5 @@
-import { useState, FormEvent, ChangeEvent } from 'react';
-import './SearchBar.css';
+import { useState, FormEvent, ChangeEvent } from "react";
+import "./SearchBar.css";
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
@@ -8,7 +8,7 @@ interface SearchBarProps {
 }
 
 export function SearchBar({ onSearch, loading, error }: SearchBarProps) {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -39,12 +39,8 @@ export function SearchBar({ onSearch, loading, error }: SearchBarProps) {
             className="search-input"
             aria-label="Search query"
           />
-          <button
-            type="submit"
-            disabled={loading}
-            className="search-button"
-          >
-            {loading ? 'Searching...' : 'Search'}
+          <button type="submit" disabled={loading} className="search-button">
+            {loading ? "Searching..." : "Search"}
           </button>
         </div>
       </form>

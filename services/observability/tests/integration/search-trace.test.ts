@@ -7,11 +7,11 @@
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 
-import { createObservabilityClient, type ObservabilityClient } from "../../src/client.js";
 import {
-  createSearchSpan,
-  type SearchSpanOptions,
-} from "../../src/search.js";
+  createObservabilityClient,
+  type ObservabilityClient,
+} from "../../src/client.js";
+import { createSearchSpan, type SearchSpanOptions } from "../../src/search.js";
 
 describe("Search Trace Capture", () => {
   let client: ObservabilityClient;
@@ -80,7 +80,7 @@ describe("Search Trace Capture", () => {
     // Simulate search results
     span.end({
       resultCount: 5,
-      topScores: [0.95, 0.87, 0.82, 0.75, 0.70],
+      topScores: [0.95, 0.87, 0.82, 0.75, 0.7],
       resultIds: ["track-1", "track-2", "track-3", "track-4", "track-5"],
     });
 

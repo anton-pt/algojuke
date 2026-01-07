@@ -7,8 +7,8 @@
  * Each tool invocation creates a span under the parent chat trace.
  */
 
-import type { Langfuse } from 'langfuse';
-import { logger } from '../../utils/logger.js';
+import type { Langfuse } from "langfuse";
+import { logger } from "../../utils/logger.js";
 
 // -----------------------------------------------------------------------------
 // Types
@@ -17,12 +17,12 @@ import { logger } from '../../utils/logger.js';
 /**
  * Langfuse trace (from chat stream service)
  */
-export type LangfuseTrace = ReturnType<Langfuse['trace']>;
+export type LangfuseTrace = ReturnType<Langfuse["trace"]>;
 
 /**
  * Langfuse span
  */
-export type LangfuseSpan = ReturnType<LangfuseTrace['span']>;
+export type LangfuseSpan = ReturnType<LangfuseTrace["span"]>;
 
 /**
  * Tool span options
@@ -85,7 +85,7 @@ export interface ToolSpanWrapper {
  */
 export function createToolSpan(
   trace: LangfuseTrace | null,
-  options: ToolSpanOptions
+  options: ToolSpanOptions,
 ): ToolSpanWrapper {
   // No-op wrapper if trace is null
   if (!trace) {
@@ -107,7 +107,7 @@ export function createToolSpan(
     },
     metadata: {
       ...options.metadata,
-      toolType: 'agent_tool',
+      toolType: "agent_tool",
     },
   });
 
@@ -122,11 +122,11 @@ export function createToolSpan(
           metadata: {
             ...result.metadata,
             durationMs: result.durationMs,
-            status: 'success',
+            status: "success",
           },
         });
       } catch (error) {
-        logger.warn('tool_span_end_success_failed', {
+        logger.warn("tool_span_end_success_failed", {
           toolName: options.toolName,
           toolCallId: options.toolCallId,
           error: error instanceof Error ? error.message : String(error),
@@ -140,16 +140,16 @@ export function createToolSpan(
           output: {
             error: result.error,
           },
-          level: 'ERROR',
+          level: "ERROR",
           metadata: {
             durationMs: result.durationMs,
             retryable: result.retryable,
             wasRetried: result.wasRetried,
-            status: 'error',
+            status: "error",
           },
         });
       } catch (error) {
-        logger.warn('tool_span_end_error_failed', {
+        logger.warn("tool_span_end_error_failed", {
           toolName: options.toolName,
           toolCallId: options.toolCallId,
           error: error instanceof Error ? error.message : String(error),
@@ -169,7 +169,7 @@ function sanitizeInput(input: unknown): unknown {
     return input;
   }
 
-  if (typeof input !== 'object') {
+  if (typeof input !== "object") {
     return input;
   }
 
@@ -177,7 +177,7 @@ function sanitizeInput(input: unknown): unknown {
     // Truncate large arrays
     if (input.length > 10) {
       return {
-        _type: 'array',
+        _type: "array",
         _length: input.length,
         _sample: input.slice(0, 5),
       };
@@ -189,8 +189,8 @@ function sanitizeInput(input: unknown): unknown {
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(input)) {
     // Truncate query strings if too long
-    if (key === 'query' && typeof value === 'string' && value.length > 500) {
-      result[key] = value.slice(0, 500) + '...[truncated]';
+    if (key === "query" && typeof value === "string" && value.length > 500) {
+      result[key] = value.slice(0, 500) + "...[truncated]";
     } else {
       result[key] = sanitizeInput(value);
     }
@@ -213,12 +213,15 @@ function sanitizeInput(input: unknown): unknown {
  * @returns Tool result
  * @throws Error from tool execution
  */
-export async function executeToolWithTracing<TInput, TOutput extends { summary: string; durationMs: number }>(
+export async function executeToolWithTracing<
+  TInput,
+  TOutput extends { summary: string; durationMs: number },
+>(
   trace: LangfuseTrace | null,
   toolName: string,
   toolCallId: string,
   input: TInput,
-  fn: (input: TInput) => Promise<TOutput>
+  fn: (input: TInput) => Promise<TOutput>,
 ): Promise<TOutput> {
   const span = createToolSpan(trace, {
     toolName,
@@ -244,8 +247,14 @@ export async function executeToolWithTracing<TInput, TOutput extends { summary: 
   } catch (error) {
     const durationMs = Date.now() - startTime;
     const errorMessage = error instanceof Error ? error.message : String(error);
-    const retryable = error instanceof Error && 'retryable' in error ? (error as any).retryable : true;
-    const wasRetried = error instanceof Error && 'wasRetried' in error ? (error as any).wasRetried : false;
+    const retryable =
+      error instanceof Error && "retryable" in error
+        ? (error as any).retryable
+        : true;
+    const wasRetried =
+      error instanceof Error && "wasRetried" in error
+        ? (error as any).wasRetried
+        : false;
 
     span.endError({
       error: errorMessage,
@@ -262,34 +271,34 @@ export async function executeToolWithTracing<TInput, TOutput extends { summary: 
  * Extract result count from tool output
  */
 function getResultCount(output: unknown): number {
-  if (output === null || output === undefined || typeof output !== 'object') {
+  if (output === null || output === undefined || typeof output !== "object") {
     return 0;
   }
 
   const obj = output as Record<string, unknown>;
 
   // Check for common result array fields
-  if ('tracks' in obj && Array.isArray(obj.tracks)) {
+  if ("tracks" in obj && Array.isArray(obj.tracks)) {
     return obj.tracks.length;
   }
 
-  if ('albums' in obj && Array.isArray(obj.albums)) {
+  if ("albums" in obj && Array.isArray(obj.albums)) {
     return obj.albums.length;
   }
 
-  if ('results' in obj && Array.isArray(obj.results)) {
+  if ("results" in obj && Array.isArray(obj.results)) {
     return obj.results.length;
   }
 
-  if ('found' in obj && Array.isArray(obj.found)) {
+  if ("found" in obj && Array.isArray(obj.found)) {
     return obj.found.length;
   }
 
-  if ('totalFound' in obj && typeof obj.totalFound === 'number') {
+  if ("totalFound" in obj && typeof obj.totalFound === "number") {
     return obj.totalFound;
   }
 
-  if ('resultCount' in obj && typeof obj.resultCount === 'number') {
+  if ("resultCount" in obj && typeof obj.resultCount === "number") {
     return obj.resultCount;
   }
 

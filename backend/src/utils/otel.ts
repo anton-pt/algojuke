@@ -8,9 +8,9 @@
  * See: https://langfuse.com/integrations/frameworks/vercel-ai-sdk
  */
 
-import { NodeSDK } from '@opentelemetry/sdk-node';
-import { LangfuseSpanProcessor } from '@langfuse/otel';
-import { logger } from './logger.js';
+import { NodeSDK } from "@opentelemetry/sdk-node";
+import { LangfuseSpanProcessor } from "@langfuse/otel";
+import { logger } from "./logger.js";
 
 /**
  * OpenTelemetry SDK instance
@@ -28,21 +28,27 @@ let sdk: NodeSDK | null = null;
  */
 export function initializeOpenTelemetry(): void {
   if (sdk) {
-    logger.warn('otel_already_initialized', { message: 'OpenTelemetry already initialized' });
+    logger.warn("otel_already_initialized", {
+      message: "OpenTelemetry already initialized",
+    });
     return;
   }
 
   const publicKey = process.env.LANGFUSE_PUBLIC_KEY;
   const secretKey = process.env.LANGFUSE_SECRET_KEY;
-  const enabled = process.env.LANGFUSE_ENABLED !== 'false';
+  const enabled = process.env.LANGFUSE_ENABLED !== "false";
 
   if (!enabled) {
-    logger.info('otel_disabled', { message: 'Langfuse OpenTelemetry disabled via LANGFUSE_ENABLED=false' });
+    logger.info("otel_disabled", {
+      message: "Langfuse OpenTelemetry disabled via LANGFUSE_ENABLED=false",
+    });
     return;
   }
 
   if (!publicKey || !secretKey) {
-    logger.warn('otel_missing_keys', { message: 'Langfuse keys not configured, OpenTelemetry disabled' });
+    logger.warn("otel_missing_keys", {
+      message: "Langfuse keys not configured, OpenTelemetry disabled",
+    });
     return;
   }
 
@@ -53,12 +59,12 @@ export function initializeOpenTelemetry(): void {
 
     sdk.start();
 
-    logger.info('otel_initialized', {
-      message: 'OpenTelemetry initialized with Langfuse span processor',
-      baseUrl: process.env.LANGFUSE_BASEURL || 'cloud',
+    logger.info("otel_initialized", {
+      message: "OpenTelemetry initialized with Langfuse span processor",
+      baseUrl: process.env.LANGFUSE_BASEURL || "cloud",
     });
   } catch (error) {
-    logger.error('otel_init_failed', {
+    logger.error("otel_init_failed", {
       error: error instanceof Error ? error.message : String(error),
     });
   }
@@ -77,9 +83,9 @@ export async function shutdownOpenTelemetry(): Promise<void> {
   try {
     await sdk.shutdown();
     sdk = null;
-    logger.info('otel_shutdown', { message: 'OpenTelemetry SDK shut down' });
+    logger.info("otel_shutdown", { message: "OpenTelemetry SDK shut down" });
   } catch (error) {
-    logger.error('otel_shutdown_failed', {
+    logger.error("otel_shutdown_failed", {
       error: error instanceof Error ? error.message : String(error),
     });
   }

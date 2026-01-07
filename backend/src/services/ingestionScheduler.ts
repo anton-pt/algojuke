@@ -35,7 +35,7 @@ import { logger } from "../utils/logger.js";
 async function parallelWithLimit<T, R>(
   items: T[],
   fn: (item: T) => Promise<R>,
-  concurrency: number
+  concurrency: number,
 ): Promise<R[]> {
   const results: R[] = new Array(items.length);
   let index = 0;
@@ -50,7 +50,7 @@ async function parallelWithLimit<T, R>(
   // Create workers up to concurrency limit
   const workers = Array.from(
     { length: Math.min(concurrency, items.length) },
-    () => worker()
+    () => worker(),
   );
 
   await Promise.all(workers);
@@ -146,7 +146,7 @@ export class IngestionScheduler {
    * @returns Scheduling result
    */
   async scheduleTrack(
-    request: TrackIngestionRequest
+    request: TrackIngestionRequest,
   ): Promise<TrackSchedulingResult> {
     const startTime = Date.now();
 
@@ -175,7 +175,7 @@ export class IngestionScheduler {
       // Fail-open: Assume not indexed and proceed with scheduling
       logger.qdrantCheckError(
         1,
-        error instanceof Error ? error.message : String(error)
+        error instanceof Error ? error.message : String(error),
       );
     }
 
@@ -200,7 +200,7 @@ export class IngestionScheduler {
     } catch (error) {
       logger.inngestSendError(
         normalizedIsrc,
-        error instanceof Error ? error.message : String(error)
+        error instanceof Error ? error.message : String(error),
       );
       return { scheduled: false, reason: "inngest_error" };
     }
@@ -220,7 +220,7 @@ export class IngestionScheduler {
    */
   async scheduleAlbumTracks(
     request: AlbumTracksIngestionRequest,
-    concurrency?: number
+    concurrency?: number,
   ): Promise<BatchSchedulingResult> {
     const config = getIngestionConfig();
     const effectiveConcurrency = concurrency ?? config.scheduling.concurrency;
@@ -228,7 +228,11 @@ export class IngestionScheduler {
     const results: TrackBatchResult[] = [];
 
     // Separate valid and invalid tracks
-    const validTracks: Array<{ isrc: string; title: string; artworkUrl?: string | null }> = [];
+    const validTracks: Array<{
+      isrc: string;
+      title: string;
+      artworkUrl?: string | null;
+    }> = [];
 
     for (const track of request.tracks) {
       if (!track.isrc || track.isrc.trim() === "") {
@@ -260,7 +264,13 @@ export class IngestionScheduler {
 
     if (validTracks.length === 0) {
       const durationMs = Date.now() - startTime;
-      this.logSchedulingResult(request.albumTitle, request.tracks.length, 0, invalidCount, durationMs);
+      this.logSchedulingResult(
+        request.albumTitle,
+        request.tracks.length,
+        0,
+        invalidCount,
+        durationMs,
+      );
       return {
         totalTracks: request.tracks.length,
         scheduledCount: 0,
@@ -273,18 +283,22 @@ export class IngestionScheduler {
     let existsMap = new Map<string, boolean>();
     try {
       existsMap = await this.qdrantClient.checkTracksExist(
-        validTracks.map((t) => t.isrc)
+        validTracks.map((t) => t.isrc),
       );
     } catch (error) {
       // Fail-open: Assume none are indexed
       logger.qdrantCheckError(
         validTracks.length,
-        error instanceof Error ? error.message : String(error)
+        error instanceof Error ? error.message : String(error),
       );
     }
 
     // Separate tracks into already-indexed and to-schedule
-    const tracksToSchedule: Array<{ isrc: string; title: string; artworkUrl?: string | null }> = [];
+    const tracksToSchedule: Array<{
+      isrc: string;
+      title: string;
+      artworkUrl?: string | null;
+    }> = [];
 
     for (const track of validTracks) {
       const exists = existsMap.get(track.isrc) ?? false;
@@ -317,7 +331,7 @@ export class IngestionScheduler {
         } catch (error) {
           logger.inngestSendError(
             track.isrc,
-            error instanceof Error ? error.message : String(error)
+            error instanceof Error ? error.message : String(error),
           );
           return {
             ...track,
@@ -326,7 +340,7 @@ export class IngestionScheduler {
           };
         }
       },
-      effectiveConcurrency
+      effectiveConcurrency,
     );
 
     // Combine results
@@ -342,7 +356,7 @@ export class IngestionScheduler {
       request.tracks.length,
       scheduledCount,
       skippedCount,
-      durationMs
+      durationMs,
     );
 
     return {
@@ -369,7 +383,7 @@ export class IngestionScheduler {
     totalTracks: number,
     scheduledCount: number,
     skippedCount: number,
-    durationMs: number
+    durationMs: number,
   ): void {
     const config = getIngestionConfig();
     const slaThresholdMs = config.scheduling.slaMs;
@@ -380,7 +394,7 @@ export class IngestionScheduler {
       totalTracks,
       scheduledCount,
       skippedCount,
-      durationMs
+      durationMs,
     );
 
     // Log SLA warning if exceeded
@@ -410,7 +424,7 @@ export class IngestionScheduler {
     } catch (error) {
       logger.qdrantCheckError(
         isrcs.length,
-        error instanceof Error ? error.message : String(error)
+        error instanceof Error ? error.message : String(error),
       );
       return new Map();
     }

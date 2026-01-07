@@ -1,8 +1,8 @@
-import axios from 'axios';
-import { logger } from '../utils/logger.js';
-import { buildImageUrls } from '../utils/imageUrl.js';
-import { RateLimiter } from '../utils/rateLimiter.js';
-import { TidalTokenService } from './tidalTokenService.js';
+import axios from "axios";
+import { logger } from "../utils/logger.js";
+import { buildImageUrls } from "../utils/imageUrl.js";
+import { RateLimiter } from "../utils/rateLimiter.js";
+import { TidalTokenService } from "./tidalTokenService.js";
 import type {
   TidalV2SearchResponse,
   TidalAlbumAttributes,
@@ -14,13 +14,17 @@ import type {
   TidalAlbumBatchResponse,
   TidalArtworkAttributes,
   JsonApiResource,
-} from '../types/tidal.js';
-import type { SearchResults, AlbumResult, TrackResult } from '../types/graphql.js';
+} from "../types/tidal.js";
+import type {
+  SearchResults,
+  AlbumResult,
+  TrackResult,
+} from "../types/graphql.js";
 import {
   RateLimitError,
   ApiUnavailableError,
   TimeoutError,
-} from '../types/errors.js';
+} from "../types/errors.js";
 
 /**
  * Service for interacting with the Tidal API
@@ -32,15 +36,16 @@ export class TidalService {
   private readonly rateLimiter: RateLimiter;
 
   constructor(tokenService: TidalTokenService) {
-    this.apiBaseUrl = process.env.TIDAL_API_BASE_URL || 'https://openapi.tidal.com';
+    this.apiBaseUrl =
+      process.env.TIDAL_API_BASE_URL || "https://openapi.tidal.com";
     this.tokenService = tokenService;
 
     // Initialize rate limiter with configurable settings
     this.rateLimiter = new RateLimiter({
-      requestsPerSecond: parseInt(process.env.TIDAL_REQUESTS_PER_SECOND || '2'),
-      maxConcurrent: parseInt(process.env.TIDAL_MAX_CONCURRENT || '3'),
-      maxRetries: parseInt(process.env.TIDAL_MAX_RETRIES || '3'),
-      baseRetryDelay: parseInt(process.env.TIDAL_RETRY_DELAY_MS || '1000'),
+      requestsPerSecond: parseInt(process.env.TIDAL_REQUESTS_PER_SECOND || "2"),
+      maxConcurrent: parseInt(process.env.TIDAL_MAX_CONCURRENT || "3"),
+      maxRetries: parseInt(process.env.TIDAL_MAX_RETRIES || "3"),
+      baseRetryDelay: parseInt(process.env.TIDAL_RETRY_DELAY_MS || "1000"),
     });
   }
 
@@ -57,7 +62,7 @@ export class TidalService {
     query: string,
     limit: number = 20,
     offset: number = 0,
-    countryCode: string = 'US'
+    countryCode: string = "US",
   ): Promise<SearchResults> {
     const token = await this.tokenService.getValidToken();
 
@@ -65,19 +70,19 @@ export class TidalService {
     const url = `${this.apiBaseUrl}/v2/searchResults/${encodeURIComponent(query)}`;
     const params = {
       countryCode,
-      explicitFilter: 'INCLUDE',
-      include: 'albums,tracks', // Include both albums and tracks in response
+      explicitFilter: "INCLUDE",
+      include: "albums,tracks", // Include both albums and tracks in response
       limit: String(limit),
     };
 
-    logger.apiCall(url, 'GET');
+    logger.apiCall(url, "GET");
 
     try {
       const response = await axios.get<TidalV2SearchResponse>(url, {
         headers: {
-          'accept': 'application/vnd.api+json',
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/vnd.api+json',
+          accept: "application/vnd.api+json",
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/vnd.api+json",
         },
         params,
         timeout: 10000, // 10 second timeout
@@ -87,22 +92,24 @@ export class TidalService {
       const included = response.data.included || [];
       const albumResources = included.filter(
         (resource): resource is JsonApiResource<TidalAlbumAttributes> =>
-          resource.type === 'albums'
+          resource.type === "albums",
       );
       const trackResources = included.filter(
         (resource): resource is JsonApiResource<TidalTrackAttributes> =>
-          resource.type === 'tracks'
+          resource.type === "tracks",
       );
 
       // Collect all album IDs from search results
-      const albumIdsFromSearch = new Set(albumResources.map(album => album.id));
+      const albumIdsFromSearch = new Set(
+        albumResources.map((album) => album.id),
+      );
 
       // Extract ISRCs from tracks for batch track fetch
       const trackIsrcs = trackResources
-        .map(track => track.attributes?.isrc)
+        .map((track) => track.attributes?.isrc)
         .filter((isrc): isrc is string => !!isrc);
 
-      logger.info('batch_optimization_start', {
+      logger.info("batch_optimization_start", {
         albumsFound: albumIdsFromSearch.size,
         tracksFound: trackResources.length,
         tracksWithIsrc: trackIsrcs.length,
@@ -112,39 +119,55 @@ export class TidalService {
       let trackToAlbumMap = new Map<string, string>();
       let albumIdsFromTracks = new Set<string>();
       if (trackIsrcs.length > 0) {
-        const trackBatchResult = await this.batchFetchTracks(trackIsrcs, countryCode, token);
+        const trackBatchResult = await this.batchFetchTracks(
+          trackIsrcs,
+          countryCode,
+          token,
+        );
         albumIdsFromTracks = trackBatchResult.albumIds;
         trackToAlbumMap = trackBatchResult.trackToAlbumMap;
-        logger.info('batch_tracks_complete', {
+        logger.info("batch_tracks_complete", {
           additionalAlbums: albumIdsFromTracks.size,
           trackMappings: trackToAlbumMap.size,
         });
       }
 
       // STEP 3: Combine all album IDs and batch fetch album details (artists + cover art)
-      const allAlbumIds = new Set([...albumIdsFromSearch, ...albumIdsFromTracks]);
-      const albumDetailsMap = await this.batchFetchAlbums(Array.from(allAlbumIds), countryCode, token);
+      const allAlbumIds = new Set([
+        ...albumIdsFromSearch,
+        ...albumIdsFromTracks,
+      ]);
+      const albumDetailsMap = await this.batchFetchAlbums(
+        Array.from(allAlbumIds),
+        countryCode,
+        token,
+      );
 
-      logger.info('batch_albums_complete', {
+      logger.info("batch_albums_complete", {
         totalAlbums: allAlbumIds.size,
         enrichedAlbums: albumDetailsMap.size,
         totalApiCalls: trackIsrcs.length > 0 ? 3 : 2, // search + (tracks?) + albums
       });
 
-      return this.transformV2Response(response.data, query, albumDetailsMap, trackToAlbumMap);
+      return this.transformV2Response(
+        response.data,
+        query,
+        albumDetailsMap,
+        trackToAlbumMap,
+      );
     } catch (error) {
       if (axios.isAxiosError(error)) {
         logger.apiError(url, error.response?.status ?? 0, error.message);
 
         // Handle timeout
-        if (error.code === 'ECONNABORTED') {
+        if (error.code === "ECONNABORTED") {
           throw new TimeoutError();
         }
 
         // Handle rate limiting
         if (error.response?.status === 429) {
-          const retryAfter = error.response.headers['retry-after']
-            ? parseInt(error.response.headers['retry-after'] as string)
+          const retryAfter = error.response.headers["retry-after"]
+            ? parseInt(error.response.headers["retry-after"] as string)
             : undefined;
           throw new RateLimitError(retryAfter);
         }
@@ -156,15 +179,17 @@ export class TidalService {
 
         // Handle unauthorized (token expired/invalid)
         if (error.response?.status === 401) {
-          logger.warn('tidal_token_invalid', { status: 401 });
+          logger.warn("tidal_token_invalid", { status: 401 });
           // Clear token cache and retry once
           this.tokenService.clearCache();
-          throw new ApiUnavailableError('Tidal authentication failed');
+          throw new ApiUnavailableError("Tidal authentication failed");
         }
       }
 
-      logger.error('tidal_search_failed', { error: String(error) });
-      throw new ApiUnavailableError('Music search service temporarily unavailable');
+      logger.error("tidal_search_failed", { error: String(error) });
+      throw new ApiUnavailableError(
+        "Music search service temporarily unavailable",
+      );
     }
   }
 
@@ -178,8 +203,8 @@ export class TidalService {
    */
   private async batchFetchTracks(
     isrcs: string[],
-    countryCode: string = 'US',
-    token: string
+    countryCode: string = "US",
+    token: string,
   ): Promise<{ albumIds: Set<string>; trackToAlbumMap: Map<string, string> }> {
     if (isrcs.length === 0) {
       return { albumIds: new Set(), trackToAlbumMap: new Map() };
@@ -189,19 +214,19 @@ export class TidalService {
       // Manually construct query string to ensure proper encoding
       const queryParams = new URLSearchParams({
         countryCode,
-        include: 'albums',
-        'filter[isrc]': isrcs.join(','),
+        include: "albums",
+        "filter[isrc]": isrcs.join(","),
       });
       const url = `${this.apiBaseUrl}/v2/tracks?${queryParams.toString()}`;
 
-      logger.info('batch_tracks_request', { isrcsCount: isrcs.length });
+      logger.info("batch_tracks_request", { isrcsCount: isrcs.length });
 
       try {
         const response = await axios.get<TidalTrackBatchResponse>(url, {
           headers: {
-            'accept': 'application/vnd.api+json',
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/vnd.api+json',
+            accept: "application/vnd.api+json",
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/vnd.api+json",
           },
           timeout: 5000,
         });
@@ -211,16 +236,19 @@ export class TidalService {
         if (response.data.included) {
           const albums = response.data.included.filter(
             (resource): resource is JsonApiResource<TidalAlbumAttributes> =>
-              resource.type === 'albums'
+              resource.type === "albums",
           );
-          albums.forEach(album => albumIds.add(album.id));
+          albums.forEach((album) => albumIds.add(album.id));
         }
 
         // Build track ID -> album ID mapping from track relationships
         const trackToAlbumMap = new Map<string, string>();
-        response.data.data.forEach(track => {
+        response.data.data.forEach((track) => {
           const albumRelationship = track.relationships?.albums?.data;
-          if (Array.isArray(albumRelationship) && albumRelationship.length > 0) {
+          if (
+            Array.isArray(albumRelationship) &&
+            albumRelationship.length > 0
+          ) {
             // Use first album relationship
             trackToAlbumMap.set(track.id, albumRelationship[0].id);
           } else if (albumRelationship && !Array.isArray(albumRelationship)) {
@@ -229,7 +257,7 @@ export class TidalService {
           }
         });
 
-        logger.info('batch_tracks_success', {
+        logger.info("batch_tracks_success", {
           albumIds: albumIds.size,
           trackMappings: trackToAlbumMap.size,
         });
@@ -237,7 +265,7 @@ export class TidalService {
         return { albumIds, trackToAlbumMap };
       } catch (error) {
         if (axios.isAxiosError(error)) {
-          logger.warn('batch_tracks_fetch_failed', {
+          logger.warn("batch_tracks_fetch_failed", {
             isrcsCount: isrcs.length,
             status: error.response?.status,
             statusText: error.response?.statusText,
@@ -245,7 +273,10 @@ export class TidalService {
             error: error.message,
           });
         } else {
-          logger.warn('batch_tracks_fetch_failed', { isrcsCount: isrcs.length, error: String(error) });
+          logger.warn("batch_tracks_fetch_failed", {
+            isrcsCount: isrcs.length,
+            error: String(error),
+          });
         }
         return { albumIds: new Set(), trackToAlbumMap: new Map() };
       }
@@ -263,8 +294,8 @@ export class TidalService {
    */
   private async batchFetchAlbums(
     albumIds: string[],
-    countryCode: string = 'US',
-    token: string
+    countryCode: string = "US",
+    token: string,
   ): Promise<Map<string, { artistNames: string[]; coverUrl: string | null }>> {
     if (albumIds.length === 0) {
       return new Map();
@@ -279,18 +310,27 @@ export class TidalService {
       chunks.push(albumIds.slice(i, i + BATCH_SIZE));
     }
 
-    logger.info('batch_albums_chunking', {
+    logger.info("batch_albums_chunking", {
       totalAlbums: albumIds.length,
       batchSize: BATCH_SIZE,
       numBatches: chunks.length,
     });
 
     // Fetch all chunks sequentially (rate limiter handles throttling)
-    const allResults = new Map<string, { artistNames: string[]; coverUrl: string | null }>();
+    const allResults = new Map<
+      string,
+      { artistNames: string[]; coverUrl: string | null }
+    >();
 
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
-      const chunkResults = await this.fetchAlbumBatch(chunk, countryCode, token, i + 1, chunks.length);
+      const chunkResults = await this.fetchAlbumBatch(
+        chunk,
+        countryCode,
+        token,
+        i + 1,
+        chunks.length,
+      );
 
       // Merge chunk results into final map
       chunkResults.forEach((value, key) => {
@@ -298,7 +338,7 @@ export class TidalService {
       });
     }
 
-    logger.info('batch_albums_complete_all_chunks', {
+    logger.info("batch_albums_complete_all_chunks", {
       totalAlbums: albumIds.length,
       enrichedAlbums: allResults.size,
       numBatches: chunks.length,
@@ -315,18 +355,18 @@ export class TidalService {
     countryCode: string,
     token: string,
     batchNumber: number,
-    totalBatches: number
+    totalBatches: number,
   ): Promise<Map<string, { artistNames: string[]; coverUrl: string | null }>> {
     return this.rateLimiter.executeWithRetry(async () => {
       // Manually construct query string to ensure proper encoding
       const queryParams = new URLSearchParams({
         countryCode,
-        include: 'artists,coverArt',
-        'filter[id]': albumIds.join(','),
+        include: "artists,coverArt",
+        "filter[id]": albumIds.join(","),
       });
       const url = `${this.apiBaseUrl}/v2/albums?${queryParams.toString()}`;
 
-      logger.info('batch_albums_request', {
+      logger.info("batch_albums_request", {
         batchNumber,
         totalBatches,
         albumIdsCount: albumIds.length,
@@ -335,9 +375,9 @@ export class TidalService {
       try {
         const response = await axios.get<TidalAlbumBatchResponse>(url, {
           headers: {
-            'accept': 'application/vnd.api+json',
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/vnd.api+json',
+            accept: "application/vnd.api+json",
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/vnd.api+json",
           },
           timeout: 5000,
         });
@@ -346,14 +386,17 @@ export class TidalService {
         const lookupMaps = this.buildLookupMaps(response.data.included || []);
 
         // Build final album data map
-        const albumDataMap = new Map<string, { artistNames: string[]; coverUrl: string | null }>();
+        const albumDataMap = new Map<
+          string,
+          { artistNames: string[]; coverUrl: string | null }
+        >();
 
-        response.data.data.forEach(album => {
+        response.data.data.forEach((album) => {
           // Get artist names
           const artistIds = album.relationships?.artists?.data;
           const artistNames: string[] = [];
           if (Array.isArray(artistIds)) {
-            artistIds.forEach(artistRef => {
+            artistIds.forEach((artistRef) => {
               const name = lookupMaps.artistMap.get(artistRef.id);
               if (name) artistNames.push(name);
             });
@@ -367,12 +410,13 @@ export class TidalService {
           }
 
           albumDataMap.set(album.id, {
-            artistNames: artistNames.length > 0 ? artistNames : ['Unknown Artist'],
+            artistNames:
+              artistNames.length > 0 ? artistNames : ["Unknown Artist"],
             coverUrl,
           });
         });
 
-        logger.info('batch_albums_success', {
+        logger.info("batch_albums_success", {
           batchNumber,
           totalBatches,
           enrichedAlbums: albumDataMap.size,
@@ -381,7 +425,7 @@ export class TidalService {
         return albumDataMap;
       } catch (error) {
         if (axios.isAxiosError(error)) {
-          logger.warn('batch_albums_fetch_failed', {
+          logger.warn("batch_albums_fetch_failed", {
             batchNumber,
             totalBatches,
             albumIdsCount: albumIds.length,
@@ -391,7 +435,7 @@ export class TidalService {
             error: error.message,
           });
         } else {
-          logger.warn('batch_albums_fetch_failed', {
+          logger.warn("batch_albums_fetch_failed", {
             batchNumber,
             totalBatches,
             albumIdsCount: albumIds.length,
@@ -410,22 +454,24 @@ export class TidalService {
    * @returns Object with artistMap and artworkMap
    */
   private buildLookupMaps(
-    included: Array<JsonApiResource<TidalArtistAttributes | TidalArtworkAttributes>>
+    included: Array<
+      JsonApiResource<TidalArtistAttributes | TidalArtworkAttributes>
+    >,
   ): { artistMap: Map<string, string>; artworkMap: Map<string, string> } {
     const artistMap = new Map<string, string>();
     const artworkMap = new Map<string, string>();
 
-    included.forEach(resource => {
-      if (resource.type === 'artists') {
+    included.forEach((resource) => {
+      if (resource.type === "artists") {
         const attrs = resource.attributes as TidalArtistAttributes;
         if (attrs?.name) {
           artistMap.set(resource.id, attrs.name);
         }
-      } else if (resource.type === 'artworks') {
+      } else if (resource.type === "artworks") {
         const attrs = resource.attributes as TidalArtworkAttributes;
         if (attrs?.files && attrs.files.length > 0) {
           // Prefer 640x640, fallback to first available
-          const image640 = attrs.files.find(f => f.meta.width === 640);
+          const image640 = attrs.files.find((f) => f.meta.width === 640);
           const url = image640?.href || attrs.files[0].href;
           artworkMap.set(resource.id, url);
         }
@@ -443,9 +489,9 @@ export class TidalService {
     const match = isoDuration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
     if (!match) return 0;
 
-    const hours = parseInt(match[1] || '0');
-    const minutes = parseInt(match[2] || '0');
-    const seconds = parseInt(match[3] || '0');
+    const hours = parseInt(match[1] || "0");
+    const minutes = parseInt(match[2] || "0");
+    const seconds = parseInt(match[3] || "0");
 
     return hours * 3600 + minutes * 60 + seconds;
   }
@@ -462,8 +508,11 @@ export class TidalService {
   private transformV2Response(
     tidalResponse: TidalV2SearchResponse,
     query: string,
-    albumDetailsMap: Map<string, { artistNames: string[]; coverUrl: string | null }> = new Map(),
-    trackToAlbumMap: Map<string, string> = new Map()
+    albumDetailsMap: Map<
+      string,
+      { artistNames: string[]; coverUrl: string | null }
+    > = new Map(),
+    trackToAlbumMap: Map<string, string> = new Map(),
   ): SearchResults {
     const included = tidalResponse.included || [];
     const relationships = tidalResponse.data.relationships;
@@ -471,17 +520,18 @@ export class TidalService {
     // Extract albums from included resources
     const albumResources = included.filter(
       (resource): resource is JsonApiResource<TidalAlbumAttributes> =>
-        resource.type === 'albums'
+        resource.type === "albums",
     );
 
     const albums: AlbumResult[] = albumResources.map((albumResource) => {
       const attrs = albumResource.attributes!;
       const externalUrl =
-        attrs.externalLinks?.find((link) => link.meta?.type === 'TIDAL_SHARING')?.href || '';
+        attrs.externalLinks?.find((link) => link.meta?.type === "TIDAL_SHARING")
+          ?.href || "";
 
       // Get album details (artist names, cover art URL) from batch fetch
       const albumDetails = albumDetailsMap.get(albumResource.id);
-      const artistNames = albumDetails?.artistNames || ['Unknown Artist'];
+      const artistNames = albumDetails?.artistNames || ["Unknown Artist"];
       const coverUrl = albumDetails?.coverUrl || null;
 
       // Use actual cover art URL from batch fetch or fallback to placeholder
@@ -501,27 +551,28 @@ export class TidalService {
         duration: this.parseDuration(attrs.duration),
         releaseDate: attrs.releaseDate,
         externalUrl,
-        source: 'tidal' as const,
+        source: "tidal" as const,
       };
     });
 
     // Extract tracks from included resources
     const trackResources = included.filter(
       (resource): resource is JsonApiResource<TidalTrackAttributes> =>
-        resource.type === 'tracks'
+        resource.type === "tracks",
     );
 
     const tracks: TrackResult[] = trackResources.map((trackResource) => {
       const attrs = trackResource.attributes!;
       const externalUrl =
-        attrs.externalLinks?.find((link) => link.meta?.type === 'TIDAL_SHARING')?.href || '';
+        attrs.externalLinks?.find((link) => link.meta?.type === "TIDAL_SHARING")
+          ?.href || "";
 
       // Look up track's album ID from batch fetch
-      const albumId = trackToAlbumMap.get(trackResource.id) || '';
+      const albumId = trackToAlbumMap.get(trackResource.id) || "";
 
       // Get album details (artist names, cover art) if we have the album
-      let artistNames: string[] = ['Unknown Artist'];
-      let albumTitle = '';
+      let artistNames: string[] = ["Unknown Artist"];
+      let albumTitle = "";
       let coverUrl: string | null = null;
 
       if (albumId) {
@@ -532,7 +583,7 @@ export class TidalService {
         }
 
         // Try to find album title from the original search results
-        const albumResource = albumResources.find(a => a.id === albumId);
+        const albumResource = albumResources.find((a) => a.id === albumId);
         if (albumResource?.attributes?.title) {
           albumTitle = albumResource.attributes.title;
         }
@@ -555,7 +606,7 @@ export class TidalService {
         explicit: attrs.explicit,
         duration: this.parseDuration(attrs.duration),
         externalUrl,
-        source: 'tidal' as const,
+        source: "tidal" as const,
       };
     });
 
@@ -585,14 +636,16 @@ export class TidalService {
    */
   async getAlbumTrackListing(
     albumId: string,
-    countryCode: string = 'US'
-  ): Promise<Array<{
-    position: number;
-    title: string;
-    duration: number;
-    tidalId?: string;
-    explicit?: boolean;
-  }>> {
+    countryCode: string = "US",
+  ): Promise<
+    Array<{
+      position: number;
+      title: string;
+      duration: number;
+      tidalId?: string;
+      explicit?: boolean;
+    }>
+  > {
     const token = await this.tokenService.getValidToken();
     const url = `${this.apiBaseUrl}/v2/albums/${albumId}/relationships/items`;
 
@@ -600,12 +653,12 @@ export class TidalService {
       const response = await this.rateLimiter.executeWithRetry(async () => {
         return await axios.get(url, {
           headers: {
-            'accept': 'application/vnd.api+json',
-            'Authorization': `Bearer ${token}`,
+            accept: "application/vnd.api+json",
+            Authorization: `Bearer ${token}`,
           },
           params: {
             countryCode,
-            include: 'items', // Required to include track details in response
+            include: "items", // Required to include track details in response
           },
           timeout: 5000,
         });
@@ -613,16 +666,18 @@ export class TidalService {
 
       // Transform JSON:API response to track listing
       const trackListing = (response.data.included || [])
-        .filter((item: any) => item.type === 'tracks')
+        .filter((item: any) => item.type === "tracks")
         .map((track: any, index: number) => ({
           position: index + 1,
-          title: track.attributes?.title || 'Unknown Track',
-          duration: track.attributes?.duration ? this.parseDuration(track.attributes.duration) : 0,
+          title: track.attributes?.title || "Unknown Track",
+          duration: track.attributes?.duration
+            ? this.parseDuration(track.attributes.duration)
+            : 0,
           tidalId: track.id,
           explicit: track.attributes?.explicit || false,
         }));
 
-      logger.info('album_track_listing_fetched', {
+      logger.info("album_track_listing_fetched", {
         albumId,
         trackCount: trackListing.length,
       });
@@ -630,25 +685,31 @@ export class TidalService {
       return trackListing;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
-          logger.error('album_track_listing_timeout', { albumId, error: String(error) });
-          throw new TimeoutError('Request to Tidal API timed out');
+        if (error.code === "ECONNABORTED" || error.code === "ETIMEDOUT") {
+          logger.error("album_track_listing_timeout", {
+            albumId,
+            error: String(error),
+          });
+          throw new TimeoutError("Request to Tidal API timed out");
         }
         if (error.response?.status === 429) {
-          logger.error('album_track_listing_rate_limit', { albumId });
+          logger.error("album_track_listing_rate_limit", { albumId });
           throw new RateLimitError();
         }
         if (error.response?.status && error.response.status >= 500) {
-          logger.error('album_track_listing_api_error', {
+          logger.error("album_track_listing_api_error", {
             albumId,
-            status: error.response.status
+            status: error.response.status,
           });
-          throw new ApiUnavailableError('Tidal API is temporarily unavailable');
+          throw new ApiUnavailableError("Tidal API is temporarily unavailable");
         }
       }
 
-      logger.error('album_track_listing_error', { albumId, error: String(error) });
-      throw new ApiUnavailableError('Failed to fetch album track listing');
+      logger.error("album_track_listing_error", {
+        albumId,
+        error: String(error),
+      });
+      throw new ApiUnavailableError("Failed to fetch album track listing");
     }
   }
 
@@ -664,7 +725,7 @@ export class TidalService {
    */
   async batchFetchTrackIsrcs(
     tidalIds: string[],
-    countryCode: string = 'US'
+    countryCode: string = "US",
   ): Promise<Map<string, string | undefined>> {
     const result = new Map<string, string | undefined>();
 
@@ -684,12 +745,12 @@ export class TidalService {
         const response = await this.rateLimiter.executeWithRetry(async () => {
           return await axios.get(url, {
             headers: {
-              'accept': 'application/vnd.api+json',
-              'Authorization': `Bearer ${token}`,
+              accept: "application/vnd.api+json",
+              Authorization: `Bearer ${token}`,
             },
             params: {
               countryCode,
-              'filter[id]': chunk.join(','),
+              "filter[id]": chunk.join(","),
             },
             timeout: 10000, // Longer timeout for batch request
           });
@@ -709,14 +770,16 @@ export class TidalService {
           }
         }
 
-        logger.info('batch_track_isrcs_fetched', {
+        logger.info("batch_track_isrcs_fetched", {
           chunkIndex: Math.floor(i / BATCH_SIZE),
           chunkSize: chunk.length,
           totalTracks: tidalIds.length,
-          isrcsFound: tracks.filter((t: { attributes?: { isrc?: string } }) => t.attributes?.isrc).length,
+          isrcsFound: tracks.filter(
+            (t: { attributes?: { isrc?: string } }) => t.attributes?.isrc,
+          ).length,
         });
       } catch (error) {
-        logger.error('batch_track_isrcs_error', {
+        logger.error("batch_track_isrcs_error", {
           chunkIndex: Math.floor(i / BATCH_SIZE),
           error: error instanceof Error ? error.message : String(error),
         });
@@ -731,14 +794,18 @@ export class TidalService {
         // Re-throw for critical errors
         if (axios.isAxiosError(error)) {
           if (error.response?.status === 429) {
-            const retryAfter = error.response.headers?.['retry-after'];
-            throw new RateLimitError(retryAfter ? parseInt(retryAfter) : undefined);
+            const retryAfter = error.response.headers?.["retry-after"];
+            throw new RateLimitError(
+              retryAfter ? parseInt(retryAfter) : undefined,
+            );
           }
-          if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
-            throw new TimeoutError('Request to Tidal API timed out');
+          if (error.code === "ECONNABORTED" || error.code === "ETIMEDOUT") {
+            throw new TimeoutError("Request to Tidal API timed out");
           }
           if (error.response?.status && error.response.status >= 500) {
-            throw new ApiUnavailableError('Tidal API is temporarily unavailable');
+            throw new ApiUnavailableError(
+              "Tidal API is temporarily unavailable",
+            );
           }
         }
         // For other errors, continue with next chunk (graceful degradation)
@@ -757,7 +824,7 @@ export class TidalService {
    */
   async getAlbumById(
     albumId: string,
-    countryCode: string = 'US'
+    countryCode: string = "US",
   ): Promise<{
     id: string;
     title: string;
@@ -774,7 +841,7 @@ export class TidalService {
     // Use query params for proper JSON:API format
     const queryParams = new URLSearchParams({
       countryCode,
-      include: 'artists,coverArt',
+      include: "artists,coverArt",
     });
     const url = `${this.apiBaseUrl}/v2/albums/${albumId}?${queryParams.toString()}`;
 
@@ -782,8 +849,8 @@ export class TidalService {
       const response = await this.rateLimiter.executeWithRetry(async () => {
         return await axios.get(url, {
           headers: {
-            'accept': 'application/vnd.api+json',
-            'Authorization': `Bearer ${token}`,
+            accept: "application/vnd.api+json",
+            Authorization: `Bearer ${token}`,
           },
           timeout: 5000,
         });
@@ -798,11 +865,11 @@ export class TidalService {
 
       // Get artist name from relationships
       const artistIds = album.relationships?.artists?.data;
-      let artistName = 'Unknown Artist';
-      let artistId = '';
+      let artistName = "Unknown Artist";
+      let artistId = "";
       if (Array.isArray(artistIds) && artistIds.length > 0) {
         artistId = artistIds[0].id;
-        artistName = lookupMaps.artistMap.get(artistId) || 'Unknown Artist';
+        artistName = lookupMaps.artistMap.get(artistId) || "Unknown Artist";
       }
 
       // Get cover art URL from relationships
@@ -814,7 +881,7 @@ export class TidalService {
 
       const albumData = {
         id: album.id,
-        title: attributes.title || 'Unknown Album',
+        title: attributes.title || "Unknown Album",
         artist: {
           id: artistId,
           name: artistName,
@@ -827,33 +894,36 @@ export class TidalService {
         popularity: attributes.popularity,
       };
 
-      logger.info('album_fetched', { albumId, title: albumData.title });
+      logger.info("album_fetched", { albumId, title: albumData.title });
       return albumData;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
-          logger.error('album_fetch_timeout', { albumId, error: String(error) });
-          throw new TimeoutError('Request to Tidal API timed out');
+        if (error.code === "ECONNABORTED" || error.code === "ETIMEDOUT") {
+          logger.error("album_fetch_timeout", {
+            albumId,
+            error: String(error),
+          });
+          throw new TimeoutError("Request to Tidal API timed out");
         }
         if (error.response?.status === 429) {
-          logger.error('album_fetch_rate_limit', { albumId });
+          logger.error("album_fetch_rate_limit", { albumId });
           throw new RateLimitError();
         }
         if (error.response?.status === 404) {
-          logger.error('album_not_found', { albumId });
-          throw new Error('Album not found on Tidal');
+          logger.error("album_not_found", { albumId });
+          throw new Error("Album not found on Tidal");
         }
         if (error.response?.status && error.response.status >= 500) {
-          logger.error('album_fetch_api_error', {
+          logger.error("album_fetch_api_error", {
             albumId,
-            status: error.response.status
+            status: error.response.status,
           });
-          throw new ApiUnavailableError('Tidal API is temporarily unavailable');
+          throw new ApiUnavailableError("Tidal API is temporarily unavailable");
         }
       }
 
-      logger.error('album_fetch_error', { albumId, error: String(error) });
-      throw new ApiUnavailableError('Failed to fetch album from Tidal');
+      logger.error("album_fetch_error", { albumId, error: String(error) });
+      throw new ApiUnavailableError("Failed to fetch album from Tidal");
     }
   }
 
@@ -875,27 +945,35 @@ export class TidalService {
    */
   async batchFetchTracksByIsrc(
     isrcs: string[],
-    countryCode: string = 'US'
-  ): Promise<Map<string, {
-    tidalId: string;
-    title: string;
-    artist: string;
-    albumId: string | null;
-    duration: number | null;
-  }>> {
+    countryCode: string = "US",
+  ): Promise<
+    Map<
+      string,
+      {
+        tidalId: string;
+        title: string;
+        artist: string;
+        albumId: string | null;
+        duration: number | null;
+      }
+    >
+  > {
     if (isrcs.length === 0) {
       return new Map();
     }
 
     const token = await this.tokenService.getValidToken();
     const BATCH_SIZE = 20; // Tidal API limit
-    const result = new Map<string, {
-      tidalId: string;
-      title: string;
-      artist: string;
-      albumId: string | null;
-      duration: number | null;
-    }>();
+    const result = new Map<
+      string,
+      {
+        tidalId: string;
+        title: string;
+        artist: string;
+        albumId: string | null;
+        duration: number | null;
+      }
+    >();
 
     // Chunk ISRCs into batches
     for (let i = 0; i < isrcs.length; i += BATCH_SIZE) {
@@ -904,10 +982,16 @@ export class TidalService {
       const totalBatches = Math.ceil(isrcs.length / BATCH_SIZE);
 
       try {
-        const chunkResult = await this.fetchTrackBatchByIsrc(chunk, countryCode, token, batchNumber, totalBatches);
+        const chunkResult = await this.fetchTrackBatchByIsrc(
+          chunk,
+          countryCode,
+          token,
+          batchNumber,
+          totalBatches,
+        );
         chunkResult.forEach((value, key) => result.set(key, value));
       } catch (error) {
-        logger.warn('batch_tracks_by_isrc_chunk_failed', {
+        logger.warn("batch_tracks_by_isrc_chunk_failed", {
           batchNumber,
           totalBatches,
           chunkSize: chunk.length,
@@ -928,23 +1012,28 @@ export class TidalService {
     countryCode: string,
     token: string,
     batchNumber: number,
-    totalBatches: number
-  ): Promise<Map<string, {
-    tidalId: string;
-    title: string;
-    artist: string;
-    albumId: string | null;
-    duration: number | null;
-  }>> {
+    totalBatches: number,
+  ): Promise<
+    Map<
+      string,
+      {
+        tidalId: string;
+        title: string;
+        artist: string;
+        albumId: string | null;
+        duration: number | null;
+      }
+    >
+  > {
     return this.rateLimiter.executeWithRetry(async () => {
       const queryParams = new URLSearchParams({
         countryCode,
-        include: 'albums,artists',
-        'filter[isrc]': isrcs.join(','),
+        include: "albums,artists",
+        "filter[isrc]": isrcs.join(","),
       });
       const url = `${this.apiBaseUrl}/v2/tracks?${queryParams.toString()}`;
 
-      logger.info('suggest_playlist_tracks_batch', {
+      logger.info("suggest_playlist_tracks_batch", {
         batchNumber,
         totalBatches,
         batchSize: isrcs.length,
@@ -952,9 +1041,9 @@ export class TidalService {
 
       const response = await axios.get<TidalTrackBatchResponse>(url, {
         headers: {
-          'accept': 'application/vnd.api+json',
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/vnd.api+json',
+          accept: "application/vnd.api+json",
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/vnd.api+json",
         },
         timeout: 10000,
       });
@@ -963,8 +1052,11 @@ export class TidalService {
       const artistMap = new Map<string, string>();
       if (response.data.included) {
         response.data.included
-          .filter((r): r is JsonApiResource<TidalArtistAttributes> => r.type === 'artists')
-          .forEach(artist => {
+          .filter(
+            (r): r is JsonApiResource<TidalArtistAttributes> =>
+              r.type === "artists",
+          )
+          .forEach((artist) => {
             if (artist.attributes?.name) {
               artistMap.set(artist.id, artist.attributes.name);
             }
@@ -972,15 +1064,18 @@ export class TidalService {
       }
 
       // Map ISRC to track data
-      const trackMap = new Map<string, {
-        tidalId: string;
-        title: string;
-        artist: string;
-        albumId: string | null;
-        duration: number | null;
-      }>();
+      const trackMap = new Map<
+        string,
+        {
+          tidalId: string;
+          title: string;
+          artist: string;
+          albumId: string | null;
+          duration: number | null;
+        }
+      >();
 
-      response.data.data.forEach(track => {
+      response.data.data.forEach((track) => {
         const isrc = track.attributes?.isrc?.toUpperCase();
         if (!isrc) return;
 
@@ -992,10 +1087,14 @@ export class TidalService {
         }
 
         // Get artist name from relationship
-        let artistName = 'Unknown Artist';
+        let artistName = "Unknown Artist";
         const artistRelationship = track.relationships?.artists?.data;
-        if (Array.isArray(artistRelationship) && artistRelationship.length > 0) {
-          artistName = artistMap.get(artistRelationship[0].id) || 'Unknown Artist';
+        if (
+          Array.isArray(artistRelationship) &&
+          artistRelationship.length > 0
+        ) {
+          artistName =
+            artistMap.get(artistRelationship[0].id) || "Unknown Artist";
         }
 
         // Parse duration
@@ -1006,14 +1105,14 @@ export class TidalService {
 
         trackMap.set(isrc, {
           tidalId: track.id,
-          title: track.attributes?.title || 'Unknown Track',
+          title: track.attributes?.title || "Unknown Track",
           artist: artistName,
           albumId,
           duration,
         });
       });
 
-      logger.info('suggest_playlist_tracks_batch_complete', {
+      logger.info("suggest_playlist_tracks_batch_complete", {
         batchNumber,
         totalBatches,
         requested: isrcs.length,
@@ -1038,18 +1137,26 @@ export class TidalService {
    */
   async batchFetchAlbumsById(
     albumIds: string[],
-    countryCode: string = 'US'
-  ): Promise<Map<string, {
-    title: string;
-    artworkUrl: string | null;
-  }>> {
+    countryCode: string = "US",
+  ): Promise<
+    Map<
+      string,
+      {
+        title: string;
+        artworkUrl: string | null;
+      }
+    >
+  > {
     if (albumIds.length === 0) {
       return new Map();
     }
 
     const token = await this.tokenService.getValidToken();
     const BATCH_SIZE = 20; // Tidal API limit
-    const result = new Map<string, { title: string; artworkUrl: string | null }>();
+    const result = new Map<
+      string,
+      { title: string; artworkUrl: string | null }
+    >();
 
     // Chunk album IDs into batches
     for (let i = 0; i < albumIds.length; i += BATCH_SIZE) {
@@ -1058,10 +1165,16 @@ export class TidalService {
       const totalBatches = Math.ceil(albumIds.length / BATCH_SIZE);
 
       try {
-        const chunkResult = await this.fetchAlbumBatchForPlaylist(chunk, countryCode, token, batchNumber, totalBatches);
+        const chunkResult = await this.fetchAlbumBatchForPlaylist(
+          chunk,
+          countryCode,
+          token,
+          batchNumber,
+          totalBatches,
+        );
         chunkResult.forEach((value, key) => result.set(key, value));
       } catch (error) {
-        logger.warn('batch_albums_by_id_chunk_failed', {
+        logger.warn("batch_albums_by_id_chunk_failed", {
           batchNumber,
           totalBatches,
           chunkSize: chunk.length,
@@ -1083,17 +1196,17 @@ export class TidalService {
     countryCode: string,
     token: string,
     batchNumber: number,
-    totalBatches: number
+    totalBatches: number,
   ): Promise<Map<string, { title: string; artworkUrl: string | null }>> {
     return this.rateLimiter.executeWithRetry(async () => {
       const queryParams = new URLSearchParams({
         countryCode,
-        include: 'coverArt',
-        'filter[id]': albumIds.join(','),
+        include: "coverArt",
+        "filter[id]": albumIds.join(","),
       });
       const url = `${this.apiBaseUrl}/v2/albums?${queryParams.toString()}`;
 
-      logger.info('suggest_playlist_albums_batch', {
+      logger.info("suggest_playlist_albums_batch", {
         batchNumber,
         totalBatches,
         batchSize: albumIds.length,
@@ -1101,9 +1214,9 @@ export class TidalService {
 
       const response = await axios.get<TidalAlbumBatchResponse>(url, {
         headers: {
-          'accept': 'application/vnd.api+json',
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/vnd.api+json',
+          accept: "application/vnd.api+json",
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/vnd.api+json",
         },
         timeout: 10000,
       });
@@ -1112,13 +1225,16 @@ export class TidalService {
       const artworkMap = new Map<string, string>();
       if (response.data.included) {
         response.data.included
-          .filter((r): r is JsonApiResource<TidalArtworkAttributes> => r.type === 'artworks')
-          .forEach(artwork => {
+          .filter(
+            (r): r is JsonApiResource<TidalArtworkAttributes> =>
+              r.type === "artworks",
+          )
+          .forEach((artwork) => {
             const files = artwork.attributes?.files;
             if (files && files.length > 0) {
               // Prefer 80x80 for compact playlist display
-              const image80 = files.find(f => f.meta.width === 80);
-              const image160 = files.find(f => f.meta.width === 160);
+              const image80 = files.find((f) => f.meta.width === 80);
+              const image160 = files.find((f) => f.meta.width === 160);
               const url = image80?.href || image160?.href || files[0].href;
               artworkMap.set(artwork.id, url);
             }
@@ -1126,9 +1242,12 @@ export class TidalService {
       }
 
       // Map album ID to album data
-      const albumMap = new Map<string, { title: string; artworkUrl: string | null }>();
+      const albumMap = new Map<
+        string,
+        { title: string; artworkUrl: string | null }
+      >();
 
-      response.data.data.forEach(album => {
+      response.data.data.forEach((album) => {
         // Get cover art URL from relationship
         let artworkUrl: string | null = null;
         const coverArtData = album.relationships?.coverArt?.data;
@@ -1137,12 +1256,12 @@ export class TidalService {
         }
 
         albumMap.set(album.id, {
-          title: album.attributes?.title || 'Unknown Album',
+          title: album.attributes?.title || "Unknown Album",
           artworkUrl,
         });
       });
 
-      logger.info('suggest_playlist_albums_batch_complete', {
+      logger.info("suggest_playlist_albums_batch_complete", {
         batchNumber,
         totalBatches,
         requested: albumIds.length,
@@ -1162,7 +1281,7 @@ export class TidalService {
    */
   async getTrackById(
     trackId: string,
-    countryCode: string = 'US'
+    countryCode: string = "US",
   ): Promise<{
     id: string;
     title: string;
@@ -1178,7 +1297,7 @@ export class TidalService {
     // Use query params for proper JSON:API format
     const queryParams = new URLSearchParams({
       countryCode,
-      include: 'artists,albums',
+      include: "artists,albums",
     });
     const url = `${this.apiBaseUrl}/v2/tracks/${trackId}?${queryParams.toString()}`;
 
@@ -1186,8 +1305,8 @@ export class TidalService {
       const response = await this.rateLimiter.executeWithRetry(async () => {
         return await axios.get(url, {
           headers: {
-            'accept': 'application/vnd.api+json',
-            'Authorization': `Bearer ${token}`,
+            accept: "application/vnd.api+json",
+            Authorization: `Bearer ${token}`,
           },
           timeout: 5000,
         });
@@ -1196,18 +1315,19 @@ export class TidalService {
       const track = response.data.data;
       const attributes = track.attributes || {};
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const included: Array<JsonApiResource<any>> = response.data.included || [];
+      const included: Array<JsonApiResource<any>> =
+        response.data.included || [];
 
       // Build lookup maps from included resources
       const lookupMaps = this.buildLookupMaps(included);
 
       // Get artist name from relationships
       const artistIds = track.relationships?.artists?.data;
-      let artistName = 'Unknown Artist';
-      let artistId = '';
+      let artistName = "Unknown Artist";
+      let artistId = "";
       if (Array.isArray(artistIds) && artistIds.length > 0) {
         artistId = artistIds[0].id;
-        artistName = lookupMaps.artistMap.get(artistId) || 'Unknown Artist';
+        artistName = lookupMaps.artistMap.get(artistId) || "Unknown Artist";
       }
 
       // Get album info from relationships - need to fetch album separately for cover art
@@ -1218,9 +1338,9 @@ export class TidalService {
 
         // Find basic album info from included data
         const albumResource = included.find(
-          (resource) => resource.type === 'albums' && resource.id === albumId
+          (resource) => resource.type === "albums" && resource.id === albumId,
         );
-        const albumTitle = albumResource?.attributes?.title || 'Unknown Album';
+        const albumTitle = albumResource?.attributes?.title || "Unknown Album";
 
         // Fetch full album details to get cover art
         try {
@@ -1232,10 +1352,10 @@ export class TidalService {
           };
         } catch (error) {
           // If album fetch fails, still return basic info without cover
-          logger.warn('album_fetch_for_track_failed', {
+          logger.warn("album_fetch_for_track_failed", {
             trackId,
             albumId,
-            error: String(error)
+            error: String(error),
           });
           albumData = {
             id: albumId,
@@ -1246,45 +1366,50 @@ export class TidalService {
 
       const trackData = {
         id: track.id,
-        title: attributes.title || 'Unknown Track',
+        title: attributes.title || "Unknown Track",
         artist: {
           id: artistId,
           name: artistName,
         },
         album: albumData,
-        duration: attributes.duration ? this.parseDuration(attributes.duration) : 0,
+        duration: attributes.duration
+          ? this.parseDuration(attributes.duration)
+          : 0,
         isrc: attributes.isrc,
         explicit: attributes.explicit || false,
         popularity: attributes.popularity,
       };
 
-      logger.info('track_fetched', { trackId, title: trackData.title });
+      logger.info("track_fetched", { trackId, title: trackData.title });
       return trackData;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
-          logger.error('track_fetch_timeout', { trackId, error: String(error) });
-          throw new TimeoutError('Request to Tidal API timed out');
+        if (error.code === "ECONNABORTED" || error.code === "ETIMEDOUT") {
+          logger.error("track_fetch_timeout", {
+            trackId,
+            error: String(error),
+          });
+          throw new TimeoutError("Request to Tidal API timed out");
         }
         if (error.response?.status === 429) {
-          logger.error('track_fetch_rate_limit', { trackId });
+          logger.error("track_fetch_rate_limit", { trackId });
           throw new RateLimitError();
         }
         if (error.response?.status === 404) {
-          logger.error('track_not_found', { trackId });
-          throw new Error('Track not found on Tidal');
+          logger.error("track_not_found", { trackId });
+          throw new Error("Track not found on Tidal");
         }
         if (error.response?.status && error.response.status >= 500) {
-          logger.error('track_fetch_api_error', {
+          logger.error("track_fetch_api_error", {
             trackId,
-            status: error.response.status
+            status: error.response.status,
           });
-          throw new ApiUnavailableError('Tidal API is temporarily unavailable');
+          throw new ApiUnavailableError("Tidal API is temporarily unavailable");
         }
       }
 
-      logger.error('track_fetch_error', { trackId, error: String(error) });
-      throw new ApiUnavailableError('Failed to fetch track from Tidal');
+      logger.error("track_fetch_error", { trackId, error: String(error) });
+      throw new ApiUnavailableError("Failed to fetch track from Tidal");
     }
   }
 
@@ -1305,7 +1430,7 @@ export class TidalService {
   async createPlaylist(
     name: string,
     accessToken: string,
-    countryCode: string = 'US'
+    countryCode: string = "US",
   ): Promise<string> {
     const url = `${this.apiBaseUrl}/v2/playlists`;
 
@@ -1314,15 +1439,15 @@ export class TidalService {
 
     const payload = {
       data: {
-        type: 'playlists',
+        type: "playlists",
         attributes: {
           name: truncatedName,
-          accessType: 'UNLISTED', // Private playlist
+          accessType: "UNLISTED", // Private playlist
         },
       },
     };
 
-    logger.info('playlist_create_start', {
+    logger.info("playlist_create_start", {
       nameLength: truncatedName.length,
       countryCode,
     });
@@ -1331,9 +1456,9 @@ export class TidalService {
       const response = await this.rateLimiter.executeWithRetry(async () => {
         return await axios.post(url, payload, {
           headers: {
-            'accept': 'application/vnd.api+json',
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/vnd.api+json',
+            accept: "application/vnd.api+json",
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/vnd.api+json",
           },
           params: { countryCode },
           timeout: 10000,
@@ -1342,10 +1467,10 @@ export class TidalService {
 
       const playlistId = response.data?.data?.id;
       if (!playlistId) {
-        throw new Error('No playlist ID returned from Tidal API');
+        throw new Error("No playlist ID returned from Tidal API");
       }
 
-      logger.info('playlist_create_success', {
+      logger.info("playlist_create_success", {
         playlistId,
         name: truncatedName,
       });
@@ -1353,28 +1478,28 @@ export class TidalService {
       return playlistId;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
-          logger.error('playlist_create_timeout', { error: String(error) });
-          throw new TimeoutError('Request to Tidal API timed out');
+        if (error.code === "ECONNABORTED" || error.code === "ETIMEDOUT") {
+          logger.error("playlist_create_timeout", { error: String(error) });
+          throw new TimeoutError("Request to Tidal API timed out");
         }
         if (error.response?.status === 429) {
-          logger.error('playlist_create_rate_limit', {});
+          logger.error("playlist_create_rate_limit", {});
           throw new RateLimitError();
         }
         if (error.response?.status === 401) {
-          logger.error('playlist_create_unauthorized', {});
-          throw new Error('Tidal authorization failed - token may be expired');
+          logger.error("playlist_create_unauthorized", {});
+          throw new Error("Tidal authorization failed - token may be expired");
         }
         if (error.response?.status && error.response.status >= 500) {
-          logger.error('playlist_create_api_error', {
+          logger.error("playlist_create_api_error", {
             status: error.response.status,
           });
-          throw new ApiUnavailableError('Tidal API is temporarily unavailable');
+          throw new ApiUnavailableError("Tidal API is temporarily unavailable");
         }
       }
 
-      logger.error('playlist_create_failed', { error: String(error) });
-      throw new ApiUnavailableError('Failed to create playlist');
+      logger.error("playlist_create_failed", { error: String(error) });
+      throw new ApiUnavailableError("Failed to create playlist");
     }
   }
 
@@ -1394,10 +1519,10 @@ export class TidalService {
     playlistId: string,
     trackIds: string[],
     accessToken: string,
-    countryCode: string = 'US'
+    countryCode: string = "US",
   ): Promise<void> {
     if (trackIds.length === 0) {
-      logger.warn('playlist_add_tracks_empty', { playlistId });
+      logger.warn("playlist_add_tracks_empty", { playlistId });
       return;
     }
 
@@ -1409,7 +1534,7 @@ export class TidalService {
       batches.push(trackIds.slice(i, i + BATCH_SIZE));
     }
 
-    logger.info('playlist_add_tracks_start', {
+    logger.info("playlist_add_tracks_start", {
       playlistId,
       totalTracks: trackIds.length,
       batchCount: batches.length,
@@ -1422,8 +1547,8 @@ export class TidalService {
       const batchNumber = i + 1;
 
       const payload = {
-        data: batch.map(trackId => ({
-          type: 'tracks',
+        data: batch.map((trackId) => ({
+          type: "tracks",
           id: trackId,
           meta: {
             addedAt: now,
@@ -1437,23 +1562,23 @@ export class TidalService {
         await this.rateLimiter.executeWithRetry(async () => {
           return await axios.post(url, payload, {
             headers: {
-              'accept': 'application/vnd.api+json',
-              'Authorization': `Bearer ${accessToken}`,
-              'Content-Type': 'application/vnd.api+json',
+              accept: "application/vnd.api+json",
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/vnd.api+json",
             },
             params: { countryCode },
             timeout: 10000,
           });
         });
 
-        logger.info('playlist_add_tracks_batch_success', {
+        logger.info("playlist_add_tracks_batch_success", {
           playlistId,
           batchNumber,
           totalBatches: batches.length,
           tracksInBatch: batch.length,
         });
       } catch (error) {
-        logger.error('playlist_add_tracks_batch_failed', {
+        logger.error("playlist_add_tracks_batch_failed", {
           playlistId,
           batchNumber,
           totalBatches: batches.length,
@@ -1465,18 +1590,22 @@ export class TidalService {
             throw new RateLimitError();
           }
           if (error.response?.status === 401) {
-            throw new Error('Tidal authorization failed - token may be expired');
+            throw new Error(
+              "Tidal authorization failed - token may be expired",
+            );
           }
           if (error.response?.status && error.response.status >= 500) {
-            throw new ApiUnavailableError('Tidal API is temporarily unavailable');
+            throw new ApiUnavailableError(
+              "Tidal API is temporarily unavailable",
+            );
           }
         }
 
-        throw new ApiUnavailableError('Failed to add tracks to playlist');
+        throw new ApiUnavailableError("Failed to add tracks to playlist");
       }
     }
 
-    logger.info('playlist_add_tracks_complete', {
+    logger.info("playlist_add_tracks_complete", {
       playlistId,
       totalTracksAdded: trackIds.length,
     });

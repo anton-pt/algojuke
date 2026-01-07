@@ -146,14 +146,14 @@ describe("TrackDocumentSchema", () => {
         TrackDocumentSchema.safeParse({
           ...createValidBaseDocument(),
           lyrics: "Some lyrics",
-        }).success
+        }).success,
       ).toBe(true);
 
       expect(
         TrackDocumentSchema.safeParse({
           ...createValidBaseDocument(),
           lyrics: null,
-        }).success
+        }).success,
       ).toBe(true);
     });
 
@@ -162,14 +162,14 @@ describe("TrackDocumentSchema", () => {
         TrackDocumentSchema.safeParse({
           ...createValidBaseDocument(),
           interpretation: "Some interpretation",
-        }).success
+        }).success,
       ).toBe(true);
 
       expect(
         TrackDocumentSchema.safeParse({
           ...createValidBaseDocument(),
           interpretation: null,
-        }).success
+        }).success,
       ).toBe(true);
     });
   });
@@ -200,14 +200,14 @@ describe("TrackDocumentSchema", () => {
         TrackDocumentSchema.safeParse({
           ...createValidBaseDocument(),
           energy: 1.5,
-        }).success
+        }).success,
       ).toBe(false);
 
       expect(
         TrackDocumentSchema.safeParse({
           ...createValidBaseDocument(),
           energy: -0.1,
-        }).success
+        }).success,
       ).toBe(false);
     });
 
@@ -216,14 +216,14 @@ describe("TrackDocumentSchema", () => {
         TrackDocumentSchema.safeParse({
           ...createValidBaseDocument(),
           key: 12,
-        }).success
+        }).success,
       ).toBe(false);
 
       expect(
         TrackDocumentSchema.safeParse({
           ...createValidBaseDocument(),
           key: -2,
-        }).success
+        }).success,
       ).toBe(false);
     });
 
@@ -232,21 +232,21 @@ describe("TrackDocumentSchema", () => {
         TrackDocumentSchema.safeParse({
           ...createValidBaseDocument(),
           mode: 0,
-        }).success
+        }).success,
       ).toBe(true);
 
       expect(
         TrackDocumentSchema.safeParse({
           ...createValidBaseDocument(),
           mode: 1,
-        }).success
+        }).success,
       ).toBe(true);
 
       expect(
         TrackDocumentSchema.safeParse({
           ...createValidBaseDocument(),
           mode: 2,
-        }).success
+        }).success,
       ).toBe(false);
     });
 
@@ -255,7 +255,7 @@ describe("TrackDocumentSchema", () => {
         TrackDocumentSchema.safeParse({
           ...createValidBaseDocument(),
           tempo: 300,
-        }).success
+        }).success,
       ).toBe(false);
     });
   });

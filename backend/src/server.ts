@@ -1,38 +1,38 @@
-import { ApolloServer } from '@apollo/server';
-import { expressMiddleware } from '@apollo/server/express4';
-import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
-import express from 'express';
-import http from 'http';
-import cors from 'cors';
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-import { config } from 'dotenv';
-import { CacheService } from './services/cacheService.js';
-import { TidalTokenService } from './services/tidalTokenService.js';
-import { TidalService } from './services/tidalService.js';
-import { LibraryService } from './services/libraryService.js';
-import { IngestionScheduler } from './services/ingestionScheduler.js';
-import { createBackendQdrantClient } from './clients/qdrantClient.js';
-import { searchResolver } from './resolvers/searchResolver.js';
-import { libraryResolvers } from './resolvers/library.js';
-import { trackMetadataResolvers } from './resolvers/trackMetadata.js';
-import { discoveryResolvers } from './resolvers/discoveryResolver.js';
-import { chatResolvers } from './resolvers/chatResolver.js';
-import { playlistResolvers } from './resolvers/playlistResolver.js';
-import { TrackMetadataService } from './services/trackMetadataService.js';
-import { DiscoveryService } from './services/discoveryService.js';
-import { ChatService } from './services/chatService.js';
-import { createIsrcDataLoader } from './loaders/isrcDataLoader.js';
-import { createChatRoutes } from './routes/chatRoutes.js';
-import { createAuthRoutes } from './routes/auth.js';
+import { ApolloServer } from "@apollo/server";
+import { expressMiddleware } from "@apollo/server/express4";
+import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
+import express from "express";
+import http from "http";
+import cors from "cors";
+import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+import { config } from "dotenv";
+import { CacheService } from "./services/cacheService.js";
+import { TidalTokenService } from "./services/tidalTokenService.js";
+import { TidalService } from "./services/tidalService.js";
+import { LibraryService } from "./services/libraryService.js";
+import { IngestionScheduler } from "./services/ingestionScheduler.js";
+import { createBackendQdrantClient } from "./clients/qdrantClient.js";
+import { searchResolver } from "./resolvers/searchResolver.js";
+import { libraryResolvers } from "./resolvers/library.js";
+import { trackMetadataResolvers } from "./resolvers/trackMetadata.js";
+import { discoveryResolvers } from "./resolvers/discoveryResolver.js";
+import { chatResolvers } from "./resolvers/chatResolver.js";
+import { playlistResolvers } from "./resolvers/playlistResolver.js";
+import { TrackMetadataService } from "./services/trackMetadataService.js";
+import { DiscoveryService } from "./services/discoveryService.js";
+import { ChatService } from "./services/chatService.js";
+import { createIsrcDataLoader } from "./loaders/isrcDataLoader.js";
+import { createChatRoutes } from "./routes/chatRoutes.js";
+import { createAuthRoutes } from "./routes/auth.js";
 // Note: Playlist export uses GraphQL mutation (exportPlaylistToTidal) instead of REST
-import { clerkMiddleware, getAuth } from './middleware/clerkAuth.js';
-import { logger } from './utils/logger.js';
-import { initializeDatabase, AppDataSource } from './config/database.js';
-import { LibraryAlbum } from './entities/LibraryAlbum.js';
-import { LibraryTrack } from './entities/LibraryTrack.js';
-import { initializeOpenTelemetry } from './utils/otel.js';
+import { clerkMiddleware, getAuth } from "./middleware/clerkAuth.js";
+import { logger } from "./utils/logger.js";
+import { initializeDatabase, AppDataSource } from "./config/database.js";
+import { LibraryAlbum } from "./entities/LibraryAlbum.js";
+import { LibraryTrack } from "./entities/LibraryTrack.js";
+import { initializeOpenTelemetry } from "./utils/otel.js";
 
 // Load environment variables
 config();
@@ -46,39 +46,48 @@ const __dirname = dirname(__filename);
 
 // Load GraphQL schemas
 const searchSchema = readFileSync(
-  join(__dirname, 'schema', 'schema.graphql'),
-  'utf-8'
+  join(__dirname, "schema", "schema.graphql"),
+  "utf-8",
 );
 
 const librarySchema = readFileSync(
-  join(__dirname, 'schema', 'library.graphql'),
-  'utf-8'
+  join(__dirname, "schema", "library.graphql"),
+  "utf-8",
 );
 
 const trackMetadataSchema = readFileSync(
-  join(__dirname, 'schema', 'trackMetadata.graphql'),
-  'utf-8'
+  join(__dirname, "schema", "trackMetadata.graphql"),
+  "utf-8",
 );
 
 const discoverySchema = readFileSync(
-  join(__dirname, 'schema', 'discovery.graphql'),
-  'utf-8'
+  join(__dirname, "schema", "discovery.graphql"),
+  "utf-8",
 );
 
 const chatSchema = readFileSync(
-  join(__dirname, 'schema', 'chat.graphql'),
-  'utf-8'
+  join(__dirname, "schema", "chat.graphql"),
+  "utf-8",
 );
 
 const playlistSchema = readFileSync(
-  join(__dirname, 'schema', 'playlist.graphql'),
-  'utf-8'
+  join(__dirname, "schema", "playlist.graphql"),
+  "utf-8",
 );
 
-const typeDefs = [searchSchema, librarySchema, trackMetadataSchema, discoverySchema, chatSchema, playlistSchema];
+const typeDefs = [
+  searchSchema,
+  librarySchema,
+  trackMetadataSchema,
+  discoverySchema,
+  chatSchema,
+  playlistSchema,
+];
 
 // Initialize services (these will be created fresh after DB initialization)
-const cache = new CacheService(parseInt(process.env.SEARCH_CACHE_TTL || '3600'));
+const cache = new CacheService(
+  parseInt(process.env.SEARCH_CACHE_TTL || "3600"),
+);
 const tokenService = new TidalTokenService();
 const tidalService = new TidalService(tokenService);
 
@@ -114,13 +123,15 @@ const mergedResolvers = {
 };
 
 // Start server
-const port = parseInt(process.env.PORT || '4000');
+const port = parseInt(process.env.PORT || "4000");
 
 async function startServer() {
   try {
     // Initialize database connection
     await initializeDatabase();
-    logger.info('database_initialized', { message: 'Database connection established' });
+    logger.info("database_initialized", {
+      message: "Database connection established",
+    });
 
     // Initialize library service with repositories and ingestion scheduler
     const albumRepository = AppDataSource.getRepository(LibraryAlbum);
@@ -129,27 +140,27 @@ async function startServer() {
     // Initialize Qdrant client and ingestion scheduler for automatic track ingestion
     const qdrantClient = createBackendQdrantClient();
     const ingestionScheduler = new IngestionScheduler(qdrantClient);
-    logger.info('ingestion_scheduler_initialized', {
-      qdrantUrl: process.env.QDRANT_URL || 'http://localhost:6333',
+    logger.info("ingestion_scheduler_initialized", {
+      qdrantUrl: process.env.QDRANT_URL || "http://localhost:6333",
     });
 
     // Initialize track metadata service for extended metadata display
     const trackMetadataService = new TrackMetadataService(qdrantClient);
-    logger.info('track_metadata_service_initialized');
+    logger.info("track_metadata_service_initialized");
 
     // Initialize discovery service for semantic search
     const discoveryService = new DiscoveryService({ qdrantClient });
-    logger.info('discovery_service_initialized');
+    logger.info("discovery_service_initialized");
 
     // Initialize chat service
     const chatService = new ChatService(AppDataSource);
-    logger.info('chat_service_initialized');
+    logger.info("chat_service_initialized");
 
     const libraryService = new LibraryService(
       albumRepository,
       trackRepository,
       tidalService,
-      ingestionScheduler
+      ingestionScheduler,
     );
 
     // Create Express app and HTTP server
@@ -174,22 +185,25 @@ async function startServer() {
     app.use(clerkMiddleware());
 
     // Mount auth routes (for Clerk + Tidal token management)
-    app.use('/api/auth', createAuthRoutes());
+    app.use("/api/auth", createAuthRoutes());
 
     // Mount chat REST routes (for SSE streaming) with tool support
-    app.use('/api/chat', createChatRoutes({
-      dataSource: AppDataSource,
-      discoveryService,
-      trackMetadataService,
-      tidalService,
-      qdrantClient,
-      libraryTrackRepository: trackRepository,
-      libraryAlbumRepository: albumRepository,
-    }));
+    app.use(
+      "/api/chat",
+      createChatRoutes({
+        dataSource: AppDataSource,
+        discoveryService,
+        trackMetadataService,
+        tidalService,
+        qdrantClient,
+        libraryTrackRepository: trackRepository,
+        libraryAlbumRepository: albumRepository,
+      }),
+    );
 
     // Mount GraphQL endpoint
     app.use(
-      '/graphql',
+      "/graphql",
       expressMiddleware(server, {
         context: async ({ req }) => {
           // Extract userId from Clerk authentication
@@ -211,19 +225,21 @@ async function startServer() {
             },
           };
         },
-      })
+      }),
     );
 
     // Start listening
     await new Promise<void>((resolve) => httpServer.listen({ port }, resolve));
 
     const url = `http://localhost:${port}/graphql`;
-    logger.info('server_started', { url });
+    logger.info("server_started", { url });
     console.log(`🚀 Server ready at ${url}`);
-    console.log(`📡 Chat SSE endpoint at http://localhost:${port}/api/chat/stream`);
+    console.log(
+      `📡 Chat SSE endpoint at http://localhost:${port}/api/chat/stream`,
+    );
   } catch (error) {
-    logger.error('server_start_failed', { error: String(error) });
-    console.error('Failed to start server:', error);
+    logger.error("server_start_failed", { error: String(error) });
+    console.error("Failed to start server:", error);
     process.exit(1);
   }
 }

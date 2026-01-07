@@ -1,6 +1,6 @@
-import type { DiscoveryResult } from '../../graphql/discovery';
-import { DiscoveryTrackItem } from './DiscoveryTrackItem';
-import './DiscoveryResults.css';
+import type { DiscoveryResult } from "../../graphql/discovery";
+import { DiscoveryTrackItem } from "./DiscoveryTrackItem";
+import "./DiscoveryResults.css";
 
 /**
  * Results list for semantic discovery search
@@ -42,7 +42,7 @@ export function DiscoveryResults({
       <div className="discovery-results-header">
         <div className="discovery-results-info">
           <span className="discovery-results-count">
-            {results.length} results{hasMore ? ' (more available)' : ''}
+            {results.length} results{hasMore ? " (more available)" : ""}
           </span>
           {expandedQueries.length > 0 && (
             <div className="discovery-results-queries">
@@ -79,18 +79,14 @@ export function DiscoveryResults({
             onClick={onLoadMore}
             disabled={loading}
           >
-            {loading ? 'Loading more...' : 'Load More Results'}
+            {loading ? "Loading more..." : "Load More Results"}
           </button>
-          <span className="discovery-load-more-hint">
-            Max 100 results
-          </span>
+          <span className="discovery-load-more-hint">Max 100 results</span>
         </div>
       )}
 
       {!hasMore && results.length > 0 && (
-        <div className="discovery-results-end">
-          End of results
-        </div>
+        <div className="discovery-results-end">End of results</div>
       )}
     </div>
   );

@@ -12,7 +12,7 @@
 - Q: What visibility should created playlists have (public/private)? → A: Private - only the user can see/access the playlist
 - Q: What details should the success message include? → A: Playlist name and number of tracks added (e.g., "Saved 'X' with N tracks")
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - Save Playlist to Tidal Account (Priority: P1)
 
@@ -108,7 +108,7 @@ As a user saving a playlist, I want to see visual feedback while the save is in 
 - What happens when the user loses network connection during save? The system should detect the failure, display an error message, and allow retry when connection is restored.
 - What happens when the Tidal API rate limit is exceeded? The system should queue the request and retry after an appropriate delay, showing a message to the user about temporary delay.
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -160,7 +160,7 @@ As a user saving a playlist, I want to see visual feedback while the save is in 
 - **Tidal Playlist**: The created playlist in the user's Tidal account. Contains a unique Tidal playlist ID, the title, creation timestamp, and list of successfully added tracks.
 - **Save Result**: The outcome of a save operation. Contains success/failure status, the created playlist ID (if successful), count of tracks added, list of tracks skipped, and any error details.
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 

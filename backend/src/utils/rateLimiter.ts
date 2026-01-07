@@ -1,4 +1,4 @@
-import { logger } from './logger.js';
+import { logger } from "./logger.js";
 
 export interface RateLimiterConfig {
   requestsPerSecond: number;
@@ -33,7 +33,7 @@ export class RateLimiter {
       baseRetryDelay: config.baseRetryDelay || 1000,
     };
 
-    logger.info('rate_limiter_initialized', {
+    logger.info("rate_limiter_initialized", {
       requestsPerSecond: this.config.requestsPerSecond,
       maxConcurrent: this.config.maxConcurrent,
     });
@@ -119,9 +119,10 @@ export class RateLimiter {
       if (is429 && request.retries < this.config.maxRetries) {
         // Retry with exponential backoff
         request.retries++;
-        const delay = this.config.baseRetryDelay * Math.pow(2, request.retries - 1);
+        const delay =
+          this.config.baseRetryDelay * Math.pow(2, request.retries - 1);
 
-        logger.warn('rate_limit_retry', {
+        logger.warn("rate_limit_retry", {
           retries: request.retries,
           maxRetries: this.config.maxRetries,
           delayMs: delay,
@@ -134,7 +135,7 @@ export class RateLimiter {
       } else {
         // Max retries exceeded or non-retriable error
         if (is429) {
-          logger.error('rate_limit_exceeded', {
+          logger.error("rate_limit_exceeded", {
             retries: request.retries,
             maxRetries: this.config.maxRetries,
           });
@@ -148,7 +149,7 @@ export class RateLimiter {
    * Check if error is a rate limit error (429)
    */
   private isRateLimitError(error: unknown): boolean {
-    if (error && typeof error === 'object') {
+    if (error && typeof error === "object") {
       const axiosError = error as { response?: { status?: number } };
       return axiosError.response?.status === 429;
     }

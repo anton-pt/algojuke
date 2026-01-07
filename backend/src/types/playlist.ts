@@ -15,10 +15,10 @@
  */
 export interface TidalPlaylistCreatePayload {
   data: {
-    type: 'playlists';
+    type: "playlists";
     attributes: {
       name: string;
-      accessType: 'UNLISTED'; // Private playlist
+      accessType: "UNLISTED"; // Private playlist
       description?: string;
     };
   };
@@ -30,7 +30,7 @@ export interface TidalPlaylistCreatePayload {
 export interface TidalPlaylistCreateResponse {
   data: {
     id: string; // UUID of created playlist
-    type: 'playlists';
+    type: "playlists";
     attributes: {
       name: string;
       createdAt: string; // ISO 8601
@@ -44,7 +44,7 @@ export interface TidalPlaylistCreateResponse {
  */
 export interface TidalPlaylistItemsPayload {
   data: Array<{
-    type: 'tracks';
+    type: "tracks";
     id: string; // Tidal track ID
     meta: {
       addedAt: string; // ISO 8601 datetime
@@ -57,7 +57,7 @@ export interface TidalPlaylistItemsPayload {
  */
 export interface TidalPlaylistItemsResponse {
   data: Array<{
-    type: 'tracks';
+    type: "tracks";
     id: string;
   }>;
 }

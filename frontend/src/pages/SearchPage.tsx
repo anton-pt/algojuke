@@ -1,10 +1,10 @@
-import { useState } from 'react';
-import { useLazyQuery } from '@apollo/client';
-import { SEARCH_QUERY } from '../graphql/queries';
-import { SearchBar } from '../components/SearchBar';
-import { ResultsList } from '../components/ResultsList';
-import { LoadingSkeleton } from '../components/LoadingSkeleton';
-import './SearchPage.css';
+import { useState } from "react";
+import { useLazyQuery } from "@apollo/client";
+import { SEARCH_QUERY } from "../graphql/queries";
+import { SearchBar } from "../components/SearchBar";
+import { ResultsList } from "../components/ResultsList";
+import { LoadingSkeleton } from "../components/LoadingSkeleton";
+import "./SearchPage.css";
 
 export function SearchPage() {
   const [searchQuery, { loading, error, data }] = useLazyQuery(SEARCH_QUERY);
@@ -19,7 +19,7 @@ export function SearchPage() {
         limit: 20,
       },
     }).catch((err) => {
-      setErrorMessage(err.message || 'Search failed. Please try again.');
+      setErrorMessage(err.message || "Search failed. Please try again.");
     });
   };
 

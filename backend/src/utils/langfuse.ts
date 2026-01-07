@@ -54,7 +54,7 @@ export type DiscoveryTrace = ReturnType<Langfuse["trace"]>;
  */
 export function createDiscoveryTrace(
   query: string,
-  sessionId?: string
+  sessionId?: string,
 ): DiscoveryTrace | null {
   const client = getLangfuseClient();
   if (!client) {
@@ -95,7 +95,7 @@ export interface GenerationSpanResult {
  */
 export function createGenerationSpan(
   trace: DiscoveryTrace | null,
-  options: GenerationSpanOptions
+  options: GenerationSpanOptions,
 ) {
   if (!trace) {
     return {
@@ -147,7 +147,7 @@ export interface SearchSpanResult {
  */
 export function createSearchSpan(
   trace: DiscoveryTrace | null,
-  options: SearchSpanOptions
+  options: SearchSpanOptions,
 ) {
   if (!trace) {
     return {
@@ -200,7 +200,7 @@ export interface EmbeddingSpanResult {
  */
 export function createEmbeddingSpan(
   trace: DiscoveryTrace | null,
-  options: EmbeddingSpanOptions
+  options: EmbeddingSpanOptions,
 ) {
   if (!trace) {
     return {

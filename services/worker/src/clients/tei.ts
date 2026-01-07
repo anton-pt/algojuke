@@ -69,7 +69,7 @@ export function createZeroVector(): number[] {
 export function validateEmbeddingDimensions(embedding: number[]): void {
   if (embedding.length !== EMBEDDING_DIMENSIONS) {
     throw new Error(
-      `Embedding must be exactly ${EMBEDDING_DIMENSIONS} dimensions, got ${embedding.length}`
+      `Embedding must be exactly ${EMBEDDING_DIMENSIONS} dimensions, got ${embedding.length}`,
     );
   }
 }
@@ -92,7 +92,7 @@ export function createTEIClient(baseUrl?: string): TEIClient {
           headers: { "Content-Type": "application/json" },
           timeout: 60000, // 60 second timeout (embedding can be slow on CPU)
           validateStatus: () => true,
-        }
+        },
       );
 
       // Handle error status codes
@@ -102,14 +102,14 @@ export function createTEIClient(baseUrl?: string): TEIClient {
           throw createAPIError(
             503,
             "TEI",
-            "TEI model not loaded. Wait for model download to complete."
+            "TEI model not loaded. Wait for model download to complete.",
           );
         }
 
         throw createAPIError(
           response.status,
           "TEI",
-          `Failed to generate embedding: ${response.statusText}`
+          `Failed to generate embedding: ${response.statusText}`,
         );
       }
 
@@ -129,7 +129,7 @@ export function createTEIClient(baseUrl?: string): TEIClient {
         throw createAPIError(
           500,
           "TEI",
-          `Unexpected response format from TEI: ${typeof data}`
+          `Unexpected response format from TEI: ${typeof data}`,
         );
       }
 
@@ -148,14 +148,14 @@ export function createTEIClient(baseUrl?: string): TEIClient {
         throw createAPIError(
           error.response?.status ?? 500,
           "TEI",
-          error.message
+          error.message,
         );
       }
 
       throw createAPIError(
         500,
         "TEI",
-        error instanceof Error ? error.message : "Unknown error"
+        error instanceof Error ? error.message : "Unknown error",
       );
     }
   }
@@ -163,7 +163,10 @@ export function createTEIClient(baseUrl?: string): TEIClient {
   return {
     embed,
 
-    async embedWithInstruct(query: string, instruct: string): Promise<number[]> {
+    async embedWithInstruct(
+      query: string,
+      instruct: string,
+    ): Promise<number[]> {
       // Format input with instruction prefix for mxbai-embed-large-v1
       // For retrieval queries, prepend the instruction
       const formattedInput = `${instruct} ${query}`;

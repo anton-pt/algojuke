@@ -10,22 +10,26 @@
  * - SSE streaming for tool invocations
  */
 
-import { streamText, tool, stepCountIs } from 'ai';
-import { anthropic } from '@ai-sdk/anthropic';
-import { Repository } from 'typeorm';
-import { ChatService } from './chatService.js';
-import { Message, ContentBlock } from '../entities/Message.js';
-import { getLangfuseClient, flushLangfuse, type DiscoveryTrace } from '../utils/langfuse.js';
-import { logger } from '../utils/logger.js';
-import { CHAT_SYSTEM_PROMPT } from '../prompts/chatSystemPrompt.js';
+import { streamText, tool, stepCountIs } from "ai";
+import { anthropic } from "@ai-sdk/anthropic";
+import { Repository } from "typeorm";
+import { ChatService } from "./chatService.js";
+import { Message, ContentBlock } from "../entities/Message.js";
+import {
+  getLangfuseClient,
+  flushLangfuse,
+  type DiscoveryTrace,
+} from "../utils/langfuse.js";
+import { logger } from "../utils/logger.js";
+import { CHAT_SYSTEM_PROMPT } from "../prompts/chatSystemPrompt.js";
 
 // Agent tool imports
-import { DiscoveryService } from './discoveryService.js';
-import { TrackMetadataService } from './trackMetadataService.js';
-import { TidalService } from './tidalService.js';
-import { BackendQdrantClient } from '../clients/qdrantClient.js';
-import { LibraryTrack } from '../entities/LibraryTrack.js';
-import { LibraryAlbum } from '../entities/LibraryAlbum.js';
+import { DiscoveryService } from "./discoveryService.js";
+import { TrackMetadataService } from "./trackMetadataService.js";
+import { TidalService } from "./tidalService.js";
+import { BackendQdrantClient } from "../clients/qdrantClient.js";
+import { LibraryTrack } from "../entities/LibraryTrack.js";
+import { LibraryAlbum } from "../entities/LibraryAlbum.js";
 import {
   SemanticSearchInputSchema,
   TidalSearchInputSchema,
@@ -37,7 +41,7 @@ import {
   type AlbumTracksInput,
   type BatchMetadataInput,
   type SuggestPlaylistInput,
-} from '../schemas/agentTools.js';
+} from "../schemas/agentTools.js";
 import type {
   SemanticSearchOutput,
   OptimizedSemanticSearchOutput,
@@ -46,14 +50,29 @@ import type {
   BatchMetadataOutput,
   SuggestPlaylistOutput,
   ToolError,
-} from '../types/agentTools.js';
-import { executeSemanticSearch, type SemanticSearchContext } from './agentTools/semanticSearchTool.js';
-import { executeTidalSearch, type TidalSearchContext } from './agentTools/tidalSearchTool.js';
-import { executeAlbumTracks, type AlbumTracksContext } from './agentTools/albumTracksTool.js';
-import { executeBatchMetadata, type BatchMetadataContext } from './agentTools/batchMetadataTool.js';
-import { executeSuggestPlaylist, type SuggestPlaylistContext } from './agentTools/suggestPlaylistTool.js';
-import { executeWithRetry } from './agentTools/retry.js';
-import { createToolSpan } from './agentTools/tracing.js';
+} from "../types/agentTools.js";
+import {
+  executeSemanticSearch,
+  type SemanticSearchContext,
+} from "./agentTools/semanticSearchTool.js";
+import {
+  executeTidalSearch,
+  type TidalSearchContext,
+} from "./agentTools/tidalSearchTool.js";
+import {
+  executeAlbumTracks,
+  type AlbumTracksContext,
+} from "./agentTools/albumTracksTool.js";
+import {
+  executeBatchMetadata,
+  type BatchMetadataContext,
+} from "./agentTools/batchMetadataTool.js";
+import {
+  executeSuggestPlaylist,
+  type SuggestPlaylistContext,
+} from "./agentTools/suggestPlaylistTool.js";
+import { executeWithRetry } from "./agentTools/retry.js";
+import { createToolSpan } from "./agentTools/tracing.js";
 
 /**
  * Model ID for chat responses
@@ -66,12 +85,12 @@ import { createToolSpan } from './agentTools/tracing.js';
  * - claude-sonnet-4-5-20241022 (better reasoning)
  * - claude-opus-4-5-20251101 (best quality)
  */
-const CHAT_MODEL = process.env.CHAT_MODEL || 'claude-haiku-4-5-20251001';
+const CHAT_MODEL = process.env.CHAT_MODEL || "claude-haiku-4-5-20251001";
 
 /**
  * Maximum tokens for response generation
  */
-const MAX_TOKENS = parseInt(process.env.CHAT_MAX_TOKENS || '4096', 10);
+const MAX_TOKENS = parseInt(process.env.CHAT_MAX_TOKENS || "4096", 10);
 
 /**
  * Maximum steps for agent tool loops
@@ -84,18 +103,18 @@ const MAX_STEPS = 20;
  * SSE Event types
  */
 export interface MessageStartEvent {
-  type: 'message_start';
+  type: "message_start";
   messageId: string;
   conversationId: string;
 }
 
 export interface TextDeltaEvent {
-  type: 'text_delta';
+  type: "text_delta";
   content: string;
 }
 
 export interface MessageEndEvent {
-  type: 'message_end';
+  type: "message_end";
   usage: {
     inputTokens: number;
     outputTokens: number;
@@ -103,7 +122,7 @@ export interface MessageEndEvent {
 }
 
 export interface ErrorEvent {
-  type: 'error';
+  type: "error";
   code: string;
   message: string;
   retryable: boolean;
@@ -113,7 +132,7 @@ export interface ErrorEvent {
  * Tool call start event - sent when tool execution begins
  */
 export interface ToolCallStartEvent {
-  type: 'tool_call_start';
+  type: "tool_call_start";
   toolCallId: string;
   toolName: string;
   input: unknown;
@@ -123,7 +142,7 @@ export interface ToolCallStartEvent {
  * Tool call end event - sent when tool completes successfully
  */
 export interface ToolCallEndEvent {
-  type: 'tool_call_end';
+  type: "tool_call_end";
   toolCallId: string;
   summary: string;
   resultCount: number;
@@ -135,7 +154,7 @@ export interface ToolCallEndEvent {
  * Tool call error event - sent when tool execution fails
  */
 export interface ToolCallErrorEvent {
-  type: 'tool_call_error';
+  type: "tool_call_error";
   toolCallId: string;
   error: string;
   retryable: boolean;
@@ -165,8 +184,8 @@ export interface StreamResult {
  * Ordered content part for tracking content in streaming order
  */
 type OrderedContentPart =
-  | { type: 'text'; content: string }
-  | { type: 'tool'; toolCallId: string };
+  | { type: "text"; content: string }
+  | { type: "tool"; toolCallId: string };
 
 /**
  * Tool execution context passed to tool functions
@@ -207,7 +226,7 @@ export class ChatStreamService {
       qdrantClient?: BackendQdrantClient;
       libraryTrackRepository?: Repository<LibraryTrack>;
       libraryAlbumRepository?: Repository<LibraryAlbum>;
-    }
+    },
   ) {
     this.chatService = chatService;
     this.discoveryService = options?.discoveryService;
@@ -226,25 +245,26 @@ export class ChatStreamService {
    */
   private createTools(context: ToolContext) {
     const semanticSearchTool = tool({
-      description: 'Search the user\'s indexed library by lyrical themes and interpreted meaning. IMPORTANT: This tool matches based on LYRICS INTERPRETATION, not musical style or audio features. A query like "ambient music" will find tracks with ambient themes in lyrics, NOT necessarily ambient-sounding music. For style/genre recommendations, use your music knowledge with tidalSearch instead. Results include shortDescription for each track.',
+      description:
+        'Search the user\'s indexed library by lyrical themes and interpreted meaning. IMPORTANT: This tool matches based on LYRICS INTERPRETATION, not musical style or audio features. A query like "ambient music" will find tracks with ambient themes in lyrics, NOT necessarily ambient-sounding music. For style/genre recommendations, use your music knowledge with tidalSearch instead. Results include shortDescription for each track.',
       inputSchema: SemanticSearchInputSchema,
       execute: async (input, options) => {
         const typedInput = input as SemanticSearchInput;
         const toolCallId = options.toolCallId;
 
         // Track tool call for persistence (Task 4.2)
-        context.toolCallsMap.set(toolCallId, { name: 'semanticSearch', input });
+        context.toolCallsMap.set(toolCallId, { name: "semanticSearch", input });
 
         // Emit tool_call_start
         context.onEvent({
-          type: 'tool_call_start',
+          type: "tool_call_start",
           toolCallId,
-          toolName: 'semanticSearch',
+          toolName: "semanticSearch",
           input,
         });
 
         const span = createToolSpan(context.trace, {
-          toolName: 'semanticSearch',
+          toolName: "semanticSearch",
           toolCallId,
           input,
         });
@@ -262,7 +282,7 @@ export class ChatStreamService {
 
           const { result, wasRetried } = await executeWithRetry(
             async () => executeSemanticSearch(typedInput, semanticContext),
-            'semanticSearch'
+            "semanticSearch",
           );
 
           const durationMs = Date.now() - startTime;
@@ -279,7 +299,7 @@ export class ChatStreamService {
 
           // Emit tool_call_end with output for frontend expand/collapse
           context.onEvent({
-            type: 'tool_call_end',
+            type: "tool_call_end",
             toolCallId,
             summary: result.summary,
             resultCount: result.totalFound,
@@ -291,9 +311,12 @@ export class ChatStreamService {
         } catch (error) {
           const durationMs = Date.now() - startTime;
           const toolError = error as ToolError;
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          const retryable = 'retryable' in toolError ? toolError.retryable : true;
-          const wasRetried = 'wasRetried' in toolError ? toolError.wasRetried : false;
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          const retryable =
+            "retryable" in toolError ? toolError.retryable : true;
+          const wasRetried =
+            "wasRetried" in toolError ? toolError.wasRetried : false;
 
           span.endError({
             error: errorMessage,
@@ -303,11 +326,14 @@ export class ChatStreamService {
           });
 
           // Track error result for persistence (Task 4.2)
-          context.toolResultsMap.set(toolCallId, { error: errorMessage, retryable });
+          context.toolResultsMap.set(toolCallId, {
+            error: errorMessage,
+            retryable,
+          });
 
           // Emit tool_call_error
           context.onEvent({
-            type: 'tool_call_error',
+            type: "tool_call_error",
             toolCallId,
             error: errorMessage,
             retryable,
@@ -320,24 +346,25 @@ export class ChatStreamService {
     });
 
     const tidalSearchTool = tool({
-      description: 'Search the Tidal music catalogue by artist name, album name, or track title. IMPORTANT: This tool only supports text-based keyword search - it does NOT understand mood, theme, or semantic queries. For mood-based requests, use semanticSearch first, then use this tool with specific artist/album names you know match the mood. Returns results with library and index status flags.',
+      description:
+        "Search the Tidal music catalogue by artist name, album name, or track title. IMPORTANT: This tool only supports text-based keyword search - it does NOT understand mood, theme, or semantic queries. For mood-based requests, use semanticSearch first, then use this tool with specific artist/album names you know match the mood. Returns results with library and index status flags.",
       inputSchema: TidalSearchInputSchema,
       execute: async (input, options) => {
         const typedInput = input as TidalSearchInput;
         const toolCallId = options.toolCallId;
 
         // Track tool call for persistence (Task 4.2)
-        context.toolCallsMap.set(toolCallId, { name: 'tidalSearch', input });
+        context.toolCallsMap.set(toolCallId, { name: "tidalSearch", input });
 
         context.onEvent({
-          type: 'tool_call_start',
+          type: "tool_call_start",
           toolCallId,
-          toolName: 'tidalSearch',
+          toolName: "tidalSearch",
           input,
         });
 
         const span = createToolSpan(context.trace, {
-          toolName: 'tidalSearch',
+          toolName: "tidalSearch",
           toolCallId,
           input,
         });
@@ -355,7 +382,7 @@ export class ChatStreamService {
 
           const { result, wasRetried } = await executeWithRetry(
             async () => executeTidalSearch(typedInput, tidalContext),
-            'tidalSearch'
+            "tidalSearch",
           );
 
           const durationMs = Date.now() - startTime;
@@ -373,7 +400,7 @@ export class ChatStreamService {
           context.toolResultsMap.set(toolCallId, result);
 
           context.onEvent({
-            type: 'tool_call_end',
+            type: "tool_call_end",
             toolCallId,
             summary: result.summary,
             resultCount,
@@ -385,9 +412,12 @@ export class ChatStreamService {
         } catch (error) {
           const durationMs = Date.now() - startTime;
           const toolError = error as ToolError;
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          const retryable = 'retryable' in toolError ? toolError.retryable : true;
-          const wasRetried = 'wasRetried' in toolError ? toolError.wasRetried : false;
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          const retryable =
+            "retryable" in toolError ? toolError.retryable : true;
+          const wasRetried =
+            "wasRetried" in toolError ? toolError.wasRetried : false;
 
           span.endError({
             error: errorMessage,
@@ -397,10 +427,13 @@ export class ChatStreamService {
           });
 
           // Track error result for persistence (Task 4.2)
-          context.toolResultsMap.set(toolCallId, { error: errorMessage, retryable });
+          context.toolResultsMap.set(toolCallId, {
+            error: errorMessage,
+            retryable,
+          });
 
           context.onEvent({
-            type: 'tool_call_error',
+            type: "tool_call_error",
             toolCallId,
             error: errorMessage,
             retryable,
@@ -413,24 +446,25 @@ export class ChatStreamService {
     });
 
     const albumTracksTool = tool({
-      description: 'Get all tracks from a specific album by its Tidal album ID. Use this after tidalSearch to see the full track listing of an album.',
+      description:
+        "Get all tracks from a specific album by its Tidal album ID. Use this after tidalSearch to see the full track listing of an album.",
       inputSchema: AlbumTracksInputSchema,
       execute: async (input, options) => {
         const typedInput = input as AlbumTracksInput;
         const toolCallId = options.toolCallId;
 
         // Track tool call for persistence (Task 4.2)
-        context.toolCallsMap.set(toolCallId, { name: 'albumTracks', input });
+        context.toolCallsMap.set(toolCallId, { name: "albumTracks", input });
 
         context.onEvent({
-          type: 'tool_call_start',
+          type: "tool_call_start",
           toolCallId,
-          toolName: 'albumTracks',
+          toolName: "albumTracks",
           input,
         });
 
         const span = createToolSpan(context.trace, {
-          toolName: 'albumTracks',
+          toolName: "albumTracks",
           toolCallId,
           input,
         });
@@ -448,7 +482,7 @@ export class ChatStreamService {
 
           const { result, wasRetried } = await executeWithRetry(
             async () => executeAlbumTracks(typedInput, albumContext),
-            'albumTracks'
+            "albumTracks",
           );
 
           const durationMs = Date.now() - startTime;
@@ -465,7 +499,7 @@ export class ChatStreamService {
           context.toolResultsMap.set(toolCallId, result);
 
           context.onEvent({
-            type: 'tool_call_end',
+            type: "tool_call_end",
             toolCallId,
             summary: result.summary,
             resultCount,
@@ -477,9 +511,12 @@ export class ChatStreamService {
         } catch (error) {
           const durationMs = Date.now() - startTime;
           const toolError = error as ToolError;
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          const retryable = 'retryable' in toolError ? toolError.retryable : true;
-          const wasRetried = 'wasRetried' in toolError ? toolError.wasRetried : false;
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          const retryable =
+            "retryable" in toolError ? toolError.retryable : true;
+          const wasRetried =
+            "wasRetried" in toolError ? toolError.wasRetried : false;
 
           span.endError({
             error: errorMessage,
@@ -489,10 +526,13 @@ export class ChatStreamService {
           });
 
           // Track error result for persistence (Task 4.2)
-          context.toolResultsMap.set(toolCallId, { error: errorMessage, retryable });
+          context.toolResultsMap.set(toolCallId, {
+            error: errorMessage,
+            retryable,
+          });
 
           context.onEvent({
-            type: 'tool_call_error',
+            type: "tool_call_error",
             toolCallId,
             error: errorMessage,
             retryable,
@@ -505,24 +545,25 @@ export class ChatStreamService {
     });
 
     const batchMetadataTool = tool({
-      description: 'Get full metadata (lyrics, interpretation, audio features) for multiple tracks by their ISRCs. Use this to get detailed information about specific tracks you want to recommend. Maximum 100 ISRCs per request.',
+      description:
+        "Get full metadata (lyrics, interpretation, audio features) for multiple tracks by their ISRCs. Use this to get detailed information about specific tracks you want to recommend. Maximum 100 ISRCs per request.",
       inputSchema: BatchMetadataInputSchema,
       execute: async (input, options) => {
         const typedInput = input as BatchMetadataInput;
         const toolCallId = options.toolCallId;
 
         // Track tool call for persistence (Task 4.2)
-        context.toolCallsMap.set(toolCallId, { name: 'batchMetadata', input });
+        context.toolCallsMap.set(toolCallId, { name: "batchMetadata", input });
 
         context.onEvent({
-          type: 'tool_call_start',
+          type: "tool_call_start",
           toolCallId,
-          toolName: 'batchMetadata',
+          toolName: "batchMetadata",
           input,
         });
 
         const span = createToolSpan(context.trace, {
-          toolName: 'batchMetadata',
+          toolName: "batchMetadata",
           toolCallId,
           input,
         });
@@ -539,7 +580,7 @@ export class ChatStreamService {
 
           const { result, wasRetried } = await executeWithRetry(
             async () => executeBatchMetadata(typedInput, batchContext),
-            'batchMetadata'
+            "batchMetadata",
           );
 
           const durationMs = Date.now() - startTime;
@@ -556,7 +597,7 @@ export class ChatStreamService {
           context.toolResultsMap.set(toolCallId, result);
 
           context.onEvent({
-            type: 'tool_call_end',
+            type: "tool_call_end",
             toolCallId,
             summary: result.summary,
             resultCount,
@@ -568,9 +609,12 @@ export class ChatStreamService {
         } catch (error) {
           const durationMs = Date.now() - startTime;
           const toolError = error as ToolError;
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          const retryable = 'retryable' in toolError ? toolError.retryable : true;
-          const wasRetried = 'wasRetried' in toolError ? toolError.wasRetried : false;
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          const retryable =
+            "retryable" in toolError ? toolError.retryable : true;
+          const wasRetried =
+            "wasRetried" in toolError ? toolError.wasRetried : false;
 
           span.endError({
             error: errorMessage,
@@ -580,10 +624,13 @@ export class ChatStreamService {
           });
 
           // Track error result for persistence (Task 4.2)
-          context.toolResultsMap.set(toolCallId, { error: errorMessage, retryable });
+          context.toolResultsMap.set(toolCallId, {
+            error: errorMessage,
+            retryable,
+          });
 
           context.onEvent({
-            type: 'tool_call_error',
+            type: "tool_call_error",
             toolCallId,
             error: errorMessage,
             retryable,
@@ -596,24 +643,28 @@ export class ChatStreamService {
     });
 
     const suggestPlaylistTool = tool({
-      description: 'Present a curated playlist to the user with visual album artwork. Use this ONLY when you have finalized your track selection and are ready to present the playlist. The tool enriches each track with Tidal metadata (album artwork, duration). Provide a descriptive title and include a one-sentence reasoning for each track explaining why it fits the playlist.',
+      description:
+        "Present a curated playlist to the user with visual album artwork. Use this ONLY when you have finalized your track selection and are ready to present the playlist. The tool enriches each track with Tidal metadata (album artwork, duration). Provide a descriptive title and include a one-sentence reasoning for each track explaining why it fits the playlist.",
       inputSchema: SuggestPlaylistInputSchema,
       execute: async (input, options) => {
         const typedInput = input as SuggestPlaylistInput;
         const toolCallId = options.toolCallId;
 
         // Track tool call for persistence (Task 4.2)
-        context.toolCallsMap.set(toolCallId, { name: 'suggestPlaylist', input });
+        context.toolCallsMap.set(toolCallId, {
+          name: "suggestPlaylist",
+          input,
+        });
 
         context.onEvent({
-          type: 'tool_call_start',
+          type: "tool_call_start",
           toolCallId,
-          toolName: 'suggestPlaylist',
+          toolName: "suggestPlaylist",
           input,
         });
 
         const span = createToolSpan(context.trace, {
-          toolName: 'suggestPlaylist',
+          toolName: "suggestPlaylist",
           toolCallId,
           input,
         });
@@ -626,7 +677,10 @@ export class ChatStreamService {
           };
 
           // Note: suggestPlaylist does its own retry logic internally
-          const result = await executeSuggestPlaylist(typedInput, playlistContext);
+          const result = await executeSuggestPlaylist(
+            typedInput,
+            playlistContext,
+          );
 
           const durationMs = Date.now() - startTime;
           const resultCount = result.tracks.length;
@@ -646,7 +700,7 @@ export class ChatStreamService {
 
           // Emit tool_call_end with full output for PlaylistCard rendering
           context.onEvent({
-            type: 'tool_call_end',
+            type: "tool_call_end",
             toolCallId,
             summary: result.summary,
             resultCount,
@@ -658,9 +712,12 @@ export class ChatStreamService {
         } catch (error) {
           const durationMs = Date.now() - startTime;
           const toolError = error as ToolError;
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          const retryable = 'retryable' in toolError ? toolError.retryable : true;
-          const wasRetried = 'wasRetried' in toolError ? toolError.wasRetried : false;
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          const retryable =
+            "retryable" in toolError ? toolError.retryable : true;
+          const wasRetried =
+            "wasRetried" in toolError ? toolError.wasRetried : false;
 
           span.endError({
             error: errorMessage,
@@ -670,10 +727,13 @@ export class ChatStreamService {
           });
 
           // Track error result for persistence (Task 4.2)
-          context.toolResultsMap.set(toolCallId, { error: errorMessage, retryable });
+          context.toolResultsMap.set(toolCallId, {
+            error: errorMessage,
+            retryable,
+          });
 
           context.onEvent({
-            type: 'tool_call_error',
+            type: "tool_call_error",
             toolCallId,
             error: errorMessage,
             retryable,
@@ -723,11 +783,11 @@ export class ChatStreamService {
     conversationId: string | undefined,
     userId: string,
     onEvent: (event: SSEEvent) => void,
-    signal?: AbortSignal
+    signal?: AbortSignal,
   ): Promise<StreamResult | null> {
     let conversation: { id: string };
     let existingMessages: Message[] = [];
-    let assistantMessageId = '';
+    let assistantMessageId = "";
     let inputTokens = 0;
     let outputTokens = 0;
     const contentBlocks: ContentBlock[] = [];
@@ -739,32 +799,40 @@ export class ChatStreamService {
     // Track content in streaming order for correct persistence
     // This ensures tools appear inline where they were called, not grouped at end
     const orderedParts: OrderedContentPart[] = [];
-    let currentTextBuffer = '';
+    let currentTextBuffer = "";
 
     try {
       // Create or get conversation
       if (conversationId) {
-        const exists = await this.chatService.conversationExists(conversationId, userId);
+        const exists = await this.chatService.conversationExists(
+          conversationId,
+          userId,
+        );
         if (!exists) {
           onEvent({
-            type: 'error',
-            code: 'NOT_FOUND',
-            message: 'Conversation not found',
+            type: "error",
+            code: "NOT_FOUND",
+            message: "Conversation not found",
             retryable: false,
           });
           return null;
         }
 
         // Get existing messages for context
-        existingMessages = await this.chatService.getConversationMessages(conversationId);
+        existingMessages =
+          await this.chatService.getConversationMessages(conversationId);
 
         // Add user message
-        const userMessage = await this.chatService.addUserMessage(conversationId, userId, message);
+        const userMessage = await this.chatService.addUserMessage(
+          conversationId,
+          userId,
+          message,
+        );
         if (!userMessage) {
           onEvent({
-            type: 'error',
-            code: 'NOT_FOUND',
-            message: 'Conversation not found',
+            type: "error",
+            code: "NOT_FOUND",
+            message: "Conversation not found",
             retryable: false,
           });
           return null;
@@ -772,7 +840,10 @@ export class ChatStreamService {
         conversation = { id: conversationId };
       } else {
         // Create new conversation with user message
-        const result = await this.chatService.createConversationWithMessage(message, userId);
+        const result = await this.chatService.createConversationWithMessage(
+          message,
+          userId,
+        );
         conversation = result.conversation;
         conversationId = conversation.id;
       }
@@ -784,21 +855,21 @@ export class ChatStreamService {
       // Note: Per-step LLM generation tracking is handled by OpenTelemetry via experimental_telemetry
       const langfuseClient = getLangfuseClient();
       const trace = langfuseClient?.trace({
-        name: 'chat-message',
+        name: "chat-message",
         sessionId: conversationId,
         metadata: {
           messageContent: message.slice(0, 100),
           messageCount: llmMessages.length,
           toolsEnabled: this.hasToolSupport(),
         },
-        tags: ['chat', 'discover', ...(this.hasToolSupport() ? ['tools'] : [])],
+        tags: ["chat", "discover", ...(this.hasToolSupport() ? ["tools"] : [])],
       });
 
       // Send message_start event
       // We'll update with real message ID after saving
       const tempMessageId = `temp-${Date.now()}`;
       onEvent({
-        type: 'message_start',
+        type: "message_start",
         messageId: tempMessageId,
         conversationId: conversationId!,
       });
@@ -808,7 +879,7 @@ export class ChatStreamService {
       let timeToFirstToken: number | null = null;
 
       // Stream response from Claude
-      logger.info('chat_stream_starting_llm', {
+      logger.info("chat_stream_starting_llm", {
         conversationId,
         model: CHAT_MODEL,
         messageCount: llmMessages.length,
@@ -817,7 +888,7 @@ export class ChatStreamService {
 
       // Check if signal is already aborted before making API call
       if (signal?.aborted) {
-        logger.warn('chat_stream_signal_already_aborted', { conversationId });
+        logger.warn("chat_stream_signal_already_aborted", { conversationId });
         return null;
       }
 
@@ -851,7 +922,7 @@ export class ChatStreamService {
         // This automatically creates generation spans for each LLM call with system prompt
         experimental_telemetry: {
           isEnabled: true,
-          functionId: 'chat-stream',
+          functionId: "chat-stream",
           metadata: {
             conversationId,
             messageCount: llmMessages.length,
@@ -859,19 +930,29 @@ export class ChatStreamService {
           },
         },
         onError: ({ error }: { error: unknown }) => {
-          logger.error('chat_stream_on_error', {
+          logger.error("chat_stream_on_error", {
             conversationId,
             error: error instanceof Error ? error.message : String(error),
           });
         },
         onChunk: ({ chunk }: { chunk: { type: string } }) => {
-          logger.debug('chat_stream_on_chunk', {
+          logger.debug("chat_stream_on_chunk", {
             conversationId,
             chunkType: chunk.type,
           });
         },
-        onFinish: ({ text, finishReason, usage, response }: { text?: string; finishReason: string; usage: unknown; response?: { id: string } }) => {
-          logger.info('chat_stream_on_finish', {
+        onFinish: ({
+          text,
+          finishReason,
+          usage,
+          response,
+        }: {
+          text?: string;
+          finishReason: string;
+          usage: unknown;
+          response?: { id: string };
+        }) => {
+          logger.info("chat_stream_on_finish", {
             conversationId,
             finishReason,
             textLength: text?.length,
@@ -890,7 +971,7 @@ export class ChatStreamService {
 
       const result = streamText(streamOptions);
 
-      logger.info('chat_stream_llm_started', { conversationId });
+      logger.info("chat_stream_llm_started", { conversationId });
 
       // Stream all events including tool calls using fullStream for multi-step support
       // Using fullStream instead of textStream is required for stopWhen to work properly
@@ -901,20 +982,23 @@ export class ChatStreamService {
         for await (const event of result.fullStream) {
           // Handle abort signal
           if (signal?.aborted) {
-            logger.info('chat_stream_signal_aborted_in_loop', { conversationId, chunkCount });
+            logger.info("chat_stream_signal_aborted_in_loop", {
+              conversationId,
+              chunkCount,
+            });
             wasAborted = true;
             break;
           }
 
           // Handle different event types from fullStream
           switch (event.type) {
-            case 'text-delta':
+            case "text-delta":
               chunkCount++;
 
               // Track time to first token (SC-001)
               if (chunkCount === 1) {
                 timeToFirstToken = Date.now() - requestStartTime;
-                logger.info('chat_stream_first_token', {
+                logger.info("chat_stream_first_token", {
                   conversationId,
                   timeToFirstTokenMs: timeToFirstToken,
                   meetsTarget: timeToFirstToken <= 3000, // SC-001: within 3 seconds
@@ -924,45 +1008,45 @@ export class ChatStreamService {
               // Accumulate text in buffer for ordered persistence
               currentTextBuffer += event.text;
               onEvent({
-                type: 'text_delta',
+                type: "text_delta",
                 content: event.text,
               });
               break;
 
-            case 'tool-call':
+            case "tool-call":
               // Tool call detected - flush accumulated text and record tool position
               // This ensures content blocks are ordered: text → tool → text → tool → ...
               if (currentTextBuffer.length > 0) {
-                orderedParts.push({ type: 'text', content: currentTextBuffer });
-                currentTextBuffer = '';
+                orderedParts.push({ type: "text", content: currentTextBuffer });
+                currentTextBuffer = "";
               }
-              orderedParts.push({ type: 'tool', toolCallId: event.toolCallId });
-              logger.debug('chat_stream_tool_call', {
+              orderedParts.push({ type: "tool", toolCallId: event.toolCallId });
+              logger.debug("chat_stream_tool_call", {
                 conversationId,
                 toolCallId: event.toolCallId,
                 toolName: event.toolName,
               });
               break;
 
-            case 'finish-step':
+            case "finish-step":
               // Log step completion for debugging multi-step flows
-              logger.debug('chat_stream_finish_step', {
+              logger.debug("chat_stream_finish_step", {
                 conversationId,
                 finishReason: event.finishReason,
               });
               break;
 
-            case 'finish':
+            case "finish":
               // Final finish event - log completion
-              logger.info('chat_stream_finish', {
+              logger.info("chat_stream_finish", {
                 conversationId,
                 finishReason: event.finishReason,
               });
               break;
 
-            case 'error':
+            case "error":
               // Handle streaming errors
-              logger.error('chat_stream_error_event', {
+              logger.error("chat_stream_error_event", {
                 conversationId,
                 error: event.error,
               });
@@ -972,7 +1056,7 @@ export class ChatStreamService {
             // which emits tool_call_start/tool_call_end/tool_call_error events
             default:
               // Log other event types for debugging
-              logger.debug('chat_stream_event', {
+              logger.debug("chat_stream_event", {
                 conversationId,
                 eventType: event.type,
               });
@@ -981,9 +1065,21 @@ export class ChatStreamService {
         }
 
         // Handle abort case - save partial content and exit cleanly
-        const totalTextLength = currentTextBuffer.length + orderedParts.filter(p => p.type === 'text').reduce((sum, p) => sum + (p as { type: 'text'; content: string }).content.length, 0);
-        if (wasAborted && (totalTextLength > 0 || toolCallsMap.size > 0) && conversationId) {
-          logger.info('chat_stream_saving_partial_on_abort', {
+        const totalTextLength =
+          currentTextBuffer.length +
+          orderedParts
+            .filter((p) => p.type === "text")
+            .reduce(
+              (sum, p) =>
+                sum + (p as { type: "text"; content: string }).content.length,
+              0,
+            );
+        if (
+          wasAborted &&
+          (totalTextLength > 0 || toolCallsMap.size > 0) &&
+          conversationId
+        ) {
+          logger.info("chat_stream_saving_partial_on_abort", {
             conversationId,
             chunkCount,
             contentLength: totalTextLength,
@@ -993,18 +1089,18 @@ export class ChatStreamService {
           try {
             // Flush any remaining text buffer
             if (currentTextBuffer.length > 0) {
-              orderedParts.push({ type: 'text', content: currentTextBuffer });
+              orderedParts.push({ type: "text", content: currentTextBuffer });
             }
 
             // Build content blocks from ordered parts (Task 4.2 fix)
             for (const part of orderedParts) {
-              if (part.type === 'text') {
-                contentBlocks.push({ type: 'text', text: part.content });
-              } else if (part.type === 'tool') {
+              if (part.type === "text") {
+                contentBlocks.push({ type: "text", text: part.content });
+              } else if (part.type === "tool") {
                 const toolCall = toolCallsMap.get(part.toolCallId);
                 if (toolCall) {
                   contentBlocks.push({
-                    type: 'tool_use',
+                    type: "tool_use",
                     id: part.toolCallId,
                     name: toolCall.name,
                     input: toolCall.input,
@@ -1013,7 +1109,7 @@ export class ChatStreamService {
                   const toolResult = toolResultsMap.get(part.toolCallId);
                   if (toolResult !== undefined) {
                     contentBlocks.push({
-                      type: 'tool_result',
+                      type: "tool_result",
                       tool_use_id: part.toolCallId,
                       content: toolResult,
                     });
@@ -1025,32 +1121,38 @@ export class ChatStreamService {
             const assistantMessage = await this.chatService.addAssistantMessage(
               conversationId,
               userId,
-              contentBlocks.length > 0 ? contentBlocks : [{ type: 'text', text: '' }]
+              contentBlocks.length > 0
+                ? contentBlocks
+                : [{ type: "text", text: "" }],
             );
             if (assistantMessage) {
               assistantMessageId = assistantMessage.id;
             } else {
               // Ownership check failed or conversation deleted - log but don't emit error
               // since we're already handling an abort
-              logger.warn('chat_partial_save_ownership_failed', {
+              logger.warn("chat_partial_save_ownership_failed", {
                 conversationId,
                 userId,
-                reason: 'addAssistantMessage returned null during abort handling',
+                reason:
+                  "addAssistantMessage returned null during abort handling",
               });
             }
 
             // Flush Langfuse (OpenTelemetry handles generation spans automatically)
             await flushLangfuse();
 
-            logger.info('chat_stream_partial_saved', {
+            logger.info("chat_stream_partial_saved", {
               conversationId,
               assistantMessageId,
               contentLength: totalTextLength,
             });
           } catch (saveError) {
-            logger.error('chat_save_partial_on_abort_failed', {
+            logger.error("chat_save_partial_on_abort_failed", {
               conversationId,
-              error: saveError instanceof Error ? saveError.message : String(saveError),
+              error:
+                saveError instanceof Error
+                  ? saveError.message
+                  : String(saveError),
             });
           }
 
@@ -1066,18 +1168,29 @@ export class ChatStreamService {
         const finishReason = await result.finishReason;
 
         // Calculate total text content length for logging
-        const completedTextLength = currentTextBuffer.length + orderedParts.filter(p => p.type === 'text').reduce((sum, p) => sum + (p as { type: 'text'; content: string }).content.length, 0);
-        logger.info('chat_stream_loop_completed', {
+        const completedTextLength =
+          currentTextBuffer.length +
+          orderedParts
+            .filter((p) => p.type === "text")
+            .reduce(
+              (sum, p) =>
+                sum + (p as { type: "text"; content: string }).content.length,
+              0,
+            );
+        logger.info("chat_stream_loop_completed", {
           conversationId,
           chunkCount,
           contentLength: completedTextLength,
           finishReason,
         });
       } catch (streamError) {
-        logger.error('chat_stream_loop_error', {
+        logger.error("chat_stream_loop_error", {
           conversationId,
           chunkCount,
-          error: streamError instanceof Error ? streamError.message : String(streamError),
+          error:
+            streamError instanceof Error
+              ? streamError.message
+              : String(streamError),
           stack: streamError instanceof Error ? streamError.stack : undefined,
         });
         throw streamError;
@@ -1090,21 +1203,21 @@ export class ChatStreamService {
 
       // Flush any remaining text buffer to ordered parts
       if (currentTextBuffer.length > 0) {
-        orderedParts.push({ type: 'text', content: currentTextBuffer });
-        currentTextBuffer = '';
+        orderedParts.push({ type: "text", content: currentTextBuffer });
+        currentTextBuffer = "";
       }
 
       // Build final content blocks in streaming order (Task 4.2 fix)
       // This ensures tool invocations appear inline where they were called
       for (const part of orderedParts) {
-        if (part.type === 'text') {
-          contentBlocks.push({ type: 'text', text: part.content });
-        } else if (part.type === 'tool') {
+        if (part.type === "text") {
+          contentBlocks.push({ type: "text", text: part.content });
+        } else if (part.type === "tool") {
           const toolCall = toolCallsMap.get(part.toolCallId);
           if (toolCall) {
             // Add tool_use block
             contentBlocks.push({
-              type: 'tool_use',
+              type: "tool_use",
               id: part.toolCallId,
               name: toolCall.name,
               input: toolCall.input,
@@ -1114,7 +1227,7 @@ export class ChatStreamService {
             const toolResult = toolResultsMap.get(part.toolCallId);
             if (toolResult !== undefined) {
               contentBlocks.push({
-                type: 'tool_result',
+                type: "tool_result",
                 tool_use_id: part.toolCallId,
                 content: toolResult,
               });
@@ -1127,22 +1240,23 @@ export class ChatStreamService {
       const assistantMessage = await this.chatService.addAssistantMessage(
         conversationId!,
         userId,
-        contentBlocks.length > 0 ? contentBlocks : [{ type: 'text', text: '' }]
+        contentBlocks.length > 0 ? contentBlocks : [{ type: "text", text: "" }],
       );
       if (assistantMessage) {
         assistantMessageId = assistantMessage.id;
       } else {
         // This should not happen since we verified ownership earlier,
         // but log it if it does (conversation may have been deleted mid-stream)
-        logger.error('chat_assistant_message_save_failed', {
+        logger.error("chat_assistant_message_save_failed", {
           conversationId,
           userId,
-          reason: 'addAssistantMessage returned null - conversation may not exist or ownership mismatch',
+          reason:
+            "addAssistantMessage returned null - conversation may not exist or ownership mismatch",
         });
         onEvent({
-          type: 'error',
-          code: 'SAVE_FAILED',
-          message: 'Failed to save assistant response',
+          type: "error",
+          code: "SAVE_FAILED",
+          message: "Failed to save assistant response",
           retryable: false,
         });
       }
@@ -1153,7 +1267,7 @@ export class ChatStreamService {
 
       // Send message_end event
       onEvent({
-        type: 'message_end',
+        type: "message_end",
         usage: {
           inputTokens,
           outputTokens,
@@ -1164,8 +1278,14 @@ export class ChatStreamService {
       await flushLangfuse();
 
       // Calculate total content length for logging
-      const finalContentLength = contentBlocks.filter(b => b.type === 'text').reduce((sum, b) => sum + ((b as { type: 'text'; text: string }).text?.length || 0), 0);
-      logger.info('chat_stream_completed', {
+      const finalContentLength = contentBlocks
+        .filter((b) => b.type === "text")
+        .reduce(
+          (sum, b) =>
+            sum + ((b as { type: "text"; text: string }).text?.length || 0),
+          0,
+        );
+      logger.info("chat_stream_completed", {
         conversationId,
         inputTokens,
         outputTokens,
@@ -1182,24 +1302,35 @@ export class ChatStreamService {
       };
     } catch (error) {
       // Save partial content if we have any (Task 4.2: include tool blocks in order)
-      const errorTotalTextLength = currentTextBuffer.length + orderedParts.filter(p => p.type === 'text').reduce((sum, p) => sum + (p as { type: 'text'; content: string }).content.length, 0);
-      if ((errorTotalTextLength > 0 || toolCallsMap.size > 0) && conversationId) {
+      const errorTotalTextLength =
+        currentTextBuffer.length +
+        orderedParts
+          .filter((p) => p.type === "text")
+          .reduce(
+            (sum, p) =>
+              sum + (p as { type: "text"; content: string }).content.length,
+            0,
+          );
+      if (
+        (errorTotalTextLength > 0 || toolCallsMap.size > 0) &&
+        conversationId
+      ) {
         try {
           // Flush any remaining text buffer
           if (currentTextBuffer.length > 0) {
-            orderedParts.push({ type: 'text', content: currentTextBuffer });
+            orderedParts.push({ type: "text", content: currentTextBuffer });
           }
 
           // Build content blocks from ordered parts
           const errorContentBlocks: ContentBlock[] = [];
           for (const part of orderedParts) {
-            if (part.type === 'text') {
-              errorContentBlocks.push({ type: 'text', text: part.content });
-            } else if (part.type === 'tool') {
+            if (part.type === "text") {
+              errorContentBlocks.push({ type: "text", text: part.content });
+            } else if (part.type === "tool") {
               const toolCall = toolCallsMap.get(part.toolCallId);
               if (toolCall) {
                 errorContentBlocks.push({
-                  type: 'tool_use',
+                  type: "tool_use",
                   id: part.toolCallId,
                   name: toolCall.name,
                   input: toolCall.input,
@@ -1208,7 +1339,7 @@ export class ChatStreamService {
                 const toolResult = toolResultsMap.get(part.toolCallId);
                 if (toolResult !== undefined) {
                   errorContentBlocks.push({
-                    type: 'tool_result',
+                    type: "tool_result",
                     tool_use_id: part.toolCallId,
                     content: toolResult,
                   });
@@ -1220,30 +1351,35 @@ export class ChatStreamService {
           const assistantMessage = await this.chatService.addAssistantMessage(
             conversationId,
             userId,
-            errorContentBlocks.length > 0 ? errorContentBlocks : [{ type: 'text', text: '' }]
+            errorContentBlocks.length > 0
+              ? errorContentBlocks
+              : [{ type: "text", text: "" }],
           );
           if (assistantMessage) {
             assistantMessageId = assistantMessage.id;
           } else {
             // Ownership check failed or conversation deleted - log but don't emit error
             // since we're already handling an error
-            logger.warn('chat_partial_save_ownership_failed', {
+            logger.warn("chat_partial_save_ownership_failed", {
               conversationId,
               userId,
-              reason: 'addAssistantMessage returned null during error handling',
+              reason: "addAssistantMessage returned null during error handling",
             });
           }
         } catch (saveError) {
-          logger.error('chat_save_partial_failed', {
+          logger.error("chat_save_partial_failed", {
             conversationId,
-            error: saveError instanceof Error ? saveError.message : String(saveError),
+            error:
+              saveError instanceof Error
+                ? saveError.message
+                : String(saveError),
           });
         }
       }
 
       // Determine error type
       if (signal?.aborted) {
-        logger.info('chat_stream_aborted', {
+        logger.info("chat_stream_aborted", {
           conversationId,
           partialContentLength: errorTotalTextLength,
         });
@@ -1258,30 +1394,41 @@ export class ChatStreamService {
           : null;
       }
 
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      logger.error('chat_stream_error', {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      logger.error("chat_stream_error", {
         conversationId,
         error: errorMessage,
       });
 
       // Check for specific error types
-      let code = 'INTERNAL_ERROR';
-      let userMessage = 'An unexpected error occurred. Please try again.';
+      let code = "INTERNAL_ERROR";
+      let userMessage = "An unexpected error occurred. Please try again.";
       let retryable = true;
 
-      if (errorMessage.includes('API key') || errorMessage.includes('authentication')) {
-        code = 'AI_SERVICE_UNAVAILABLE';
-        userMessage = 'The AI service is temporarily unavailable. Please try again later.';
-      } else if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
-        code = 'RATE_LIMITED';
-        userMessage = 'Too many requests. Please wait a moment and try again.';
-      } else if (errorMessage.includes('timeout') || errorMessage.includes('ETIMEDOUT')) {
-        code = 'TIMEOUT';
-        userMessage = 'The request timed out. Please try again.';
+      if (
+        errorMessage.includes("API key") ||
+        errorMessage.includes("authentication")
+      ) {
+        code = "AI_SERVICE_UNAVAILABLE";
+        userMessage =
+          "The AI service is temporarily unavailable. Please try again later.";
+      } else if (
+        errorMessage.includes("rate limit") ||
+        errorMessage.includes("429")
+      ) {
+        code = "RATE_LIMITED";
+        userMessage = "Too many requests. Please wait a moment and try again.";
+      } else if (
+        errorMessage.includes("timeout") ||
+        errorMessage.includes("ETIMEDOUT")
+      ) {
+        code = "TIMEOUT";
+        userMessage = "The request timed out. Please try again.";
       }
 
       onEvent({
-        type: 'error',
+        type: "error",
         code,
         message: userMessage,
         retryable,
@@ -1296,9 +1443,9 @@ export class ChatStreamService {
    */
   private buildLLMMessages(
     existingMessages: Message[],
-    newMessage: string
-  ): Array<{ role: 'user' | 'assistant'; content: string }> {
-    const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+    newMessage: string,
+  ): Array<{ role: "user" | "assistant"; content: string }> {
+    const messages: Array<{ role: "user" | "assistant"; content: string }> = [];
 
     // Add existing messages
     for (const msg of existingMessages) {
@@ -1313,7 +1460,7 @@ export class ChatStreamService {
 
     // Add new user message
     messages.push({
-      role: 'user',
+      role: "user",
       content: newMessage,
     });
 
@@ -1331,10 +1478,13 @@ export class ChatStreamService {
    * Extract text content from content blocks
    */
   private extractTextContent(content: ContentBlock[]): string | null {
-    const textBlocks = content.filter(b => b.type === 'text') as Array<{ type: 'text'; text: string }>;
+    const textBlocks = content.filter((b) => b.type === "text") as Array<{
+      type: "text";
+      text: string;
+    }>;
     if (textBlocks.length === 0) {
       return null;
     }
-    return textBlocks.map(b => b.text).join('\n');
+    return textBlocks.map((b) => b.text).join("\n");
   }
 }

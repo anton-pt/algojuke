@@ -4,26 +4,26 @@
  * Tests the Tidal token refresh endpoint response schema.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from "vitest";
 import {
   TidalTokenStatusSchema,
   ErrorResponseSchema,
-} from '../../../src/schemas/auth.js';
+} from "../../../src/schemas/auth.js";
 
-describe('POST /api/auth/tidal/refresh contract', () => {
-  describe('Successful refresh response', () => {
-    it('validates token status response after refresh', () => {
+describe("POST /api/auth/tidal/refresh contract", () => {
+  describe("Successful refresh response", () => {
+    it("validates token status response after refresh", () => {
       const response = {
         hasTokens: true,
         expiresAt: Date.now() + 86400000, // 24 hours from now
         isExpired: false,
         scopes: [
-          'collection.read',
-          'playlists.read',
-          'playlists.write',
-          'recommendations.read',
-          'search.read',
-          'user.read',
+          "collection.read",
+          "playlists.read",
+          "playlists.write",
+          "recommendations.read",
+          "search.read",
+          "user.read",
         ],
       };
 
@@ -37,41 +37,41 @@ describe('POST /api/auth/tidal/refresh contract', () => {
     });
   });
 
-  describe('Error responses', () => {
-    it('validates 401 unauthorized response', () => {
+  describe("Error responses", () => {
+    it("validates 401 unauthorized response", () => {
       const response = {
-        error: 'unauthorized',
-        message: 'Authentication required',
+        error: "unauthorized",
+        message: "Authentication required",
       };
 
       const result = ErrorResponseSchema.safeParse(response);
       expect(result.success).toBe(true);
     });
 
-    it('validates 403 forbidden response for non-approved user', () => {
+    it("validates 403 forbidden response for non-approved user", () => {
       const response = {
-        error: 'forbidden',
-        message: 'User not approved for beta access',
+        error: "forbidden",
+        message: "User not approved for beta access",
       };
 
       const result = ErrorResponseSchema.safeParse(response);
       expect(result.success).toBe(true);
     });
 
-    it('validates 422 no connection response', () => {
+    it("validates 422 no connection response", () => {
       const response = {
-        error: 'no_connection',
-        message: 'No Tidal connection found',
+        error: "no_connection",
+        message: "No Tidal connection found",
       };
 
       const result = ErrorResponseSchema.safeParse(response);
       expect(result.success).toBe(true);
     });
 
-    it('validates 500 internal error response', () => {
+    it("validates 500 internal error response", () => {
       const response = {
-        error: 'internal_error',
-        message: 'Failed to refresh Tidal tokens',
+        error: "internal_error",
+        message: "Failed to refresh Tidal tokens",
       };
 
       const result = ErrorResponseSchema.safeParse(response);

@@ -109,7 +109,7 @@ export interface TrackPayload {
  * Transform Qdrant TrackPayload to GraphQL ExtendedTrackMetadata
  */
 export function transformPayloadToMetadata(
-  payload: TrackPayload
+  payload: TrackPayload,
 ): ExtendedTrackMetadata {
   // Check if any audio features are present
   const hasAudioFeatures =

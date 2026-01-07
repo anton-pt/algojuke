@@ -44,7 +44,7 @@ describe("Instrumental Track Ingestion", () => {
 
       const isInstrumental = !interpretation;
       const hasAudioFeatures = Object.values(audioFeatures).some(
-        (v) => v !== null && v !== undefined
+        (v) => v !== null && v !== undefined,
       );
 
       expect(isInstrumental).toBe(true);
@@ -60,7 +60,7 @@ describe("Instrumental Track Ingestion", () => {
           "Orion",
           "Metallica",
           "Master of Puppets",
-          audioFeatures
+          audioFeatures,
         );
 
         expect(prompt).toContain("instrumental track");
@@ -75,7 +75,7 @@ describe("Instrumental Track Ingestion", () => {
       const audioFeatures = {};
 
       const hasAudioFeatures = Object.values(audioFeatures).some(
-        (v) => v !== null && v !== undefined
+        (v) => v !== null && v !== undefined,
       );
 
       expect(hasAudioFeatures).toBe(false);
@@ -83,7 +83,7 @@ describe("Instrumental Track Ingestion", () => {
       const prompt = buildMetadataOnlyShortDescriptionPrompt(
         "Unknown Track",
         "Unknown Artist",
-        "Unknown Album"
+        "Unknown Album",
       );
 
       expect(prompt).toContain("brief, neutral description");
@@ -254,7 +254,7 @@ describe("Instrumental Track Ingestion", () => {
         trackData.title,
         trackData.artist,
         trackData.album,
-        trackData.audioFeatures
+        trackData.audioFeatures,
       );
 
       expect(prompt).toContain("instrumental track");
@@ -277,7 +277,7 @@ describe("Instrumental Track Ingestion", () => {
       const prompt = buildMetadataOnlyShortDescriptionPrompt(
         trackData.title,
         trackData.artist,
-        trackData.album
+        trackData.album,
       );
 
       expect(prompt).toContain("brief, neutral description");

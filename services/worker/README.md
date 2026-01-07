@@ -104,14 +104,14 @@ curl -X POST http://localhost:8288/e/algojuke-worker \
 
 ### Event Payload Options
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `taskId` | string | Yes | Unique identifier for idempotency |
-| `simulateFailure` | boolean | No | Trigger simulated failure (default: false) |
-| `failAtStep` | string | No | Which step to fail at: "step-1-initialize", "step-2-process", "step-3-simulate-delay", "step-4-simulate-api-call", "step-5-finalize" |
-| `delayMs` | number | No | Delay duration in milliseconds (default: 1000) |
-| `priority` | number | No | Execution priority: -600 to 600 (default: 0, higher = earlier execution) |
-| `force` | boolean | No | Override idempotency and force re-execution (default: false) |
+| Field             | Type    | Required | Description                                                                                                                          |
+| ----------------- | ------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `taskId`          | string  | Yes      | Unique identifier for idempotency                                                                                                    |
+| `simulateFailure` | boolean | No       | Trigger simulated failure (default: false)                                                                                           |
+| `failAtStep`      | string  | No       | Which step to fail at: "step-1-initialize", "step-2-process", "step-3-simulate-delay", "step-4-simulate-api-call", "step-5-finalize" |
+| `delayMs`         | number  | No       | Delay duration in milliseconds (default: 1000)                                                                                       |
+| `priority`        | number  | No       | Execution priority: -600 to 600 (default: 0, higher = earlier execution)                                                             |
+| `force`           | boolean | No       | Override idempotency and force re-execution (default: false)                                                                         |
 
 ### Infrastructure Features
 
@@ -135,6 +135,7 @@ Each step is independently tracked and can be inspected in the dashboard.
 - This prevents duplicate side effects and improves performance
 
 **Example**:
+
 - Initial run: Steps 1, 2, 3 succeed → Step 4 fails
 - Retry 1: Steps 1, 2, 3 **skipped** (memoized) → Step 4 retries → Step 5 executes
 - Result: Steps 1-3 execute once, Step 4 retries until success
@@ -142,6 +143,7 @@ Each step is independently tracked and can be inspected in the dashboard.
 #### 3. Automatic Retries
 
 Configuration:
+
 - **Max retries**: 5 attempts
 - **Backoff strategy**: Exponential with jitter
 - **Retry delays**: ~1s, ~2s, ~4s, ~8s, ~16s
@@ -162,6 +164,7 @@ curl -X POST http://localhost:8288/e/algojuke-worker \
 ```
 
 Observe in the dashboard:
+
 - Initial execution fails at step 4
 - Automatic retries with increasing delays
 - Waterfall view shows all retry attempts
@@ -170,11 +173,13 @@ Observe in the dashboard:
 #### 4. Rate Limiting
 
 Configuration:
+
 - **Throttle limit**: 20 executions per 60 seconds (global across all invocations)
 - **Concurrency limit**: 10 simultaneous executions
 - **Idempotency window**: 24 hours (by `taskId`)
 
 **Throttle Modes:**
+
 - **Global throttling** (current): `throttle: { limit: 20, period: "60s" }` - applies across all function invocations
 - **Per-key throttling**: `throttle: { limit: 20, period: "60s", key: "event.data.userId" }` - separate limit per unique key value (e.g., per user)
 
@@ -188,6 +193,7 @@ To test rate limiting:
 ```
 
 Expected behavior:
+
 - Max 10 tasks execute simultaneously (concurrency limit)
 - Max 20 tasks start per 60s window (throttle limit)
 - Additional tasks are queued until next time window
@@ -235,6 +241,7 @@ Tests dashboard visibility, filtering, and inspection:
 ```
 
 Sends 5 demo tasks:
+
 - 1 successful task
 - 2 failed tasks (at different steps)
 - 1 high-priority task
@@ -251,6 +258,7 @@ Tests throttle and concurrency limits:
 ```
 
 Sends 30 tasks rapidly to validate:
+
 - Concurrency limit (max 10 simultaneous)
 - Throttle limit (20 executions per 60 seconds)
 - Queue behavior
@@ -376,7 +384,7 @@ The worker connects to these services via localhost.
      { event: "my/event.triggered" },
      async ({ event, step }) => {
        // Implementation
-     }
+     },
    );
    ```
 
@@ -424,6 +432,7 @@ The worker connects to these services via localhost.
 **Error**: `Port 3001 already in use`
 
 **Solution**:
+
 ```bash
 # Find process using port 3001
 lsof -i :3001
@@ -440,6 +449,7 @@ PORT=3002 npm run dev
 **Error**: `❌ Inngest Dev Server not reachable at http://localhost:8288`
 
 **Solution**:
+
 ```bash
 # Check if Inngest is running
 docker compose ps inngest
@@ -456,6 +466,7 @@ docker compose logs inngest
 **Issue**: Dashboard shows no functions registered
 
 **Solution**:
+
 1. Ensure worker service is running (`npm run dev`)
 2. Check worker console for "Registered functions" confirmation
 3. Refresh the Inngest dashboard (http://localhost:8288)
@@ -487,15 +498,16 @@ Short descriptions are generated as step 4 in the track ingestion pipeline:
 
 The pipeline uses different prompts based on available data:
 
-| Data Available | Prompt Used |
-|----------------|-------------|
-| Interpretation | `buildShortDescriptionPrompt` - Summarizes the interpretation |
+| Data Available      | Prompt Used                                                                 |
+| ------------------- | --------------------------------------------------------------------------- |
+| Interpretation      | `buildShortDescriptionPrompt` - Summarizes the interpretation               |
 | Audio features only | `buildInstrumentalShortDescriptionPrompt` - Describes sonic characteristics |
-| Metadata only | `buildMetadataOnlyShortDescriptionPrompt` - Brief neutral description |
+| Metadata only       | `buildMetadataOnlyShortDescriptionPrompt` - Brief neutral description       |
 
 ### Graceful Failure
 
 If short description generation fails:
+
 - Error is logged
 - `null` is stored in `short_description` field
 - Pipeline continues to completion
@@ -516,11 +528,13 @@ npx tsx scripts/backfill-short-descriptions.ts --reset
 **Rate limit**: 1 track every 2 seconds (30 tracks/minute)
 
 **Progress tracking**:
+
 - Progress saved to `.backfill-progress.json`
 - Resumes automatically after interruption
 - Shows ETA and counts during execution
 
 **Langfuse tracing**:
+
 - Each generation traced as `llm-short-description-backfill`
 - Scroll operations traced as `qdrant-scroll`
 

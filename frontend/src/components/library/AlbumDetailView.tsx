@@ -1,11 +1,15 @@
-import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation } from '@apollo/client';
-import { GET_LIBRARY_ALBUM, GET_LIBRARY_ALBUMS, REMOVE_ALBUM_FROM_LIBRARY } from '../../graphql/library';
-import { useUndoDelete } from '../../hooks/useUndoDelete';
-import { useTrackMetadata } from '../../hooks/useTrackMetadata';
-import { TrackMetadataPanel } from './TrackMetadataPanel';
-import { IndexedBadge } from './IndexedBadge';
-import './AlbumDetailView.css';
+import { useParams, useNavigate } from "react-router-dom";
+import { useQuery, useMutation } from "@apollo/client";
+import {
+  GET_LIBRARY_ALBUM,
+  GET_LIBRARY_ALBUMS,
+  REMOVE_ALBUM_FROM_LIBRARY,
+} from "../../graphql/library";
+import { useUndoDelete } from "../../hooks/useUndoDelete";
+import { useTrackMetadata } from "../../hooks/useTrackMetadata";
+import { TrackMetadataPanel } from "./TrackMetadataPanel";
+import { IndexedBadge } from "./IndexedBadge";
+import "./AlbumDetailView.css";
 
 interface TrackInfo {
   position: number;
@@ -32,7 +36,7 @@ interface LibraryAlbumDetail {
 function formatDuration(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
 function formatTotalDuration(tracks: TrackInfo[]): string {
@@ -50,20 +54,19 @@ export function AlbumDetailView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const { loading, error, data } = useQuery<{ getLibraryAlbum: LibraryAlbumDetail }>(
-    GET_LIBRARY_ALBUM,
-    {
-      variables: { id },
-      skip: !id,
-    }
-  );
+  const { loading, error, data } = useQuery<{
+    getLibraryAlbum: LibraryAlbumDetail;
+  }>(GET_LIBRARY_ALBUM, {
+    variables: { id },
+    skip: !id,
+  });
 
   const [removeAlbumMutation] = useMutation(REMOVE_ALBUM_FROM_LIBRARY, {
     refetchQueries: [{ query: GET_LIBRARY_ALBUMS }],
   });
 
   const { handleDelete } = useUndoDelete<LibraryAlbumDetail>({
-    itemName: 'Album',
+    itemName: "Album",
     getItemLabel: (album) => `${album.title} - ${album.artistName}`,
     onDelete: async (albumId) => {
       await removeAlbumMutation({ variables: { id: albumId } });
@@ -93,7 +96,10 @@ export function AlbumDetailView() {
       <div className="album-detail-view">
         <div className="album-detail-error">
           <p>Error loading album: {error.message}</p>
-          <button onClick={() => navigate('/library/albums')} className="back-button">
+          <button
+            onClick={() => navigate("/library/albums")}
+            className="back-button"
+          >
             Back to Library
           </button>
         </div>
@@ -108,7 +114,10 @@ export function AlbumDetailView() {
       <div className="album-detail-view">
         <div className="album-detail-error">
           <p>Album not found</p>
-          <button onClick={() => navigate('/library/albums')} className="back-button">
+          <button
+            onClick={() => navigate("/library/albums")}
+            className="back-button"
+          >
             Back to Library
           </button>
         </div>
@@ -122,14 +131,20 @@ export function AlbumDetailView() {
 
   return (
     <div className="album-detail-view">
-      <button onClick={() => navigate('/library/albums')} className="back-button">
+      <button
+        onClick={() => navigate("/library/albums")}
+        className="back-button"
+      >
         ← Back to Albums
       </button>
 
       <div className="album-detail-header">
         <div className="album-detail-artwork">
           {album.coverArtUrl ? (
-            <img src={album.coverArtUrl} alt={`${album.title} by ${album.artistName}`} />
+            <img
+              src={album.coverArtUrl}
+              alt={`${album.title} by ${album.artistName}`}
+            />
           ) : (
             <div className="album-detail-artwork-placeholder">No Cover Art</div>
           )}
@@ -146,7 +161,7 @@ export function AlbumDetailView() {
           <button
             onClick={() => {
               handleDelete(album);
-              navigate('/library/albums');
+              navigate("/library/albums");
             }}
             className="remove-album-button"
           >
@@ -165,7 +180,7 @@ export function AlbumDetailView() {
             return (
               <div
                 key={track.position}
-                className={`track-listing-row ${expanded ? 'expanded' : ''}`}
+                className={`track-listing-row ${expanded ? "expanded" : ""}`}
               >
                 <div
                   className="track-listing-header"
@@ -174,7 +189,7 @@ export function AlbumDetailView() {
                   tabIndex={0}
                   aria-expanded={expanded}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
+                    if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
                       toggleTrack(trackKey, track.isrc);
                     }
@@ -183,11 +198,19 @@ export function AlbumDetailView() {
                   <span className="track-number">{track.position}</span>
                   <span className="track-title">
                     {track.title}
-                    {track.explicit && <span className="explicit-indicator">E</span>}
+                    {track.explicit && (
+                      <span className="explicit-indicator">E</span>
+                    )}
                     <IndexedBadge isIndexed={track.isIndexed} size="small" />
                   </span>
-                  <span className="track-duration">{formatDuration(track.duration)}</span>
-                  <span className={`track-expand-indicator ${expanded ? 'up' : 'down'}`}>▼</span>
+                  <span className="track-duration">
+                    {formatDuration(track.duration)}
+                  </span>
+                  <span
+                    className={`track-expand-indicator ${expanded ? "up" : "down"}`}
+                  >
+                    ▼
+                  </span>
                 </div>
                 {expanded && (
                   <div className="track-listing-panel">

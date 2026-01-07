@@ -12,15 +12,22 @@
  * this tool returns FULL metadata for on-demand deep inspection.
  */
 
-import { Repository } from 'typeorm';
-import { BackendQdrantClient } from '../../clients/qdrantClient.js';
-import { LibraryTrack } from '../../entities/LibraryTrack.js';
-import { LibraryAlbum } from '../../entities/LibraryAlbum.js';
-import { BatchMetadataInputSchema, type BatchMetadataInput } from '../../schemas/agentTools.js';
-import type { BatchMetadataOutput, IndexedTrackResult, AudioFeatures } from '../../types/agentTools.js';
-import { createToolError, type ToolError } from '../../types/agentTools.js';
-import { getLibraryIsrcs } from './libraryStatus.js';
-import { logger } from '../../utils/logger.js';
+import { Repository } from "typeorm";
+import { BackendQdrantClient } from "../../clients/qdrantClient.js";
+import { LibraryTrack } from "../../entities/LibraryTrack.js";
+import { LibraryAlbum } from "../../entities/LibraryAlbum.js";
+import {
+  BatchMetadataInputSchema,
+  type BatchMetadataInput,
+} from "../../schemas/agentTools.js";
+import type {
+  BatchMetadataOutput,
+  IndexedTrackResult,
+  AudioFeatures,
+} from "../../types/agentTools.js";
+import { createToolError, type ToolError } from "../../types/agentTools.js";
+import { getLibraryIsrcs } from "./libraryStatus.js";
+import { logger } from "../../utils/logger.js";
 
 // -----------------------------------------------------------------------------
 // Types
@@ -62,12 +69,12 @@ function findMalformedIsrcs(isrcs: string[]): string[] {
  */
 export async function executeBatchMetadata(
   input: BatchMetadataInput,
-  context: BatchMetadataContext
+  context: BatchMetadataContext,
 ): Promise<BatchMetadataOutput> {
   const startTime = Date.now();
   const { userId } = context;
 
-  logger.info('batch_metadata_tool_start', {
+  logger.info("batch_metadata_tool_start", {
     isrcCount: input.isrcs.length,
   });
 
@@ -77,7 +84,7 @@ export async function executeBatchMetadata(
       `Maximum 100 ISRCs per request (received ${input.isrcs.length}). Please split into multiple requests.`,
       false,
       false,
-      'VALIDATION_ERROR'
+      "VALIDATION_ERROR",
     );
   }
 
@@ -89,18 +96,18 @@ export async function executeBatchMetadata(
     const examples = malformedIsrcs.slice(0, exampleCount);
     const moreCount = malformedIsrcs.length - exampleCount;
 
-    let errorMessage = `Invalid ISRC format (must be 12 alphanumeric characters): ${examples.map((i) => `"${i}"`).join(', ')}`;
+    let errorMessage = `Invalid ISRC format (must be 12 alphanumeric characters): ${examples.map((i) => `"${i}"`).join(", ")}`;
     if (moreCount > 0) {
       errorMessage += ` and ${moreCount} more`;
     }
 
-    logger.warn('batch_metadata_invalid_isrcs', {
+    logger.warn("batch_metadata_invalid_isrcs", {
       totalCount: input.isrcs.length,
       malformedCount: malformedIsrcs.length,
       examples,
     });
 
-    throw createToolError(errorMessage, false, false, 'VALIDATION_ERROR');
+    throw createToolError(errorMessage, false, false, "VALIDATION_ERROR");
   }
 
   // Run full schema validation for any other issues
@@ -108,8 +115,8 @@ export async function executeBatchMetadata(
   if (!validationResult.success) {
     const errorMessage = validationResult.error.issues
       .map((e) => e.message)
-      .join(', ');
-    throw createToolError(errorMessage, false, false, 'VALIDATION_ERROR');
+      .join(", ");
+    throw createToolError(errorMessage, false, false, "VALIDATION_ERROR");
   }
 
   const { isrcs } = validationResult.data;
@@ -120,7 +127,7 @@ export async function executeBatchMetadata(
       tracks: [],
       found: [],
       notFound: [],
-      summary: 'No ISRCs provided',
+      summary: "No ISRCs provided",
       durationMs: Date.now() - startTime,
     };
   }
@@ -140,7 +147,12 @@ export async function executeBatchMetadata(
     // Separate found and not found
     const foundIsrcs: string[] = [];
     const notFoundIsrcs: string[] = [];
-    const foundPayloads: { isrc: string; payload: NonNullable<Awaited<ReturnType<typeof context.qdrantClient.getTrackPayload>>> }[] = [];
+    const foundPayloads: {
+      isrc: string;
+      payload: NonNullable<
+        Awaited<ReturnType<typeof context.qdrantClient.getTrackPayload>>
+      >;
+    }[] = [];
 
     for (const result of metadataResults) {
       if (result.payload) {
@@ -157,77 +169,79 @@ export async function executeBatchMetadata(
       context.libraryTrackRepository,
       context.libraryAlbumRepository,
       userId,
-      'batch_metadata'
+      "batch_metadata",
     );
 
     // Build enriched track results
-    const tracks: IndexedTrackResult[] = foundPayloads.map(({ isrc, payload }) => {
-      // Build audio features if available
-      let audioFeatures: AudioFeatures | undefined;
-      if (
-        payload.acousticness !== null ||
-        payload.danceability !== null ||
-        payload.energy !== null ||
-        payload.instrumentalness !== null ||
-        payload.key !== null ||
-        payload.liveness !== null ||
-        payload.loudness !== null ||
-        payload.mode !== null ||
-        payload.speechiness !== null ||
-        payload.tempo !== null ||
-        payload.valence !== null
-      ) {
-        audioFeatures = {
-          acousticness: payload.acousticness ?? undefined,
-          danceability: payload.danceability ?? undefined,
-          energy: payload.energy ?? undefined,
-          instrumentalness: payload.instrumentalness ?? undefined,
-          key: payload.key ?? undefined,
-          liveness: payload.liveness ?? undefined,
-          loudness: payload.loudness ?? undefined,
-          mode: payload.mode ?? undefined,
-          speechiness: payload.speechiness ?? undefined,
-          tempo: payload.tempo ?? undefined,
-          valence: payload.valence ?? undefined,
+    const tracks: IndexedTrackResult[] = foundPayloads.map(
+      ({ isrc, payload }) => {
+        // Build audio features if available
+        let audioFeatures: AudioFeatures | undefined;
+        if (
+          payload.acousticness !== null ||
+          payload.danceability !== null ||
+          payload.energy !== null ||
+          payload.instrumentalness !== null ||
+          payload.key !== null ||
+          payload.liveness !== null ||
+          payload.loudness !== null ||
+          payload.mode !== null ||
+          payload.speechiness !== null ||
+          payload.tempo !== null ||
+          payload.valence !== null
+        ) {
+          audioFeatures = {
+            acousticness: payload.acousticness ?? undefined,
+            danceability: payload.danceability ?? undefined,
+            energy: payload.energy ?? undefined,
+            instrumentalness: payload.instrumentalness ?? undefined,
+            key: payload.key ?? undefined,
+            liveness: payload.liveness ?? undefined,
+            loudness: payload.loudness ?? undefined,
+            mode: payload.mode ?? undefined,
+            speechiness: payload.speechiness ?? undefined,
+            tempo: payload.tempo ?? undefined,
+            valence: payload.valence ?? undefined,
+          };
+        }
+
+        // T014: Extract short_description from payload (feature 013)
+        const shortDescription =
+          "short_description" in payload && payload.short_description
+            ? String(payload.short_description)
+            : undefined;
+
+        return {
+          isrc,
+          title: payload.title,
+          artist: payload.artist,
+          album: payload.album,
+          artworkUrl: undefined, // Not stored in Qdrant payload
+          duration: undefined, // Not available from Qdrant
+          inLibrary: libraryIsrcs.has(isrc),
+          isIndexed: true,
+          score: 1.0, // Direct lookup, not a search result
+          lyrics: payload.lyrics ?? undefined,
+          interpretation: payload.interpretation ?? undefined,
+          shortDescription, // T014: Include short_description in full results
+          audioFeatures,
         };
-      }
-
-      // T014: Extract short_description from payload (feature 013)
-      const shortDescription =
-        'short_description' in payload && payload.short_description
-          ? String(payload.short_description)
-          : undefined;
-
-      return {
-        isrc,
-        title: payload.title,
-        artist: payload.artist,
-        album: payload.album,
-        artworkUrl: undefined, // Not stored in Qdrant payload
-        duration: undefined, // Not available from Qdrant
-        inLibrary: libraryIsrcs.has(isrc),
-        isIndexed: true,
-        score: 1.0, // Direct lookup, not a search result
-        lyrics: payload.lyrics ?? undefined,
-        interpretation: payload.interpretation ?? undefined,
-        shortDescription, // T014: Include short_description in full results
-        audioFeatures,
-      };
-    });
+      },
+    );
 
     const durationMs = Date.now() - startTime;
 
     // Build summary
     let summary: string;
     if (foundIsrcs.length === normalizedIsrcs.length) {
-      summary = `Found metadata for all ${foundIsrcs.length} track${foundIsrcs.length === 1 ? '' : 's'}`;
+      summary = `Found metadata for all ${foundIsrcs.length} track${foundIsrcs.length === 1 ? "" : "s"}`;
     } else if (foundIsrcs.length === 0) {
-      summary = `No tracks found for ${notFoundIsrcs.length} ISRC${notFoundIsrcs.length === 1 ? '' : 's'}`;
+      summary = `No tracks found for ${notFoundIsrcs.length} ISRC${notFoundIsrcs.length === 1 ? "" : "s"}`;
     } else {
       summary = `Found ${foundIsrcs.length} of ${normalizedIsrcs.length} tracks (${notFoundIsrcs.length} not indexed)`;
     }
 
-    logger.info('batch_metadata_tool_complete', {
+    logger.info("batch_metadata_tool_complete", {
       requestedCount: normalizedIsrcs.length,
       foundCount: foundIsrcs.length,
       notFoundCount: notFoundIsrcs.length,
@@ -246,8 +260,8 @@ export async function executeBatchMetadata(
     const durationMs = Date.now() - startTime;
 
     // Re-throw ToolErrors
-    if (error instanceof Error && 'retryable' in error) {
-      logger.error('batch_metadata_tool_error', {
+    if (error instanceof Error && "retryable" in error) {
+      logger.error("batch_metadata_tool_error", {
         isrcCount: normalizedIsrcs.length,
         durationMs,
         error: error.message,
@@ -257,17 +271,17 @@ export async function executeBatchMetadata(
     }
 
     // Wrap unknown errors
-    logger.error('batch_metadata_tool_unexpected_error', {
+    logger.error("batch_metadata_tool_unexpected_error", {
       isrcCount: normalizedIsrcs.length,
       durationMs,
       error: error instanceof Error ? error.message : String(error),
     });
 
     throw createToolError(
-      'Metadata service is temporarily unavailable',
+      "Metadata service is temporarily unavailable",
       true,
       false,
-      'INTERNAL_ERROR'
+      "INTERNAL_ERROR",
     );
   }
 }

@@ -1,7 +1,7 @@
-import { ReactNode } from 'react';
-import { TrackMetadataPanel } from './TrackMetadataPanel';
-import { ExtendedTrackMetadata } from '../../graphql/trackMetadata';
-import './TrackAccordion.css';
+import { ReactNode } from "react";
+import { TrackMetadataPanel } from "./TrackMetadataPanel";
+import { ExtendedTrackMetadata } from "../../graphql/trackMetadata";
+import "./TrackAccordion.css";
 
 interface TrackAccordionProps {
   /** Unique track ID */
@@ -41,7 +41,7 @@ export function TrackAccordion({
 }: TrackAccordionProps) {
   return (
     <div
-      className={`track-accordion ${isExpanded ? 'expanded' : ''}`}
+      className={`track-accordion ${isExpanded ? "expanded" : ""}`}
       data-testid={`track-accordion-${trackId}`}
     >
       {/* Track content (clickable header) */}
@@ -53,7 +53,7 @@ export function TrackAccordion({
         aria-expanded={isExpanded}
         aria-controls={`track-accordion-panel-${trackId}`}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
+          if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
             onToggle();
           }
@@ -61,7 +61,7 @@ export function TrackAccordion({
       >
         {children}
         <div className="track-accordion-indicator">
-          <span className={`chevron ${isExpanded ? 'up' : 'down'}`}>▼</span>
+          <span className={`chevron ${isExpanded ? "up" : "down"}`}>▼</span>
         </div>
       </div>
 

@@ -11,6 +11,7 @@
 Inngest is a durable execution platform that replaces traditional task queues with event-driven, stateful functions that run anywhere (serverless, servers, or edge). It provides step-based workflows with automatic retries, state persistence, and built-in observability through a comprehensive UI dashboard.
 
 **Key Strengths for Requirements:**
+
 - ✅ Built-in multi-step pipelines with independent step retry (FR-002, FR-003)
 - ✅ Exponential backoff and configurable retry policies (FR-004, FR-005)
 - ✅ Native scheduled/delayed execution via step.sleep and cron (FR-011)
@@ -36,6 +37,7 @@ Inngest implements **durable functions** (also called "durable workflows") that 
 - **Memoization**: Successfully executed steps are memoized and won't re-execute
 
 **Architecture:**
+
 ```
 Event API (HTTPS) → Durable Execution Engine → Your Functions (HTTP)
                          ↓
@@ -60,6 +62,7 @@ Functions execute **incrementally, step by step**:
 ### 1.3 State Management Between Steps
 
 **State Persistence Mechanism:**
+
 - Step results are persisted in Inngest's managed function state store
 - Each step's ID is hashed as the state identifier for future executions
 - Step index is included in the result for ordering
@@ -67,6 +70,7 @@ Functions execute **incrementally, step by step**:
 - State store includes: triggering event(s), step output, step errors
 
 **Storage Architecture:**
+
 - **State Store (Database)**: Persists data for pending/ongoing function runs
 - **Main Database**: Persists system data and history (Apps, Functions, Events, Function run results)
 - **Self-hosting**: Uses PostgreSQL for persistent storage, Redis for queue management
@@ -79,6 +83,7 @@ Functions execute **incrementally, step by step**:
 ### 2.1 Multi-Step Pipelines with Independent Step Retry (FR-002, FR-003)
 
 **Implementation:**
+
 ```typescript
 export default inngest.createFunction(
   { id: "import-product-images" },
@@ -96,15 +101,19 @@ export default inngest.createFunction(
 
     // Step 3: Independent retry
     await step.run("update-database", async () => {
-      return db.updateProduct(event.data.productId, { images: uploadedImageURLs, metadata });
+      return db.updateProduct(event.data.productId, {
+        images: uploadedImageURLs,
+        metadata,
+      });
     });
 
     return { success: true, images: uploadedImageURLs.length };
-  }
+  },
 );
 ```
 
 **Key Features:**
+
 - Each `step.run()` has its own independent retry counter
 - Failing steps can be retried and recovered independently
 - Successful steps are never re-executed
@@ -113,28 +122,33 @@ export default inngest.createFunction(
 ### 2.2 Exponential Backoff and Retry Policies (FR-004, FR-005)
 
 **Default Behavior:**
+
 - Retries executed with **exponential backoff with jitter**
 - Default: 4 retries (5 total attempts including initial)
 - Each step has independent retry counter
 
 **Configuration:**
+
 ```typescript
 export default inngest.createFunction(
   {
     id: "process-payment",
-    retries: 10  // Each step will be attempted up to 11 times (1 initial + 10 retries)
+    retries: 10, // Each step will be attempted up to 11 times (1 initial + 10 retries)
   },
   { event: "payment/initiated" },
   async ({ event, step }) => {
     // Function logic
-  }
+  },
 );
 
 // Setting to 0 disables retries
-{ retries: 0 }
+{
+  retries: 0;
+}
 ```
 
 **Custom Retry Timing with RetryAfterError:**
+
 ```typescript
 import { RetryAfterError } from "inngest";
 
@@ -152,6 +166,7 @@ await step.run("call-rate-limited-api", async () => {
 ```
 
 **Non-Retriable Errors:**
+
 ```typescript
 import { NonRetriableError } from "inngest";
 
@@ -167,6 +182,7 @@ await step.run("validate-input", async () => {
 ### 2.3 Scheduled/Delayed Execution (FR-011)
 
 **Sleep (Delay Execution):**
+
 ```typescript
 export default inngest.createFunction(
   { id: "send-delayed-email" },
@@ -178,29 +194,32 @@ export default inngest.createFunction(
     await step.run("send-followup-email", async () => {
       return await email.send("followup", event.data.email);
     });
-  }
+  },
 );
 ```
 
 **Sleep Until (Specific Time):**
+
 ```typescript
 await step.sleepUntil("wait-until-midnight", new Date("2025-01-01T00:00:00Z"));
 ```
 
 **Cron Schedules:**
+
 ```typescript
 export default inngest.createFunction(
   { id: "weekly-report" },
-  { cron: "0 9 * * MON" },  // Every Monday at 9 AM
+  { cron: "0 9 * * MON" }, // Every Monday at 9 AM
   async ({ step }) => {
     await step.run("generate-report", async () => {
       return generateWeeklyReport();
     });
-  }
+  },
 );
 ```
 
 **Key Benefits:**
+
 - Functions don't need to be running during sleep interval
 - Works in serverless environments
 - Sleeping functions don't count against concurrency limits
@@ -209,30 +228,33 @@ export default inngest.createFunction(
 ### 2.4 Rate Limiting & Concurrency Control (FR-008, FR-009, FR-018)
 
 **Throttling (Smooth Spikes):**
+
 ```typescript
 export default inngest.createFunction(
   {
     id: "sync-systems",
     throttle: {
-      limit: 3,           // 3 runs per period
-      period: "1min",     // Within 1 minute window
-      burst: 5,           // Allow burst of 5 runs
-      key: "event.data.user_id"  // Per-user throttling
-    }
+      limit: 3, // 3 runs per period
+      period: "1min", // Within 1 minute window
+      burst: 5, // Allow burst of 5 runs
+      key: "event.data.user_id", // Per-user throttling
+    },
   },
   { event: "system/sync.requested" },
   async ({ event, step }) => {
     // Function logic
-  }
+  },
 );
 ```
 
 **Throttling Algorithm:** Uses Generic Cell Rate Algorithm (GCRA)
+
 - If capacity available: function starts immediately
 - If no capacity: function delayed until capacity available
 - Delays function runs to smooth spikes (non-lossy)
 
 **Rate Limiting (Hard Limits):**
+
 ```typescript
 export default inngest.createFunction(
   {
@@ -240,54 +262,58 @@ export default inngest.createFunction(
     rateLimit: {
       limit: 10,
       period: "1h",
-      key: "event.data.customer_id"
-    }
+      key: "event.data.customer_id",
+    },
   },
   { event: "notification/send" },
   async ({ event, step }) => {
     // Function logic
-  }
+  },
 );
 ```
 
 **Rate Limiting vs Throttling:**
+
 - **Rate Limiting**: Lossy, provides hard limits, executes first event
 - **Throttling**: Non-lossy, delays runs until capacity, smooths spikes
 
 **Concurrency Control:**
+
 ```typescript
 export default inngest.createFunction(
   {
     id: "process-video",
     concurrency: {
-      limit: 5,  // Max 5 concurrent executions
-      key: "event.data.user_id"  // Per-user concurrency
-    }
+      limit: 5, // Max 5 concurrent executions
+      key: "event.data.user_id", // Per-user concurrency
+    },
   },
   { event: "video/upload" },
   async ({ event, step }) => {
     // Function logic
-  }
+  },
 );
 ```
 
 ### 2.5 Task Deduplication/Idempotency (FR-014)
 
 **Idempotency Configuration:**
+
 ```typescript
 export default inngest.createFunction(
   {
     id: "process-payment",
-    idempotency: "event.data.payment_id"  // CEL expression
+    idempotency: "event.data.payment_id", // CEL expression
   },
   { event: "payment/initiated" },
   async ({ event, step }) => {
     // This function will only execute once per payment_id within 24 hours
-  }
+  },
 );
 ```
 
 **Deduplication Behavior:**
+
 - Each unique expression generates a unique string key
 - Prevents duplicate execution for 24 hour period
 - After 24 hours, same key can trigger new execution
@@ -298,32 +324,36 @@ export default inngest.createFunction(
 ### 2.6 Priority Queues (FR-013)
 
 **Priority Configuration:**
+
 ```typescript
 export default inngest.createFunction(
   {
     id: "process-order",
     priority: {
-      run: "event.data.subscription_tier == 'premium' ? 600 : 0"  // CEL expression
-    }
+      run: "event.data.subscription_tier == 'premium' ? 600 : 0", // CEL expression
+    },
   },
   { event: "order/created" },
   async ({ event, step }) => {
     // Premium users processed first
-  }
+  },
 );
 ```
 
 **Priority Range:**
+
 - **Highest priority**: 600 (seconds ahead)
 - **Default priority**: 0 (current time)
 - **Lowest priority**: -600 (seconds behind)
 
 **Use Cases:**
+
 - Prioritize paid vs free users
 - Ensure critical work executes before other work
 - Improve onboarding experience with higher priority
 
 **How It Works:**
+
 - Functions scheduled in priority queue based on time they should run
 - Priority expression evaluated for each new function run
 - Expression returns factor in seconds (positive or negative)
@@ -332,25 +362,27 @@ export default inngest.createFunction(
 ### 2.7 Debouncing
 
 **Debounce Configuration:**
+
 ```typescript
 export default inngest.createFunction(
   {
     id: "process-user-updates",
     debounce: {
       key: "event.data.account_id",
-      period: "5m",  // Wait 5 minutes after last event
-      timeout: "1h"  // Maximum debounce duration
-    }
+      period: "5m", // Wait 5 minutes after last event
+      timeout: "1h", // Maximum debounce duration
+    },
   },
   { event: "user/profile.updated" },
   async ({ event, step }) => {
     // Only runs after 5m of no new events for this account_id
     // Uses the LAST event as input data
-  }
+  },
 );
 ```
 
 **Debounce Behavior:**
+
 - Delays function run for given period
 - Reschedules if new events received while debounce active
 - Runs after period passes with no new events
@@ -358,6 +390,7 @@ export default inngest.createFunction(
 - Min period: 1 second, Max period: 7 days
 
 **Use Cases:**
+
 - Prevent wasted work from rapidly changing user input
 - Delay processing of noisy webhook events
 - Batch updates for frequently modified resources
@@ -365,22 +398,24 @@ export default inngest.createFunction(
 ### 2.8 Event Batching
 
 **Batch Configuration:**
+
 ```typescript
 export default inngest.createFunction(
   {
     id: "record-api-calls",
     batchEvents: {
-      maxSize: 100,      // Max events per batch
-      timeout: "5s",     // Max wait time
-      key: "event.data.customer_id"  // Per-customer batching
-    }
+      maxSize: 100, // Max events per batch
+      timeout: "5s", // Max wait time
+      key: "event.data.customer_id", // Per-customer batching
+    },
   },
   { event: "log/api.call" },
-  async ({ events, step }) => {  // Note: 'events' array, not 'event'
-    const attrs = events.map(evt => ({
+  async ({ events, step }) => {
+    // Note: 'events' array, not 'event'
+    const attrs = events.map((evt) => ({
       user_id: evt.data.user_id,
       endpoint: evt.data.endpoint,
-      timestamp: toDateTime(evt.ts)
+      timestamp: toDateTime(evt.ts),
     }));
 
     const result = await step.run("record data to DB", async () => {
@@ -388,16 +423,18 @@ export default inngest.createFunction(
     });
 
     return { success: true, recorded: result.length };
-  }
+  },
 );
 ```
 
 **Batch Limits:**
+
 - **Maximum batch size**: 100 events
 - **Maximum batch data**: 10 MiB (enforced for system safety)
 - Batch executes early if size/data limits exceeded
 
 **Use Cases:**
+
 - Reduce requests to external APIs with batch support
 - Create batch database writes
 - Improve performance and reduce serverless costs
@@ -409,19 +446,22 @@ export default inngest.createFunction(
 ### 3.1 Running Inngest Dev Server
 
 **Method 1: NPX (Simplest):**
+
 ```bash
 npx inngest-cli@latest dev
 ```
 
 **Method 2: Docker Container:**
+
 ```bash
 docker run -p 8288:8288 inngest/inngest:latest inngest dev -u http://host.docker.internal:3000/api/inngest
 ```
 
 **Method 3: Docker Compose (Recommended for Multi-Service):**
+
 ```yaml
 # docker-compose.yml
-version: '3.8'
+version: "3.8"
 
 services:
   app:
@@ -442,6 +482,7 @@ services:
 ```
 
 **Access Dev Server:**
+
 - URL: http://localhost:8288
 - Provides full feature parity with production
 - Auto-discovery of apps on common ports
@@ -450,6 +491,7 @@ services:
 ### 3.2 TypeScript SDK Setup
 
 **Installation:**
+
 ```bash
 npm install inngest
 # or
@@ -459,6 +501,7 @@ pnpm add inngest
 ```
 
 **Basic Configuration:**
+
 ```typescript
 // src/inngest/client.ts
 import { Inngest, EventSchemas } from "inngest";
@@ -486,6 +529,7 @@ export const inngest = new Inngest({
 ```
 
 **With Zod Schema Validation:**
+
 ```typescript
 import { Inngest, EventSchemas } from "inngest";
 import { z } from "zod";
@@ -505,6 +549,7 @@ export const inngest = new Inngest({
 ```
 
 **Environment Variables:**
+
 ```bash
 # Development
 INNGEST_DEV=1
@@ -516,6 +561,7 @@ INNGEST_SIGNING_KEY=your_signing_key
 ```
 
 **SDK Modes:**
+
 - **Dev Mode**: Auto-detected via `NODE_ENV=development` or `INNGEST_DEV=1`
 - **Cloud Mode**: Auto-detected in production environments
 - Can force mode with `isDev` option in client config
@@ -523,6 +569,7 @@ INNGEST_SIGNING_KEY=your_signing_key
 ### 3.3 Creating Functions
 
 **Define a Function:**
+
 ```typescript
 // src/inngest/functions/processOrder.ts
 import { inngest } from "../client";
@@ -540,11 +587,12 @@ export const processOrder = inngest.createFunction(
     });
 
     return { success: true, paymentId: payment.id };
-  }
+  },
 );
 ```
 
 **Serve Functions (Next.js Example):**
+
 ```typescript
 // app/api/inngest/route.ts
 import { serve } from "inngest/next";
@@ -561,6 +609,7 @@ export const { GET, POST, PUT } = serve({
 ```
 
 **Other Framework Adapters Available:**
+
 - Express
 - Remix
 - Cloudflare Pages
@@ -572,16 +621,19 @@ export const { GET, POST, PUT } = serve({
 ### 3.4 Development Workflow
 
 **1. Start Dev Server:**
+
 ```bash
 npx inngest-cli@latest dev
 ```
 
 **2. Start Your Application:**
+
 ```bash
 npm run dev
 ```
 
 **3. Access Dev Server UI:**
+
 - Navigate to http://localhost:8288
 - View registered functions
 - See event logs
@@ -589,6 +641,7 @@ npm run dev
 - Test functions manually
 
 **4. Send Test Events:**
+
 ```typescript
 // In your application code
 await inngest.send({
@@ -596,12 +649,13 @@ await inngest.send({
   data: {
     orderId: "123",
     amount: 99.99,
-    customerId: "user_456"
-  }
+    customerId: "user_456",
+  },
 });
 ```
 
 **5. Debug:**
+
 - View real-time logs in Dev Server UI
 - Inspect step-by-step execution
 - See exact error messages
@@ -614,6 +668,7 @@ await inngest.send({
 ### 4.1 Built-in UI Dashboard
 
 **Key Features:**
+
 - **Function Dashboard**: View all registered functions, their configurations, and status
 - **Event Logs**: Track all events received, with linked function runs and raw event data
 - **Function Runs**: Detailed view of each function execution
@@ -623,6 +678,7 @@ await inngest.send({
 ### 4.2 Function Run History and Logs
 
 **Run Details Include:**
+
 - Complete execution timeline
 - Step-by-step breakdown
 - Input arguments for each step
@@ -632,6 +688,7 @@ await inngest.send({
 - State at each checkpoint
 
 **Filtering Capabilities:**
+
 - Filter by status (Running, Completed, Failed, Cancelled)
 - Filter by time range (Queued or Started at)
 - Filter by application
@@ -640,6 +697,7 @@ await inngest.send({
 ### 4.3 Metrics and Monitoring
 
 **Available Metrics:**
+
 - **Throughput**: Event rate over time, function execution rate
 - **Backlog**: Number of queued function runs
 - **Concurrency**: Current concurrent executions, concurrency limit hits
@@ -649,6 +707,7 @@ await inngest.send({
 - **Usage Analytics**: Overall system usage trends
 
 **Metrics Dashboard Features:**
+
 - Holistic top-down monitoring
 - Per-function dashboards
 - Correlation between metrics (e.g., concurrency limits and throttling)
@@ -657,6 +716,7 @@ await inngest.send({
 ### 4.4 Manual Replay/Retry Functionality (FR-016)
 
 **Replay from Function Dashboard:**
+
 1. Navigate to function dashboard
 2. Click "Replay" in "All actions" menu
 3. Configure replay:
@@ -666,17 +726,20 @@ await inngest.send({
    - **Multiple Statuses**: Can select multiple (e.g., Failed + Succeeded)
 
 **Replay Process:**
+
 - Runs spread out over time to avoid overwhelming application
 - Progress visible on replay page
 - Takes seconds to minutes depending on run count
 
 **Individual Run Replay:**
+
 - From function run details page
 - Click replay button
 - Option to send trigger event to local dev server
 - Full context available for reproduction
 
 **Replay Use Cases:**
+
 - Recover from failures after bug fixes
 - Re-process data after logic changes
 - Handle transient infrastructure issues
@@ -685,6 +748,7 @@ await inngest.send({
 ### 4.5 Inngest Insights (Query Feature)
 
 **Beta Feature for Querying Data:**
+
 - Eliminate need for custom metrics and log grepping
 - Query function runs and events programmatically
 - Useful for:
@@ -695,20 +759,21 @@ await inngest.send({
 ### 4.6 External Integrations
 
 **Failure Handler for External Tools:**
+
 ```typescript
 export const trackFailures = inngest.createFunction(
   { id: "track-all-failures" },
-  { event: "inngest/function.failed" },  // System event
+  { event: "inngest/function.failed" }, // System event
   async ({ event, step }) => {
     // Send to Datadog, Sentry, etc.
     await step.run("send-to-datadog", async () => {
       return await datadog.sendMetric({
         metric: "inngest.function.failed",
         value: 1,
-        tags: [`function:${event.data.function_id}`]
+        tags: [`function:${event.data.function_id}`],
       });
     });
-  }
+  },
 );
 ```
 
@@ -736,6 +801,7 @@ export const trackFailures = inngest.createFunction(
    - Handles flow control (throttling, rate limiting, etc.)
 
 **For Self-Hosting:**
+
 - **PostgreSQL**: External persistent storage (production)
 - **Redis**: Queue and state management
 - **SQLite**: Default database for dev (`.inngest/main.db`)
@@ -763,6 +829,7 @@ export const trackFailures = inngest.createFunction(
    - Injects previous step data into function
 
 **Example:**
+
 ```typescript
 async ({ event, step }) => {
   // Step 1: Result stored
@@ -772,14 +839,14 @@ async ({ event, step }) => {
 
   // Step 2: Can access 'user' from step 1
   const orders = await step.run("fetch-orders", async () => {
-    return db.getOrders(user.id);  // Uses memoized 'user' data
+    return db.getOrders(user.id); // Uses memoized 'user' data
   });
 
   // Step 3: Can access both 'user' and 'orders'
   await step.run("send-summary", async () => {
     return sendEmail(user.email, { orders });
   });
-}
+};
 ```
 
 ### 5.3 Task History Retention
@@ -796,11 +863,13 @@ async ({ event, step }) => {
 ### 5.4 Storage Limits
 
 **Known Limits:**
+
 - **Step State Size**: Total data from all steps must be under **4MB**
 - **Batch Size**: Maximum **10 MiB** for batched events
 - **Batch Count**: Maximum **100 events** per batch
 
 **Best Practices:**
+
 - Store references (IDs, URLs) rather than large payloads
 - Use external storage (S3, etc.) for large data
 - Return minimal necessary data from steps
@@ -813,17 +882,19 @@ async ({ event, step }) => {
 ### 6.1 Function Definition Patterns
 
 **Basic Function:**
+
 ```typescript
 export const myFunction = inngest.createFunction(
   { id: "unique-function-id" },
   { event: "app/event.name" },
   async ({ event, step }) => {
     // Function logic
-  }
+  },
 );
 ```
 
 **Multiple Event Triggers:**
+
 ```typescript
 export const handleMultipleEvents = inngest.createFunction(
   { id: "multi-event-handler" },
@@ -834,38 +905,41 @@ export const handleMultipleEvents = inngest.createFunction(
     } else {
       // Handle login
     }
-  }
+  },
 );
 ```
 
 **Conditional Event Trigger (CEL Expression):**
+
 ```typescript
 export const handlePremiumUsers = inngest.createFunction(
   { id: "premium-user-handler" },
   {
     event: "user/signup",
-    if: "event.data.tier == 'premium'"  // Only trigger for premium users
+    if: "event.data.tier == 'premium'", // Only trigger for premium users
   },
   async ({ event, step }) => {
     // Only processes premium signups
-  }
+  },
 );
 ```
 
 **Cron Trigger:**
+
 ```typescript
 export const dailyCleanup = inngest.createFunction(
   { id: "daily-cleanup" },
-  { cron: "0 2 * * *" },  // Every day at 2 AM
+  { cron: "0 2 * * *" }, // Every day at 2 AM
   async ({ step }) => {
     await step.run("cleanup-temp-files", async () => {
       return cleanupTempFiles();
     });
-  }
+  },
 );
 ```
 
 **Complete Configuration:**
+
 ```typescript
 export const complexFunction = inngest.createFunction(
   {
@@ -874,35 +948,35 @@ export const complexFunction = inngest.createFunction(
     retries: 5,
     concurrency: {
       limit: 10,
-      key: "event.data.userId"
+      key: "event.data.userId",
     },
     throttle: {
       limit: 100,
       period: "1h",
-      burst: 10
+      burst: 10,
     },
     rateLimit: {
       limit: 1000,
       period: "1d",
-      key: "event.data.tenantId"
+      key: "event.data.tenantId",
     },
     priority: {
-      run: "event.data.tier == 'premium' ? 300 : 0"
+      run: "event.data.tier == 'premium' ? 300 : 0",
     },
     idempotency: "event.data.requestId",
     batchEvents: {
       maxSize: 50,
-      timeout: "10s"
+      timeout: "10s",
     },
     debounce: {
       period: "5m",
-      key: "event.data.resourceId"
-    }
+      key: "event.data.resourceId",
+    },
   },
   { event: "app/event.name" },
   async ({ event, step }) => {
     // Function logic
-  }
+  },
 );
 ```
 
@@ -921,23 +995,25 @@ export const complexFunction = inngest.createFunction(
 9. **step.ai.wrap()** - Wrap AI SDK calls
 
 **Parallel Step Execution:**
+
 ```typescript
 async ({ event, step }) => {
   // Execute steps in parallel
   const [user, orders, payments] = await Promise.all([
     step.run("fetch-user", async () => db.getUser(event.data.userId)),
     step.run("fetch-orders", async () => db.getOrders(event.data.userId)),
-    step.run("fetch-payments", async () => db.getPayments(event.data.userId))
+    step.run("fetch-payments", async () => db.getPayments(event.data.userId)),
   ]);
 
   // All results available once all parallel steps complete
   await step.run("generate-report", async () => {
     return generateReport({ user, orders, payments });
   });
-}
+};
 ```
 
 **Wait for Event Pattern:**
+
 ```typescript
 async ({ event, step }) => {
   await step.run("send-verification-email", async () => {
@@ -948,7 +1024,7 @@ async ({ event, step }) => {
   const verified = await step.waitForEvent("wait-for-verification", {
     event: "user/email.verified",
     timeout: "3d",
-    match: "data.userId"  // Match on event.data.userId field
+    match: "data.userId", // Match on event.data.userId field
   });
 
   if (!verified) {
@@ -962,36 +1038,38 @@ async ({ event, step }) => {
       return activateAccount(event.data.userId);
     });
   }
-}
+};
 ```
 
 **Invoke Another Function:**
+
 ```typescript
 async ({ event, step }) => {
   const result = await step.invoke("call-another-function", {
     function: otherFunction,
     data: {
       userId: event.data.userId,
-      action: "process"
-    }
+      action: "process",
+    },
   });
 
   // Use result from invoked function
   await step.run("handle-result", async () => {
     return handleResult(result);
   });
-}
+};
 ```
 
 **Durable Fetch:**
+
 ```typescript
 async ({ event, step }) => {
   const apiData = await step.fetch("fetch-external-data", {
     url: "https://api.example.com/data",
     method: "GET",
     headers: {
-      "Authorization": `Bearer ${process.env.API_TOKEN}`
-    }
+      Authorization: `Bearer ${process.env.API_TOKEN}`,
+    },
   });
 
   const json = await apiData.json();
@@ -999,12 +1077,13 @@ async ({ event, step }) => {
   await step.run("process-data", async () => {
     return processData(json);
   });
-}
+};
 ```
 
 ### 6.3 Type Safety and TypeScript Support
 
 **Event Type Inference:**
+
 ```typescript
 import { type GetEvents } from "inngest";
 import { inngest } from "./client";
@@ -1019,6 +1098,7 @@ function handleEvent(event: Events) {
 ```
 
 **Typed Event Schemas:**
+
 ```typescript
 type Events = {
   "user/signup": {
@@ -1053,31 +1133,33 @@ export const handleSignup = inngest.createFunction(
 
     // TypeScript will error if you access non-existent properties
     // const invalid = event.data.nonExistent; // Error!
-  }
+  },
 );
 ```
 
 **Zod Schema Integration:**
+
 ```typescript
 import { z } from "zod";
 
 const userSchema = z.object({
   email: z.string().email(),
   name: z.string().min(1),
-  tier: z.enum(["free", "premium"])
+  tier: z.enum(["free", "premium"]),
 });
 
 export const inngest = new Inngest({
   id: "algojuke",
   schemas: new EventSchemas().fromZod({
     "user/signup": {
-      data: userSchema
-    }
+      data: userSchema,
+    },
   }),
 });
 ```
 
 **Step Type Inference:**
+
 ```typescript
 async ({ event, step }) => {
   // Return type is inferred
@@ -1086,14 +1168,15 @@ async ({ event, step }) => {
   });
 
   // TypeScript knows the type of 'user'
-  console.log(user.name);  // ✓ Valid
-  console.log(user.invalid);  // ✗ TypeScript error
-}
+  console.log(user.name); // ✓ Valid
+  console.log(user.invalid); // ✗ TypeScript error
+};
 ```
 
 ### 6.4 Error Handling Patterns
 
 **Try-Catch Within Steps:**
+
 ```typescript
 async ({ event, step }) => {
   const result = await step.run("risky-operation", async () => {
@@ -1114,10 +1197,11 @@ async ({ event, step }) => {
       throw error;
     }
   });
-}
+};
 ```
 
 **Function-Level Failure Handler:**
+
 ```typescript
 export const myFunction = inngest.createFunction(
   {
@@ -1128,29 +1212,30 @@ export const myFunction = inngest.createFunction(
         return await logToMonitoring({
           error: error.message,
           eventId: event.id,
-          functionId: "my-function"
+          functionId: "my-function",
         });
       });
 
       await step.run("notify-team", async () => {
         return await sendSlackNotification({
-          message: `Function failed: ${error.message}`
+          message: `Function failed: ${error.message}`,
         });
       });
-    }
+    },
   },
   { event: "app/event" },
   async ({ event, step }) => {
     // Main function logic
-  }
+  },
 );
 ```
 
 **Global Failure Handler:**
+
 ```typescript
 export const globalFailureHandler = inngest.createFunction(
   { id: "global-failure-handler" },
-  { event: "inngest/function.failed" },  // System event
+  { event: "inngest/function.failed" }, // System event
   async ({ event, step }) => {
     await step.run("track-failure", async () => {
       return await analytics.track({
@@ -1158,24 +1243,25 @@ export const globalFailureHandler = inngest.createFunction(
         properties: {
           functionId: event.data.function_id,
           error: event.data.error,
-          runId: event.data.run_id
-        }
+          runId: event.data.run_id,
+        },
       });
     });
-  }
+  },
 );
 ```
 
 **Preserving Stack Traces:**
+
 ```typescript
 // ✓ GOOD: Await promises to preserve stack traces
 const result = await step.run("fetch-data", async () => {
-  return await fetchFromAPI();  // Awaited
+  return await fetchFromAPI(); // Awaited
 });
 
 // ✗ BAD: Don't await - stack trace may be lost
 const result = await step.run("fetch-data", async () => {
-  return fetchFromAPI();  // Not awaited
+  return fetchFromAPI(); // Not awaited
 });
 ```
 
@@ -1186,6 +1272,7 @@ const result = await step.run("fetch-data", async () => {
 ### 7.1 Triggering Functions from External Applications
 
 **Sending Events via SDK:**
+
 ```typescript
 import { inngest } from "./inngest/client";
 
@@ -1194,24 +1281,25 @@ await inngest.send({
   name: "user/signup",
   data: {
     email: "user@example.com",
-    name: "John Doe"
-  }
+    name: "John Doe",
+  },
 });
 
 // Send multiple events
 await inngest.send([
   {
     name: "order/created",
-    data: { orderId: "123", amount: 99.99 }
+    data: { orderId: "123", amount: 99.99 },
   },
   {
     name: "order/created",
-    data: { orderId: "124", amount: 49.99 }
-  }
+    data: { orderId: "124", amount: 49.99 },
+  },
 ]);
 ```
 
 **Sending Events from Within Functions:**
+
 ```typescript
 async ({ event, step }) => {
   // Use step.sendEvent for reliability
@@ -1219,13 +1307,14 @@ async ({ event, step }) => {
     name: "order/processed",
     data: {
       orderId: event.data.orderId,
-      status: "completed"
-    }
+      status: "completed",
+    },
   });
-}
+};
 ```
 
 **HTTP API (Alternative to SDK):**
+
 ```bash
 curl -X POST https://api.inngest.com/v0/events \
   -H "Authorization: Bearer YOUR_EVENT_KEY" \
@@ -1242,6 +1331,7 @@ curl -X POST https://api.inngest.com/v0/events \
 ### 7.2 Event Schemas and Validation
 
 **TypeScript Schema Definition:**
+
 ```typescript
 import { EventSchemas, Inngest } from "inngest";
 
@@ -1274,6 +1364,7 @@ export const inngest = new Inngest({
 ```
 
 **Zod Runtime Validation:**
+
 ```typescript
 import { z } from "zod";
 import { EventSchemas, Inngest } from "inngest";
@@ -1282,24 +1373,27 @@ const orderCreatedSchema = z.object({
   orderId: z.string().uuid(),
   customerId: z.string(),
   amount: z.number().positive(),
-  items: z.array(z.object({
-    productId: z.string(),
-    quantity: z.number().int().positive(),
-    price: z.number().positive()
-  }))
+  items: z.array(
+    z.object({
+      productId: z.string(),
+      quantity: z.number().int().positive(),
+      price: z.number().positive(),
+    }),
+  ),
 });
 
 export const inngest = new Inngest({
   id: "algojuke",
   schemas: new EventSchemas().fromZod({
     "order/created": {
-      data: orderCreatedSchema
-    }
+      data: orderCreatedSchema,
+    },
   }),
 });
 ```
 
 **Benefits:**
+
 - Compile-time type checking
 - Runtime validation (with Zod)
 - Autocomplete for event names and data
@@ -1308,11 +1402,12 @@ export const inngest = new Inngest({
 ### 7.3 API Integration for Task Queries (FR-007)
 
 **REST API - Query Function Runs:**
+
 ```typescript
 // 1. Send event and capture event ID
 const eventIds = await inngest.send({
   name: "order/created",
-  data: { orderId: "123" }
+  data: { orderId: "123" },
 });
 
 const eventId = eventIds[0];
@@ -1322,9 +1417,9 @@ const response = await fetch(
   `https://api.inngest.com/v1/events/${eventId}/runs`,
   {
     headers: {
-      "Authorization": `Bearer ${process.env.INNGEST_SIGNING_KEY}`
-    }
-  }
+      Authorization: `Bearer ${process.env.INNGEST_SIGNING_KEY}`,
+    },
+  },
 );
 
 const runs = await response.json();
@@ -1337,35 +1432,38 @@ for (const run of runs.data) {
 ```
 
 **Fetch Run Status and Output:**
+
 ```typescript
 async function getRunStatus(eventId: string) {
   const response = await fetch(
     `https://api.inngest.com/v1/events/${eventId}/runs`,
     {
       headers: {
-        "Authorization": `Bearer ${process.env.INNGEST_SIGNING_KEY}`
-      }
-    }
+        Authorization: `Bearer ${process.env.INNGEST_SIGNING_KEY}`,
+      },
+    },
   );
 
   const runs = await response.json();
 
-  return runs.data.map(run => ({
+  return runs.data.map((run) => ({
     id: run.id,
-    status: run.status,  // Running, Completed, Failed, etc.
+    status: run.status, // Running, Completed, Failed, etc.
     output: run.output,
     startedAt: run.started_at,
-    endedAt: run.ended_at
+    endedAt: run.ended_at,
   }));
 }
 ```
 
 **GraphQL Support:**
+
 - Inngest provides GraphQL API for more complex queries
 - Access system resources programmatically
 - Available in both cloud and self-hosted deployments
 
 **Display in Application (Example Use Case):**
+
 ```typescript
 // In a user dashboard
 export async function GET(request: Request) {
@@ -1374,7 +1472,7 @@ export async function GET(request: Request) {
   // Send event to start background job
   const eventIds = await inngest.send({
     name: "user/report.generate",
-    data: { userId }
+    data: { userId },
   });
 
   // Query status
@@ -1383,7 +1481,7 @@ export async function GET(request: Request) {
   return Response.json({
     jobId: eventIds[0],
     status: runs[0]?.status || "queued",
-    progress: runs[0]?.output?.progress || 0
+    progress: runs[0]?.output?.progress || 0,
   });
 }
 ```
@@ -1395,6 +1493,7 @@ export async function GET(request: Request) {
 ### 8.1 Recommended Patterns for Complex Workflows
 
 **1. Clear Event Naming Convention:**
+
 ```
 object.action format:
 - user.created
@@ -1406,6 +1505,7 @@ object.action format:
 ```
 
 **2. Single-Purpose Functions:**
+
 ```typescript
 // ✓ GOOD: Single responsibility
 export const sendWelcomeEmail = inngest.createFunction(
@@ -1433,6 +1533,7 @@ export const handleUserCreation = inngest.createFunction(
 ```
 
 **3. Use Steps as Checkpoints:**
+
 ```typescript
 async ({ event, step }) => {
   // ✓ GOOD: Each step returns useful data
@@ -1448,10 +1549,11 @@ async ({ event, step }) => {
   await step.run("send-welcome", async () => {
     return await email.send(user.email, { accountId: account.id });
   });
-}
+};
 ```
 
 **4. Avoid Side Effects in Function Body:**
+
 ```typescript
 // ✗ BAD: Side effect outside step
 export const processOrder = inngest.createFunction(
@@ -1459,12 +1561,12 @@ export const processOrder = inngest.createFunction(
   { event: "order/created" },
   async ({ event, step }) => {
     // This runs on EVERY step execution!
-    await db.logEvent(event.id);  // ✗ Side effect
+    await db.logEvent(event.id); // ✗ Side effect
 
     await step.run("process", async () => {
       // ...
     });
-  }
+  },
 );
 
 // ✓ GOOD: Side effects in steps
@@ -1480,11 +1582,12 @@ export const processOrder = inngest.createFunction(
     await step.run("process", async () => {
       // ...
     });
-  }
+  },
 );
 ```
 
 **5. Use Descriptive Step Names:**
+
 ```typescript
 // ✓ GOOD: Clear step names for observability
 await step.run("validate-payment-method", async () => ...);
@@ -1499,6 +1602,7 @@ await step.run("process", async () => ...);
 ```
 
 **6. Business Logic in Utilities:**
+
 ```typescript
 // ✓ GOOD: Testable utility functions
 async function processPayment(orderId: string, amount: number) {
@@ -1513,22 +1617,23 @@ export const handlePayment = inngest.createFunction(
     const result = await step.run("process-payment", async () => {
       return await processPayment(event.data.orderId, event.data.amount);
     });
-  }
+  },
 );
 ```
 
 **7. Function Versioning for Traceability:**
+
 ```typescript
 // Version 1
 export const processUpload = inngest.createFunction(
   { id: "process-upload-v1" },
   {
     event: "upload/created",
-    if: "event.ts < 1640000000000"  // Only process old events
+    if: "event.ts < 1640000000000", // Only process old events
   },
   async ({ event, step }) => {
     // Old logic
-  }
+  },
 );
 
 // Version 2
@@ -1536,17 +1641,18 @@ export const processUploadV2 = inngest.createFunction(
   { id: "process-upload-v2" },
   {
     event: "upload/created",
-    if: "event.ts >= 1640000000000"  // Only process new events
+    if: "event.ts >= 1640000000000", // Only process new events
   },
   async ({ event, step }) => {
     // New logic
-  }
+  },
 );
 ```
 
 ### 8.2 Error Handling Strategies
 
 **1. Idempotent Steps:**
+
 ```typescript
 // ✓ GOOD: Upsert is idempotent
 await step.run("save-user", async () => {
@@ -1555,11 +1661,12 @@ await step.run("save-user", async () => {
 
 // ✗ BAD: Insert is not idempotent
 await step.run("save-user", async () => {
-  return await db.insertUser({ id: userId, ...data });  // Fails on retry
+  return await db.insertUser({ id: userId, ...data }); // Fails on retry
 });
 ```
 
 **2. Categorize Errors:**
+
 ```typescript
 await step.run("call-api", async () => {
   try {
@@ -1587,6 +1694,7 @@ await step.run("call-api", async () => {
 ```
 
 **3. Graceful Degradation:**
+
 ```typescript
 async ({ event, step }) => {
   let userData;
@@ -1604,20 +1712,22 @@ async ({ event, step }) => {
   await step.run("process-data", async () => {
     return processUser(userData);
   });
-}
+};
 ```
 
 **4. Preserve Stack Traces:**
+
 ```typescript
 // Always await promises for proper stack traces
 await step.run("async-operation", async () => {
-  return await someAsyncFunction();  // ✓ Awaited
+  return await someAsyncFunction(); // ✓ Awaited
 });
 ```
 
 ### 8.3 Testing Approaches
 
 **Using @inngest/test Package:**
+
 ```typescript
 import { InngestTestEngine } from "@inngest/test";
 import { myFunction } from "./functions/myFunction";
@@ -1638,9 +1748,9 @@ describe("myFunction", () => {
         name: "user/signup",
         data: {
           email: "test@example.com",
-          name: "Test User"
-        }
-      }
+          name: "Test User",
+        },
+      },
     });
 
     // Assert on result
@@ -1649,21 +1759,21 @@ describe("myFunction", () => {
     // Assert step was called
     expect(ctx.step.run).toHaveBeenCalledWith(
       "create-user",
-      expect.any(Function)
+      expect.any(Function),
     );
   });
 
   it("should handle errors gracefully", async () => {
     // Mock external dependencies
     const mockDB = {
-      createUser: jest.fn().mockRejectedValue(new Error("DB Error"))
+      createUser: jest.fn().mockRejectedValue(new Error("DB Error")),
     };
 
     const { result, ctx } = await t.execute({
       event: {
         name: "user/signup",
-        data: { email: "test@example.com" }
-      }
+        data: { email: "test@example.com" },
+      },
     });
 
     // Assert error handling
@@ -1673,10 +1783,11 @@ describe("myFunction", () => {
 ```
 
 **Unit Testing Utility Functions:**
+
 ```typescript
 // Separate business logic for easy testing
 export async function calculateOrderTotal(items: OrderItem[]) {
-  return items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 }
 
 // Unit test (no Inngest needed)
@@ -1684,7 +1795,7 @@ describe("calculateOrderTotal", () => {
   it("should calculate total correctly", () => {
     const items = [
       { price: 10, quantity: 2 },
-      { price: 5, quantity: 3 }
+      { price: 5, quantity: 3 },
     ];
     expect(calculateOrderTotal(items)).toBe(35);
   });
@@ -1692,6 +1803,7 @@ describe("calculateOrderTotal", () => {
 ```
 
 **Integration Testing:**
+
 ```typescript
 describe("Order Processing Integration", () => {
   it("should complete full order workflow", async () => {
@@ -1701,7 +1813,7 @@ describe("Order Processing Integration", () => {
     // Send test event
     const eventIds = await testInngest.send({
       name: "order/created",
-      data: { orderId: "test-123" }
+      data: { orderId: "test-123" },
     });
 
     // Wait for completion (in test environment)
@@ -1714,17 +1826,20 @@ describe("Order Processing Integration", () => {
 ### 8.4 Production Deployment Considerations
 
 **1. Environment Separation:**
+
 ```typescript
 // Use different Inngest apps for environments
 const inngest = new Inngest({
-  id: process.env.NODE_ENV === "production"
-    ? "algojuke-production"
-    : "algojuke-development",
-  schemas: eventSchemas
+  id:
+    process.env.NODE_ENV === "production"
+      ? "algojuke-production"
+      : "algojuke-development",
+  schemas: eventSchemas,
 });
 ```
 
 **2. Secure Key Management:**
+
 ```bash
 # Production environment variables
 INNGEST_EVENT_KEY=your_production_event_key
@@ -1735,6 +1850,7 @@ INNGEST_SIGNING_KEY=your_production_signing_key
 ```
 
 **3. Monitoring and Alerts:**
+
 ```typescript
 // Set up failure handler for alerts
 export const alertOnFailure = inngest.createFunction(
@@ -1748,21 +1864,23 @@ export const alertOnFailure = inngest.createFunction(
         return await pagerduty.alert({
           severity: "critical",
           message: `Critical function failed: ${event.data.function_id}`,
-          details: event.data.error
+          details: event.data.error,
         });
       });
     }
-  }
+  },
 );
 ```
 
 **4. Capacity Planning:**
+
 - Monitor concurrency usage
 - Set appropriate throttle limits
 - Use flow control to prevent overload
 - Consider batch processing for high-volume events
 
 **5. Deployment Strategy:**
+
 ```typescript
 // Use environments for staged rollout
 // 1. Deploy to staging environment first
@@ -1776,15 +1894,16 @@ export const processOrderV2 = inngest.createFunction(
   { id: "process-order-v2" },
   {
     event: "order/created",
-    if: "event.data.version >= 2"  // Gradual rollout
+    if: "event.data.version >= 2", // Gradual rollout
   },
   async ({ event, step }) => {
     // New logic
-  }
+  },
 );
 ```
 
 **6. Performance Optimization:**
+
 - Use parallel steps for independent operations
 - Minimize data passed between steps (< 4MB total)
 - Use `step.fetch()` for external API calls
@@ -1792,16 +1911,17 @@ export const processOrderV2 = inngest.createFunction(
 - Use batching for high-volume events
 
 **7. Logging and Debugging:**
+
 ```typescript
 async ({ event, step }) => {
   // Inngest automatically logs step results
   // Add context for debugging
   const user = await step.run("fetch-user", async () => {
     const result = await db.getUser(event.data.userId);
-    console.log(`Fetched user: ${result.id}`);  // Visible in logs
+    console.log(`Fetched user: ${result.id}`); // Visible in logs
     return result;
   });
-}
+};
 ```
 
 ---
@@ -1814,7 +1934,7 @@ async ({ event, step }) => {
 export const onboardingCampaign = inngest.createFunction(
   {
     id: "user-onboarding-campaign",
-    idempotency: "event.data.userId"  // Once per user
+    idempotency: "event.data.userId", // Once per user
   },
   { event: "user/signup" },
   async ({ event, step }) => {
@@ -1827,7 +1947,7 @@ export const onboardingCampaign = inngest.createFunction(
     const completed = await step.waitForEvent("wait-for-onboarding", {
       event: "user/onboarding.completed",
       timeout: "2d",
-      match: "data.userId"
+      match: "data.userId",
     });
 
     if (!completed) {
@@ -1855,7 +1975,7 @@ export const onboardingCampaign = inngest.createFunction(
     await step.run("send-feature-highlight", async () => {
       return await email.send("feature-highlight", event.data.email);
     });
-  }
+  },
 );
 ```
 
@@ -1868,8 +1988,8 @@ export const processPayment = inngest.createFunction(
     retries: 5,
     idempotency: "event.data.paymentId",
     priority: {
-      run: "event.data.tier == 'premium' ? 300 : 0"
-    }
+      run: "event.data.tier == 'premium' ? 300 : 0",
+    },
   },
   { event: "payment/initiated" },
   async ({ event, step }) => {
@@ -1887,7 +2007,7 @@ export const processPayment = inngest.createFunction(
       return await fraudService.analyze({
         userId: event.data.userId,
         amount: event.data.amount,
-        paymentMethod: event.data.paymentMethod
+        paymentMethod: event.data.paymentMethod,
       });
     });
 
@@ -1901,7 +2021,7 @@ export const processPayment = inngest.createFunction(
       const approved = await step.waitForEvent("wait-for-approval", {
         event: "payment/approved",
         timeout: "24h",
-        match: "data.paymentId"
+        match: "data.paymentId",
       });
 
       if (!approved) {
@@ -1916,7 +2036,7 @@ export const processPayment = inngest.createFunction(
           amount: event.data.amount,
           currency: "usd",
           source: event.data.paymentMethod,
-          metadata: { paymentId: event.data.paymentId }
+          metadata: { paymentId: event.data.paymentId },
         });
       } catch (error) {
         if (error.code === "card_declined") {
@@ -1931,7 +2051,7 @@ export const processPayment = inngest.createFunction(
       return await db.updateOrder(event.data.orderId, {
         status: "paid",
         paymentId: charge.id,
-        paidAt: new Date()
+        paidAt: new Date(),
       });
     });
 
@@ -1942,8 +2062,8 @@ export const processPayment = inngest.createFunction(
         data: {
           amount: event.data.amount,
           orderId: event.data.orderId,
-          chargeId: charge.id
-        }
+          chargeId: charge.id,
+        },
       });
     });
 
@@ -1952,12 +2072,12 @@ export const processPayment = inngest.createFunction(
       name: "order/ready-for-fulfillment",
       data: {
         orderId: event.data.orderId,
-        paymentId: charge.id
-      }
+        paymentId: charge.id,
+      },
     });
 
     return { success: true, chargeId: charge.id };
-  }
+  },
 );
 ```
 
@@ -1970,25 +2090,29 @@ export const processBatchLogs = inngest.createFunction(
     batchEvents: {
       maxSize: 100,
       timeout: "10s",
-      key: "event.data.customerId"  // Batch per customer
+      key: "event.data.customerId", // Batch per customer
     },
     concurrency: {
-      limit: 5  // Process max 5 batches concurrently
-    }
+      limit: 5, // Process max 5 batches concurrently
+    },
   },
   { event: "log/api.call" },
-  async ({ events, step }) => {  // Note: 'events' array
+  async ({ events, step }) => {
+    // Note: 'events' array
     // Step 1: Aggregate logs
     const aggregated = await step.run("aggregate-logs", async () => {
-      return events.reduce((acc, evt) => {
-        const endpoint = evt.data.endpoint;
-        if (!acc[endpoint]) {
-          acc[endpoint] = { count: 0, totalDuration: 0 };
-        }
-        acc[endpoint].count++;
-        acc[endpoint].totalDuration += evt.data.duration;
-        return acc;
-      }, {} as Record<string, { count: number; totalDuration: number }>);
+      return events.reduce(
+        (acc, evt) => {
+          const endpoint = evt.data.endpoint;
+          if (!acc[endpoint]) {
+            acc[endpoint] = { count: 0, totalDuration: 0 };
+          }
+          acc[endpoint].count++;
+          acc[endpoint].totalDuration += evt.data.duration;
+          return acc;
+        },
+        {} as Record<string, { count: number; totalDuration: number }>,
+      );
     });
 
     // Step 2: Calculate metrics
@@ -1998,7 +2122,7 @@ export const processBatchLogs = inngest.createFunction(
         count: data.count,
         avgDuration: data.totalDuration / data.count,
         customerId: events[0].data.customerId,
-        timestamp: new Date()
+        timestamp: new Date(),
       }));
     });
 
@@ -2010,12 +2134,13 @@ export const processBatchLogs = inngest.createFunction(
     // Step 4: Check for anomalies
     await step.run("check-anomalies", async () => {
       for (const metric of metrics) {
-        if (metric.avgDuration > 5000) {  // > 5 seconds
+        if (metric.avgDuration > 5000) {
+          // > 5 seconds
           await sendAlert({
             type: "slow_endpoint",
             endpoint: metric.endpoint,
             avgDuration: metric.avgDuration,
-            customerId: metric.customerId
+            customerId: metric.customerId,
           });
         }
       }
@@ -2024,9 +2149,9 @@ export const processBatchLogs = inngest.createFunction(
     return {
       success: true,
       processedEvents: events.length,
-      metricsRecorded: metrics.length
+      metricsRecorded: metrics.length,
     };
-  }
+  },
 );
 ```
 
@@ -2040,19 +2165,17 @@ export const generateContentWithAI = inngest.createFunction(
     throttle: {
       limit: 10,
       period: "1m",
-      key: "event.data.userId"  // Rate limit per user
-    }
+      key: "event.data.userId", // Rate limit per user
+    },
   },
   { event: "content/generate" },
   async ({ event, step }) => {
     // Step 1: Fetch context data
     const [user, preferences] = await Promise.all([
-      step.run("fetch-user", async () =>
-        db.getUser(event.data.userId)
-      ),
+      step.run("fetch-user", async () => db.getUser(event.data.userId)),
       step.run("fetch-preferences", async () =>
-        db.getUserPreferences(event.data.userId)
-      )
+        db.getUserPreferences(event.data.userId),
+      ),
     ]);
 
     // Step 2: Generate with AI (offloaded to Inngest)
@@ -2062,15 +2185,15 @@ export const generateContentWithAI = inngest.createFunction(
         messages: [
           {
             role: "system",
-            content: "You are a helpful content generator."
+            content: "You are a helpful content generator.",
           },
           {
             role: "user",
-            content: `Generate content about: ${event.data.topic}. User preferences: ${JSON.stringify(preferences)}`
-          }
+            content: `Generate content about: ${event.data.topic}. User preferences: ${JSON.stringify(preferences)}`,
+          },
         ],
-        max_tokens: 1000
-      }
+        max_tokens: 1000,
+      },
     });
 
     const content = aiResponse.choices[0].message.content;
@@ -2081,7 +2204,7 @@ export const generateContentWithAI = inngest.createFunction(
         userId: event.data.userId,
         topic: event.data.topic,
         content,
-        generatedAt: new Date()
+        generatedAt: new Date(),
       });
     });
 
@@ -2095,7 +2218,7 @@ export const generateContentWithAI = inngest.createFunction(
       await step.run("flag-content", async () => {
         return await db.updateContent(saved.id, {
           status: "flagged",
-          moderationReason: moderation.reason
+          moderationReason: moderation.reason,
         });
       });
 
@@ -2104,8 +2227,8 @@ export const generateContentWithAI = inngest.createFunction(
         data: {
           contentId: saved.id,
           userId: event.data.userId,
-          reason: moderation.reason
-        }
+          reason: moderation.reason,
+        },
       });
     } else {
       await step.run("publish-content", async () => {
@@ -2116,17 +2239,17 @@ export const generateContentWithAI = inngest.createFunction(
         name: "content/published",
         data: {
           contentId: saved.id,
-          userId: event.data.userId
-        }
+          userId: event.data.userId,
+        },
       });
     }
 
     return {
       success: true,
       contentId: saved.id,
-      status: moderation.flagged ? "flagged" : "published"
+      status: moderation.flagged ? "flagged" : "published",
     };
-  }
+  },
 );
 ```
 
@@ -2134,33 +2257,34 @@ export const generateContentWithAI = inngest.createFunction(
 
 ## 10. Feature Mapping to Functional Requirements
 
-| Requirement ID | Description | Inngest Feature | Implementation |
-|---------------|-------------|-----------------|----------------|
-| FR-002 | Multi-step pipelines | ✅ `step.run()` | Each step independently executable and retriable |
-| FR-003 | Independent step retry | ✅ Step-level retry | Each `step.run()` has own retry counter |
-| FR-004 | Exponential backoff | ✅ Built-in | Default retry policy with exponential backoff + jitter |
-| FR-005 | Configurable retry | ✅ Function config | `retries` option, `RetryAfterError` for custom timing |
-| FR-007 | API task queries | ✅ REST/GraphQL API | Query runs by event ID via REST API |
-| FR-008 | Rate limiting | ✅ `rateLimit` config | Hard limits on function execution per period |
-| FR-009 | Throttling | ✅ `throttle` config | GCRA algorithm, smooth spikes, per-key limits |
-| FR-011 | Scheduled execution | ✅ `step.sleep()`, cron | Delay execution or schedule recurring jobs |
-| FR-013 | Priority queues | ✅ `priority` config | Dynamic priority -600 to +600 seconds |
-| FR-014 | Deduplication | ✅ `idempotency` config | 24-hour deduplication by CEL expression |
-| FR-016 | Manual replay | ✅ Dashboard UI | Bulk replay by time range and status filter |
-| FR-018 | Concurrency control | ✅ `concurrency` config | Limit concurrent executions per key |
-| - | Event batching | ✅ `batchEvents` config | Process up to 100 events per batch |
-| - | Debouncing | ✅ `debounce` config | Delay until events stop, use last event |
-| - | Wait for events | ✅ `step.waitForEvent()` | Pause until event received or timeout |
-| - | State persistence | ✅ Managed state store | Auto-persist step results, < 4MB limit |
-| - | Observability | ✅ Dashboard + API | Waterfall traces, metrics, logs, insights |
-| - | Type safety | ✅ TypeScript SDK | Full type inference with schemas (TypeScript/Zod) |
-| - | Local development | ✅ Dev Server | Docker support, auto-discovery, feature parity |
+| Requirement ID | Description            | Inngest Feature          | Implementation                                         |
+| -------------- | ---------------------- | ------------------------ | ------------------------------------------------------ |
+| FR-002         | Multi-step pipelines   | ✅ `step.run()`          | Each step independently executable and retriable       |
+| FR-003         | Independent step retry | ✅ Step-level retry      | Each `step.run()` has own retry counter                |
+| FR-004         | Exponential backoff    | ✅ Built-in              | Default retry policy with exponential backoff + jitter |
+| FR-005         | Configurable retry     | ✅ Function config       | `retries` option, `RetryAfterError` for custom timing  |
+| FR-007         | API task queries       | ✅ REST/GraphQL API      | Query runs by event ID via REST API                    |
+| FR-008         | Rate limiting          | ✅ `rateLimit` config    | Hard limits on function execution per period           |
+| FR-009         | Throttling             | ✅ `throttle` config     | GCRA algorithm, smooth spikes, per-key limits          |
+| FR-011         | Scheduled execution    | ✅ `step.sleep()`, cron  | Delay execution or schedule recurring jobs             |
+| FR-013         | Priority queues        | ✅ `priority` config     | Dynamic priority -600 to +600 seconds                  |
+| FR-014         | Deduplication          | ✅ `idempotency` config  | 24-hour deduplication by CEL expression                |
+| FR-016         | Manual replay          | ✅ Dashboard UI          | Bulk replay by time range and status filter            |
+| FR-018         | Concurrency control    | ✅ `concurrency` config  | Limit concurrent executions per key                    |
+| -              | Event batching         | ✅ `batchEvents` config  | Process up to 100 events per batch                     |
+| -              | Debouncing             | ✅ `debounce` config     | Delay until events stop, use last event                |
+| -              | Wait for events        | ✅ `step.waitForEvent()` | Pause until event received or timeout                  |
+| -              | State persistence      | ✅ Managed state store   | Auto-persist step results, < 4MB limit                 |
+| -              | Observability          | ✅ Dashboard + API       | Waterfall traces, metrics, logs, insights              |
+| -              | Type safety            | ✅ TypeScript SDK        | Full type inference with schemas (TypeScript/Zod)      |
+| -              | Local development      | ✅ Dev Server            | Docker support, auto-discovery, feature parity         |
 
 ---
 
 ## 11. Comparison with Requirements
 
 ### Strengths
+
 - **Comprehensive step workflow**: Exactly matches FR-002 and FR-003 requirements
 - **Flexible retry policies**: Exceeds FR-004 and FR-005 with `RetryAfterError` and `NonRetriableError`
 - **Rich flow control**: Supports rate limiting, throttling, concurrency, priority (FR-008, FR-009, FR-013, FR-018)
@@ -2171,6 +2295,7 @@ export const generateContentWithAI = inngest.createFunction(
 - **Local dev experience**: Dev server with feature parity to production
 
 ### Considerations
+
 - **Data retention**: Specific retention period not clearly documented (30-day requirement needs verification)
 - **Vendor lock-in**: Proprietary platform (but can self-host)
 - **Step data limits**: 4MB total limit may be constraining for some workflows
@@ -2178,6 +2303,7 @@ export const generateContentWithAI = inngest.createFunction(
 - **Learning curve**: Event-driven paradigm may require mental model shift from traditional queues
 
 ### Gaps (if any)
+
 - **30-day history retention**: Not explicitly confirmed in documentation (verify with Inngest)
 - **Self-hosting complexity**: Requires PostgreSQL + Redis for production
 - **Cost**: Pricing model not covered in research (needs evaluation)
@@ -2235,6 +2361,7 @@ export const generateContentWithAI = inngest.createFunction(
 ## 14. Resources
 
 ### Official Documentation
+
 - [Inngest Documentation](https://www.inngest.com/docs)
 - [TypeScript SDK](https://www.inngest.com/docs/typescript)
 - [Durable Execution](https://www.inngest.com/docs/learn/how-functions-are-executed)
@@ -2245,17 +2372,20 @@ export const generateContentWithAI = inngest.createFunction(
 - [Observability & Metrics](https://www.inngest.com/docs/platform/monitor/observability-metrics)
 
 ### API References
+
 - [REST API - Function Runs](https://www.inngest.com/docs/examples/fetch-run-status-and-output)
 - [Create Function Reference](https://www.inngest.com/docs/reference/functions/create)
 - [Step API](https://www.inngest.com/docs/reference/functions/step-run)
 - [Wait for Event](https://www.inngest.com/docs/reference/functions/step-wait-for-event)
 
 ### GitHub
+
 - [inngest/inngest](https://github.com/inngest/inngest) - Main repository
 - [inngest/inngest-js](https://github.com/inngest/inngest-js) - TypeScript SDK
 - [@inngest/test](https://www.npmjs.com/package/@inngest/test) - Testing package
 
 ### Blog Posts
+
 - [Introducing Inngest Dev Server](https://www.inngest.com/blog/introducing-inngest-dev-server)
 - [Event Batching](https://www.inngest.com/blog/event-batching)
 - [Enhanced Observability](https://www.inngest.com/blog/enhanced-observability-traces-and-metrics)
@@ -2263,6 +2393,7 @@ export const generateContentWithAI = inngest.createFunction(
 - [Rate Limiting vs Debouncing vs Throttling](https://www.inngest.com/blog/rate-limit-debouncing-throttling-explained)
 
 ### Community
+
 - [GitHub Discussions](https://github.com/inngest/inngest/discussions)
 - [Discord Community](https://www.inngest.com/discord)
 

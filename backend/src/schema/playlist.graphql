@@ -6,13 +6,19 @@
 Track data for playlist export request
 """
 input TrackForExportInput {
-  """ISRC code (12 alphanumeric characters)"""
+  """
+  ISRC code (12 alphanumeric characters)
+  """
   isrc: String!
 
-  """Track title"""
+  """
+  Track title
+  """
   title: String!
 
-  """Artist name"""
+  """
+  Artist name
+  """
   artist: String!
 }
 
@@ -20,10 +26,14 @@ input TrackForExportInput {
 Input for exporting a playlist to Tidal
 """
 input ExportPlaylistToTidalInput {
-  """Playlist name (1-150 characters)"""
+  """
+  Playlist name (1-150 characters)
+  """
   name: String!
 
-  """Tracks to include in the playlist (1-50 tracks)"""
+  """
+  Tracks to include in the playlist (1-50 tracks)
+  """
   tracks: [TrackForExportInput!]!
 }
 
@@ -31,13 +41,19 @@ input ExportPlaylistToTidalInput {
 Track that was skipped because it couldn't be found on Tidal
 """
 type SkippedTrack {
-  """ISRC code"""
+  """
+  ISRC code
+  """
   isrc: String!
 
-  """Track title"""
+  """
+  Track title
+  """
   title: String!
 
-  """Artist name"""
+  """
+  Artist name
+  """
   artist: String!
 }
 
@@ -45,19 +61,29 @@ type SkippedTrack {
 Successful playlist export result
 """
 type ExportPlaylistSuccess {
-  """Tidal playlist UUID"""
+  """
+  Tidal playlist UUID
+  """
   playlistId: String!
 
-  """Playlist name as saved on Tidal"""
+  """
+  Playlist name as saved on Tidal
+  """
   playlistName: String!
 
-  """Number of tracks successfully added"""
+  """
+  Number of tracks successfully added
+  """
   tracksAdded: Int!
 
-  """Number of tracks that couldn't be found on Tidal"""
+  """
+  Number of tracks that couldn't be found on Tidal
+  """
   tracksSkipped: Int!
 
-  """Details of skipped tracks (if any)"""
+  """
+  Details of skipped tracks (if any)
+  """
   skippedTracks: [SkippedTrack!]
 }
 
@@ -65,10 +91,14 @@ type ExportPlaylistSuccess {
 Error when user has no Tidal connection
 """
 type NoTidalConnectionError {
-  """Error message"""
+  """
+  Error message
+  """
   message: String!
 
-  """Error code for client handling"""
+  """
+  Error code for client handling
+  """
   code: String!
 }
 
@@ -76,10 +106,14 @@ type NoTidalConnectionError {
 Error when Tidal token refresh failed
 """
 type TokenRefreshFailedError {
-  """Error message"""
+  """
+  Error message
+  """
   message: String!
 
-  """Error code for client handling"""
+  """
+  Error code for client handling
+  """
   code: String!
 }
 
@@ -87,10 +121,14 @@ type TokenRefreshFailedError {
 Error when no tracks could be found on Tidal
 """
 type NoTracksAvailableError {
-  """Error message"""
+  """
+  Error message
+  """
   message: String!
 
-  """Error code for client handling"""
+  """
+  Error code for client handling
+  """
   code: String!
 }
 
@@ -98,16 +136,24 @@ type NoTracksAvailableError {
 Error when playlist creation failed
 """
 type PlaylistCreationFailedError {
-  """Error message"""
+  """
+  Error message
+  """
   message: String!
 
-  """Error code for client handling"""
+  """
+  Error code for client handling
+  """
   code: String!
 
-  """Whether the operation can be retried"""
+  """
+  Whether the operation can be retried
+  """
   retryable: Boolean!
 
-  """Seconds to wait before retrying (for rate limits)"""
+  """
+  Seconds to wait before retrying (for rate limits)
+  """
   retryAfter: Int
 }
 
@@ -115,13 +161,19 @@ type PlaylistCreationFailedError {
 Validation error for playlist export
 """
 type PlaylistValidationError {
-  """Error message"""
+  """
+  Error message
+  """
   message: String!
 
-  """Error code for client handling"""
+  """
+  Error code for client handling
+  """
   code: String!
 
-  """Validation error details"""
+  """
+  Validation error details
+  """
   details: [String!]
 }
 
@@ -129,7 +181,7 @@ type PlaylistValidationError {
 Result of exporting a playlist to Tidal
 """
 union ExportPlaylistToTidalResult =
-    ExportPlaylistSuccess
+  | ExportPlaylistSuccess
   | NoTidalConnectionError
   | TokenRefreshFailedError
   | NoTracksAvailableError
@@ -142,5 +194,7 @@ type Mutation {
   Creates an unlisted playlist with the specified name and tracks.
   Returns success with track counts, or appropriate error type.
   """
-  exportPlaylistToTidal(input: ExportPlaylistToTidalInput!): ExportPlaylistToTidalResult!
+  exportPlaylistToTidal(
+    input: ExportPlaylistToTidalInput!
+  ): ExportPlaylistToTidalResult!
 }

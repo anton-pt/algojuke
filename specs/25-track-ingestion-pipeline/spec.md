@@ -12,7 +12,7 @@
 - Q: Where should track metadata (title, artist, album) come from? → A: Input payload - metadata is passed alongside ISRC when triggering ingestion, sourced from Tidal API at search time. This ensures tracks not indexed by Musixmatch can still be fully stored.
 - Q: What should happen when lyrics are exceptionally long? → A: No explicit truncation needed - LLM summarizes naturally, and Qwen3-Embedding-8B supports 32K token input which accommodates any reasonable interpretation length.
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - Complete Track Ingestion (Priority: P1)
 
@@ -107,7 +107,7 @@ As a system administrator running batch ingestions, I need the pipeline to respe
 - **Empty interpretation from LLM (malformed response)**: Validate response; if empty, retry step; if consistently empty, fail pipeline with descriptive error
 - **Embedding returns wrong dimension count**: Validate embedding dimensions (must be 4096); if invalid, retry; if consistently wrong, fail with configuration error
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -142,7 +142,7 @@ As a system administrator running batch ingestions, I need the pipeline to respe
 - **Track Document**: The complete indexed entity stored in Qdrant, containing all of the above plus core metadata (title, artist, album, ISRC)
 - **Pipeline Trace**: Langfuse trace containing correlated spans for all pipeline operations, enabling end-to-end debugging
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 
@@ -216,11 +216,13 @@ As a system administrator running batch ingestions, I need the pipeline to respe
 **Deviation from spec**: The implementation uses `mixedbread-ai/mxbai-embed-large-v1` (1024 dimensions) instead of the originally specified `Qwen3-Embedding-8B` (4096 dimensions).
 
 **Rationale**:
+
 - mxbai-embed-large-v1 has better availability in TEI's pre-built Docker images
 - The model produces high-quality embeddings suitable for semantic search
 - 1024 dimensions provides a good balance of quality and storage efficiency
 
 **Impact**:
+
 - Vector index schema updated to 1024 dimensions (see `services/search-index/src/schema/trackCollection.ts`)
 - Zero vector for instrumentals is 1024 dimensions
 - All dimension validation uses 1024 as the expected value

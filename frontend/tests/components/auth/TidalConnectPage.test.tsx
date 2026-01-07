@@ -4,20 +4,23 @@
  * Tests the Tidal connection page for approved users.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
-import { TidalConnectPage, RETURN_URL_KEY } from '../../../src/pages/TidalConnectPage';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import {
+  TidalConnectPage,
+  RETURN_URL_KEY,
+} from "../../../src/pages/TidalConnectPage";
 
 // Mock Clerk
-vi.mock('@clerk/clerk-react', () => ({
+vi.mock("@clerk/clerk-react", () => ({
   UserButton: () => <button data-testid="user-button">User</button>,
 }));
 
 // Mock useTidalAuth hook
 const mockInitiateTidalLogin = vi.fn();
 const mockUseTidalAuth = vi.fn();
-vi.mock('../../../src/hooks/useTidalAuth', () => ({
+vi.mock("../../../src/hooks/useTidalAuth", () => ({
   useTidalAuth: () => mockUseTidalAuth(),
 }));
 
@@ -30,9 +33,9 @@ const mockSessionStorage = {
   length: 0,
   key: vi.fn(),
 };
-Object.defineProperty(window, 'sessionStorage', { value: mockSessionStorage });
+Object.defineProperty(window, "sessionStorage", { value: mockSessionStorage });
 
-describe('TidalConnectPage', () => {
+describe("TidalConnectPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseTidalAuth.mockReturnValue({
@@ -45,54 +48,64 @@ describe('TidalConnectPage', () => {
 
   const renderWithRouter = (state?: { returnTo?: string }) => {
     return render(
-      <MemoryRouter initialEntries={[{ pathname: '/connect-tidal', state }]}>
+      <MemoryRouter initialEntries={[{ pathname: "/connect-tidal", state }]}>
         <TidalConnectPage />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
   };
 
-  it('renders the page heading', () => {
+  it("renders the page heading", () => {
     renderWithRouter();
-    expect(screen.getByRole('heading', { name: /connect your tidal account/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /connect your tidal account/i }),
+    ).toBeInTheDocument();
   });
 
-  it('displays user button for sign out', () => {
+  it("displays user button for sign out", () => {
     renderWithRouter();
-    expect(screen.getByTestId('user-button')).toBeInTheDocument();
+    expect(screen.getByTestId("user-button")).toBeInTheDocument();
   });
 
-  it('lists features that require Tidal connection', () => {
+  it("lists features that require Tidal connection", () => {
     renderWithRouter();
     expect(screen.getByText(/access your saved albums/i)).toBeInTheDocument();
-    expect(screen.getByText(/ai-powered music recommendations/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/ai-powered music recommendations/i),
+    ).toBeInTheDocument();
   });
 
-  it('displays connect button', () => {
+  it("displays connect button", () => {
     renderWithRouter();
     expect(screen.getByText(/connect with tidal/i)).toBeInTheDocument();
   });
 
-  it('stores return URL in sessionStorage when connecting', () => {
-    renderWithRouter({ returnTo: '/library' });
+  it("stores return URL in sessionStorage when connecting", () => {
+    renderWithRouter({ returnTo: "/library" });
 
     const connectButton = screen.getByText(/connect with tidal/i);
     fireEvent.click(connectButton);
 
-    expect(mockSessionStorage.setItem).toHaveBeenCalledWith(RETURN_URL_KEY, '/library');
+    expect(mockSessionStorage.setItem).toHaveBeenCalledWith(
+      RETURN_URL_KEY,
+      "/library",
+    );
   });
 
-  it('uses /discover as default return URL', () => {
+  it("uses /discover as default return URL", () => {
     renderWithRouter();
 
     const connectButton = screen.getByText(/connect with tidal/i);
     fireEvent.click(connectButton);
 
-    expect(mockSessionStorage.setItem).toHaveBeenCalledWith(RETURN_URL_KEY, '/discover');
+    expect(mockSessionStorage.setItem).toHaveBeenCalledWith(
+      RETURN_URL_KEY,
+      "/discover",
+    );
   });
 
-  it('displays error message when connection fails', () => {
+  it("displays error message when connection fails", () => {
     mockUseTidalAuth.mockReturnValue({
-      error: 'Failed to connect to Tidal',
+      error: "Failed to connect to Tidal",
       isConnecting: false,
       initiateTidalLogin: mockInitiateTidalLogin,
       isInitialized: true,
@@ -104,7 +117,7 @@ describe('TidalConnectPage', () => {
     expect(screen.getByText(/please try again/i)).toBeInTheDocument();
   });
 
-  it('disables connect button while connecting', () => {
+  it("disables connect button while connecting", () => {
     mockUseTidalAuth.mockReturnValue({
       error: null,
       isConnecting: true,
@@ -117,8 +130,10 @@ describe('TidalConnectPage', () => {
     expect(screen.getByText(/connecting/i)).toBeInTheDocument();
   });
 
-  it('mentions privacy and credentials not being stored', () => {
+  it("mentions privacy and credentials not being stored", () => {
     renderWithRouter();
-    expect(screen.getByText(/credentials are never stored/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/credentials are never stored/i),
+    ).toBeInTheDocument();
   });
 });

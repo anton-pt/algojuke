@@ -5,18 +5,18 @@
  * Task: T019-IT
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MockedProvider } from '@apollo/client/testing';
-import { ChatSidebar } from '../ChatSidebar';
-import { GET_CONVERSATIONS } from '../../../graphql/chat';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { MockedProvider } from "@apollo/client/testing";
+import { ChatSidebar } from "../ChatSidebar";
+import { GET_CONVERSATIONS } from "../../../graphql/chat";
 
 // Mock Clerk hooks (may be used by child components)
-vi.mock('@clerk/clerk-react', () => ({
+vi.mock("@clerk/clerk-react", () => ({
   useAuth: () => ({
-    getToken: vi.fn().mockResolvedValue('test-token'),
+    getToken: vi.fn().mockResolvedValue("test-token"),
     isSignedIn: true,
-    userId: 'user_testUser123',
+    userId: "user_testUser123",
   }),
   useClerk: () => ({
     signOut: vi.fn(),
@@ -26,25 +26,25 @@ vi.mock('@clerk/clerk-react', () => ({
 // Mock conversations data
 const mockConversations = [
   {
-    __typename: 'Conversation' as const,
-    id: '1',
-    preview: 'Tell me about jazz music',
+    __typename: "Conversation" as const,
+    id: "1",
+    preview: "Tell me about jazz music",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     messageCount: 2,
   },
   {
-    __typename: 'Conversation' as const,
-    id: '2',
-    preview: 'Find upbeat songs',
+    __typename: "Conversation" as const,
+    id: "2",
+    preview: "Find upbeat songs",
     createdAt: new Date(Date.now() - 3600000).toISOString(),
     updatedAt: new Date(Date.now() - 3600000).toISOString(),
     messageCount: 4,
   },
   {
-    __typename: 'Conversation' as const,
-    id: '3',
-    preview: 'Relaxing playlist recommendations',
+    __typename: "Conversation" as const,
+    id: "3",
+    preview: "Relaxing playlist recommendations",
     createdAt: new Date(Date.now() - 86400000).toISOString(),
     updatedAt: new Date(Date.now() - 86400000).toISOString(),
     messageCount: 6,
@@ -59,7 +59,7 @@ const mocks = [
     result: {
       data: {
         conversations: {
-          __typename: 'ConversationsList',
+          __typename: "ConversationsList",
           conversations: mockConversations,
           totalCount: mockConversations.length,
         },
@@ -76,7 +76,7 @@ const emptyMocks = [
     result: {
       data: {
         conversations: {
-          __typename: 'ConversationsList',
+          __typename: "ConversationsList",
           conversations: [],
           totalCount: 0,
         },
@@ -85,7 +85,7 @@ const emptyMocks = [
   },
 ];
 
-describe('ChatSidebar', () => {
+describe("ChatSidebar", () => {
   const defaultProps = {
     selectedId: null,
     onSelect: vi.fn(),
@@ -96,131 +96,142 @@ describe('ChatSidebar', () => {
     vi.clearAllMocks();
   });
 
-  it('renders conversation list', async () => {
+  it("renders conversation list", async () => {
     render(
       <MockedProvider mocks={mocks}>
         <ChatSidebar {...defaultProps} />
-      </MockedProvider>
+      </MockedProvider>,
     );
 
     // Wait for loading to complete
     await waitFor(() => {
-      expect(screen.getByText('Tell me about jazz music')).toBeInTheDocument();
+      expect(screen.getByText("Tell me about jazz music")).toBeInTheDocument();
     });
 
-    expect(screen.getByText('Find upbeat songs')).toBeInTheDocument();
-    expect(screen.getByText('Relaxing playlist recommendations')).toBeInTheDocument();
+    expect(screen.getByText("Find upbeat songs")).toBeInTheDocument();
+    expect(
+      screen.getByText("Relaxing playlist recommendations"),
+    ).toBeInTheDocument();
   });
 
-  it('renders empty state when no conversations', async () => {
+  it("renders empty state when no conversations", async () => {
     render(
       <MockedProvider mocks={emptyMocks}>
         <ChatSidebar {...defaultProps} />
-      </MockedProvider>
+      </MockedProvider>,
     );
 
     await waitFor(() => {
-      expect(screen.getByText('No conversations yet')).toBeInTheDocument();
+      expect(screen.getByText("No conversations yet")).toBeInTheDocument();
     });
 
-    expect(screen.getByText('Start a new chat to discover music')).toBeInTheDocument();
+    expect(
+      screen.getByText("Start a new chat to discover music"),
+    ).toBeInTheDocument();
   });
 
-  it('shows loading skeleton initially', () => {
+  it("shows loading skeleton initially", () => {
     render(
-      <MockedProvider mocks={mocks} >
+      <MockedProvider mocks={mocks}>
         <ChatSidebar {...defaultProps} />
-      </MockedProvider>
+      </MockedProvider>,
     );
 
     // Should show loading skeletons
-    const skeletons = document.querySelectorAll('.chat-sidebar__skeleton');
+    const skeletons = document.querySelectorAll(".chat-sidebar__skeleton");
     expect(skeletons.length).toBeGreaterThan(0);
   });
 
-  it('calls onSelect when conversation is clicked', async () => {
+  it("calls onSelect when conversation is clicked", async () => {
     const onSelect = vi.fn();
 
     render(
-      <MockedProvider mocks={mocks} >
+      <MockedProvider mocks={mocks}>
         <ChatSidebar {...defaultProps} onSelect={onSelect} />
-      </MockedProvider>
+      </MockedProvider>,
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Tell me about jazz music')).toBeInTheDocument();
+      expect(screen.getByText("Tell me about jazz music")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('Tell me about jazz music'));
-    expect(onSelect).toHaveBeenCalledWith('1');
+    fireEvent.click(screen.getByText("Tell me about jazz music"));
+    expect(onSelect).toHaveBeenCalledWith("1");
   });
 
-  it('highlights selected conversation', async () => {
+  it("highlights selected conversation", async () => {
     render(
-      <MockedProvider mocks={mocks} >
+      <MockedProvider mocks={mocks}>
         <ChatSidebar {...defaultProps} selectedId="2" />
-      </MockedProvider>
+      </MockedProvider>,
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Find upbeat songs')).toBeInTheDocument();
+      expect(screen.getByText("Find upbeat songs")).toBeInTheDocument();
     });
 
-    const selectedItem = screen.getByText('Find upbeat songs').closest('.chat-sidebar__item');
-    expect(selectedItem).toHaveClass('chat-sidebar__item--selected');
+    const selectedItem = screen
+      .getByText("Find upbeat songs")
+      .closest(".chat-sidebar__item");
+    expect(selectedItem).toHaveClass("chat-sidebar__item--selected");
   });
 
-  it('calls onSelect(null) when New Chat button is clicked', async () => {
+  it("calls onSelect(null) when New Chat button is clicked", async () => {
     const onSelect = vi.fn();
 
     render(
-      <MockedProvider mocks={mocks} >
+      <MockedProvider mocks={mocks}>
         <ChatSidebar {...defaultProps} selectedId="1" onSelect={onSelect} />
-      </MockedProvider>
+      </MockedProvider>,
     );
 
     await waitFor(() => {
-      expect(screen.getByText('+ New Chat')).toBeInTheDocument();
+      expect(screen.getByText("+ New Chat")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('+ New Chat'));
+    fireEvent.click(screen.getByText("+ New Chat"));
     expect(onSelect).toHaveBeenCalledWith(null);
   });
 
-  it('shows confirmation dialog when switching conversations during streaming', async () => {
+  it("shows confirmation dialog when switching conversations during streaming", async () => {
     const onSelect = vi.fn();
 
     render(
-      <MockedProvider mocks={mocks} >
-        <ChatSidebar {...defaultProps} selectedId="1" onSelect={onSelect} isStreaming={true} />
-      </MockedProvider>
+      <MockedProvider mocks={mocks}>
+        <ChatSidebar
+          {...defaultProps}
+          selectedId="1"
+          onSelect={onSelect}
+          isStreaming={true}
+        />
+      </MockedProvider>,
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Find upbeat songs')).toBeInTheDocument();
+      expect(screen.getByText("Find upbeat songs")).toBeInTheDocument();
     });
 
     // Click on a different conversation while streaming
-    fireEvent.click(screen.getByText('Find upbeat songs'));
+    fireEvent.click(screen.getByText("Find upbeat songs"));
 
     // Should show confirmation dialog
     await waitFor(() => {
-      expect(screen.getByText('Leave this page?')).toBeInTheDocument();
+      expect(screen.getByText("Leave this page?")).toBeInTheDocument();
     });
 
     // onSelect should not have been called yet
     expect(onSelect).not.toHaveBeenCalled();
   });
 
-  it('formats relative time correctly', async () => {
+  it("formats relative time correctly", async () => {
     render(
-      <MockedProvider mocks={mocks} >
+      <MockedProvider mocks={mocks}>
         <ChatSidebar {...defaultProps} />
-      </MockedProvider>
+      </MockedProvider>,
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Tell me about jazz music')).toBeInTheDocument();
+      expect(screen.getByText("Tell me about jazz music")).toBeInTheDocument();
     });
 
     // First conversation should show "Just now" or similar recent time

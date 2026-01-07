@@ -12,18 +12,18 @@
  * 0-11 = C, C#/Db, D, D#/Eb, E, F, F#/Gb, G, G#/Ab, A, A#/Bb, B
  */
 const KEY_NAMES = [
-  'C',
-  'C♯/D♭',
-  'D',
-  'D♯/E♭',
-  'E',
-  'F',
-  'F♯/G♭',
-  'G',
-  'G♯/A♭',
-  'A',
-  'A♯/B♭',
-  'B',
+  "C",
+  "C♯/D♭",
+  "D",
+  "D♯/E♭",
+  "E",
+  "F",
+  "F♯/G♭",
+  "G",
+  "G♯/A♭",
+  "A",
+  "A♯/B♭",
+  "B",
 ];
 
 /**
@@ -31,11 +31,11 @@ const KEY_NAMES = [
  */
 export function formatKey(key: number | null, mode: number | null): string {
   if (key === null || key < 0 || key > 11) {
-    return 'Unknown';
+    return "Unknown";
   }
 
   const keyName = KEY_NAMES[key];
-  const modeName = mode === 1 ? 'major' : mode === 0 ? 'minor' : '';
+  const modeName = mode === 1 ? "major" : mode === 0 ? "minor" : "";
 
   return modeName ? `${keyName} ${modeName}` : keyName;
 }
@@ -45,7 +45,7 @@ export function formatKey(key: number | null, mode: number | null): string {
  */
 export function formatPercentage(value: number | null): string {
   if (value === null) {
-    return '—';
+    return "—";
   }
   return `${Math.round(value * 100)}%`;
 }
@@ -55,7 +55,7 @@ export function formatPercentage(value: number | null): string {
  */
 export function formatTempo(tempo: number | null): string {
   if (tempo === null) {
-    return '—';
+    return "—";
   }
   return `${Math.round(tempo)} BPM`;
 }
@@ -65,7 +65,7 @@ export function formatTempo(tempo: number | null): string {
  */
 export function formatLoudness(loudness: number | null): string {
   if (loudness === null) {
-    return '—';
+    return "—";
   }
   return `${loudness.toFixed(1)} dB`;
 }
@@ -75,15 +75,15 @@ export function formatLoudness(loudness: number | null): string {
  */
 export function formatValence(valence: number | null): string {
   if (valence === null) {
-    return '—';
+    return "—";
   }
   if (valence >= 0.7) {
-    return 'Uplifting';
+    return "Uplifting";
   }
   if (valence >= 0.4) {
-    return 'Neutral';
+    return "Neutral";
   }
-  return 'Melancholic';
+  return "Melancholic";
 }
 
 /**
@@ -91,15 +91,15 @@ export function formatValence(valence: number | null): string {
  */
 export function getValenceEmoji(valence: number | null): string {
   if (valence === null) {
-    return '';
+    return "";
   }
   if (valence >= 0.7) {
-    return '☀️';
+    return "☀️";
   }
   if (valence >= 0.4) {
-    return '⛅';
+    return "⛅";
   }
-  return '🌧️';
+  return "🌧️";
 }
 
 /**
@@ -116,48 +116,48 @@ export interface AudioFeatureConfig {
  */
 export const AUDIO_FEATURE_CONFIGS: Record<string, AudioFeatureConfig> = {
   tempo: {
-    label: 'Tempo',
+    label: "Tempo",
     formatter: formatTempo,
-    description: 'Beats per minute',
+    description: "Beats per minute",
   },
   energy: {
-    label: 'Energy',
+    label: "Energy",
     formatter: formatPercentage,
-    description: 'Intensity and activity',
+    description: "Intensity and activity",
   },
   danceability: {
-    label: 'Danceability',
+    label: "Danceability",
     formatter: formatPercentage,
-    description: 'Suitability for dancing',
+    description: "Suitability for dancing",
   },
   valence: {
-    label: 'Mood',
+    label: "Mood",
     formatter: formatValence,
-    description: 'Musical positivity',
+    description: "Musical positivity",
   },
   acousticness: {
-    label: 'Acoustic',
+    label: "Acoustic",
     formatter: formatPercentage,
-    description: 'Acoustic vs electronic',
+    description: "Acoustic vs electronic",
   },
   instrumentalness: {
-    label: 'Instrumental',
+    label: "Instrumental",
     formatter: formatPercentage,
-    description: 'Likelihood of no vocals',
+    description: "Likelihood of no vocals",
   },
   liveness: {
-    label: 'Live',
+    label: "Live",
     formatter: formatPercentage,
-    description: 'Live audience presence',
+    description: "Live audience presence",
   },
   speechiness: {
-    label: 'Speech',
+    label: "Speech",
     formatter: formatPercentage,
-    description: 'Spoken word presence',
+    description: "Spoken word presence",
   },
   loudness: {
-    label: 'Loudness',
+    label: "Loudness",
     formatter: formatLoudness,
-    description: 'Average volume',
+    description: "Average volume",
   },
 };

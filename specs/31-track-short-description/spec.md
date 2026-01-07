@@ -5,7 +5,7 @@
 **Status**: Draft
 **Input**: User description: "Create a feature to extend track ingestion pipeline to also generate a 1 sentence short description of a track based on the generated interpretation. Use claude-haiku-4-5-20251001 to generate the sentence. Create a script to backfill the short description for already-ingested tracks. The short sentence will be used in vector search results to provide an agent with sufficient context about a track to determine whether it should fetch its full metadata."
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - Short Description Generation During Ingestion (Priority: P1)
 
@@ -83,7 +83,7 @@ As a developer debugging ingestion issues, I need the short description generati
 - **Track already has short description (re-ingestion)**: Overwrite with new description during upsert
 - **Backfill encounters API rate limits**: Apply exponential backoff and respect rate limits; progress resumes after cooldown
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -109,7 +109,7 @@ As a developer debugging ingestion issues, I need the short description generati
 - **Track Document** (extended): Existing track document schema extended with optional `short_description` field (string, nullable)
 - **Backfill State**: Tracks processing progress including last processed ISRC, completion status, and error counts for resumable execution
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 

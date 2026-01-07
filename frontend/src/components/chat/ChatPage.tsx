@@ -10,13 +10,15 @@
  * is not currently used in this app.
  */
 
-import { useState, useCallback } from 'react';
-import { ChatSidebar } from './ChatSidebar';
-import { ChatView } from './ChatView';
-import './ChatPage.css';
+import { useState, useCallback } from "react";
+import { ChatSidebar } from "./ChatSidebar";
+import { ChatView } from "./ChatView";
+import "./ChatPage.css";
 
 export function ChatPage() {
-  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [selectedConversationId, setSelectedConversationId] = useState<
+    string | null
+  >(null);
   const [isStreaming, setIsStreaming] = useState(false);
 
   // Handle conversation selection from sidebar

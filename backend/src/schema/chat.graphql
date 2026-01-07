@@ -12,19 +12,29 @@ A chat conversation between the user and the AI assistant.
 Sorted by most recent interaction when listed.
 """
 type Conversation {
-  """Unique identifier (UUID), also used as Langfuse session ID"""
+  """
+  Unique identifier (UUID), also used as Langfuse session ID
+  """
   id: ID!
 
-  """Preview text from first user message (truncated to ~50 chars)"""
+  """
+  Preview text from first user message (truncated to ~50 chars)
+  """
   preview: String!
 
-  """When the conversation was created"""
+  """
+  When the conversation was created
+  """
   createdAt: String!
 
-  """When the conversation was last updated (used for sorting)"""
+  """
+  When the conversation was last updated (used for sorting)
+  """
   updatedAt: String!
 
-  """Number of messages in the conversation"""
+  """
+  Number of messages in the conversation
+  """
   messageCount: Int!
 }
 
@@ -32,10 +42,14 @@ type Conversation {
 A single message within a conversation.
 """
 type ChatMessage {
-  """Unique identifier (UUID)"""
+  """
+  Unique identifier (UUID)
+  """
   id: ID!
 
-  """Who sent the message"""
+  """
+  Who sent the message
+  """
   role: MessageRole!
 
   """
@@ -45,7 +59,9 @@ type ChatMessage {
   """
   content: [ContentBlock!]!
 
-  """When the message was sent"""
+  """
+  When the message was sent
+  """
   createdAt: String!
 }
 
@@ -53,10 +69,14 @@ type ChatMessage {
 Message sender role.
 """
 enum MessageRole {
-  """Message from the user"""
+  """
+  Message from the user
+  """
   user
 
-  """Message from the AI assistant"""
+  """
+  Message from the AI assistant
+  """
   assistant
 }
 
@@ -64,22 +84,34 @@ enum MessageRole {
 Content block within a message. Discriminated union by type field.
 """
 type ContentBlock {
-  """Block type: 'text', 'tool_use', or 'tool_result'"""
+  """
+  Block type: 'text', 'tool_use', or 'tool_result'
+  """
   type: String!
 
-  """Text content (present when type='text')"""
+  """
+  Text content (present when type='text')
+  """
   text: String
 
-  """Tool call ID (present when type='tool_use' or 'tool_result')"""
+  """
+  Tool call ID (present when type='tool_use' or 'tool_result')
+  """
   toolId: String
 
-  """Tool name (present when type='tool_use')"""
+  """
+  Tool name (present when type='tool_use')
+  """
   toolName: String
 
-  """Tool input as JSON string (present when type='tool_use')"""
+  """
+  Tool input as JSON string (present when type='tool_use')
+  """
   toolInput: String
 
-  """Tool result as JSON string (present when type='tool_result')"""
+  """
+  Tool result as JSON string (present when type='tool_result')
+  """
   toolResult: String
 }
 
@@ -87,10 +119,14 @@ type ContentBlock {
 Full conversation with all messages.
 """
 type ConversationWithMessages {
-  """Conversation metadata"""
+  """
+  Conversation metadata
+  """
   conversation: Conversation!
 
-  """All messages in chronological order"""
+  """
+  All messages in chronological order
+  """
   messages: [ChatMessage!]!
 }
 
@@ -104,10 +140,14 @@ Result of listing conversations.
 union ConversationsResult = ConversationsList | ChatError
 
 type ConversationsList {
-  """List of conversations, sorted by most recent first"""
+  """
+  List of conversations, sorted by most recent first
+  """
   conversations: [Conversation!]!
 
-  """Total count of conversations"""
+  """
+  Total count of conversations
+  """
   totalCount: Int!
 }
 
@@ -122,10 +162,14 @@ Result of deleting a conversation.
 union DeleteConversationResult = DeleteSuccess | ChatError
 
 type DeleteSuccess {
-  """ID of the deleted conversation"""
+  """
+  ID of the deleted conversation
+  """
   deletedId: ID!
 
-  """Confirmation message"""
+  """
+  Confirmation message
+  """
   message: String!
 }
 
@@ -133,13 +177,19 @@ type DeleteSuccess {
 Error response for chat operations.
 """
 type ChatError {
-  """Error message for display"""
+  """
+  Error message for display
+  """
   message: String!
 
-  """Error code for programmatic handling"""
+  """
+  Error code for programmatic handling
+  """
   code: ChatErrorCode!
 
-  """Whether the operation can be retried"""
+  """
+  Whether the operation can be retried
+  """
   retryable: Boolean!
 }
 
@@ -147,19 +197,29 @@ type ChatError {
 Error codes for chat operations.
 """
 enum ChatErrorCode {
-  """Conversation not found"""
+  """
+  Conversation not found
+  """
   NOT_FOUND
 
-  """Cannot delete while response is being generated"""
+  """
+  Cannot delete while response is being generated
+  """
   OPERATION_IN_PROGRESS
 
-  """Database operation failed"""
+  """
+  Database operation failed
+  """
   DATABASE_ERROR
 
-  """Input validation failed"""
+  """
+  Input validation failed
+  """
   VALIDATION_ERROR
 
-  """Unexpected internal error"""
+  """
+  Unexpected internal error
+  """
   INTERNAL_ERROR
 }
 

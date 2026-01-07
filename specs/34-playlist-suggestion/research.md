@@ -68,6 +68,7 @@ const toolName = tool({
 ```
 
 **Alternatives Considered**:
+
 - Custom tool implementation outside SDK: Rejected - would bypass streaming, tracing, persistence infrastructure
 - Simplified tool without retry: Rejected - Tidal API calls may have transient failures
 
@@ -99,18 +100,21 @@ private async batchFetchAlbums(albumIds: string[], countryCode: string, token: s
 ```
 
 **Track Batch API**:
+
 - Endpoint: `GET /v2/tracks`
 - Query: `filter[isrc]=ISRC1,ISRC2,...&include=albums&countryCode=US`
 - Limit: 20 ISRCs per request (same as albums)
 - Returns: Track data with album relationships
 
 **Album Batch API**:
+
 - Endpoint: `GET /v2/albums`
 - Query: `filter[id]=ID1,ID2,...&include=artists,coverArt&countryCode=US`
 - Limit: 20 album IDs per request
 - Returns: Album data with artwork URLs (640x640 preferred, fallback to available)
 
 **Alternatives Considered**:
+
 - Single track lookups: Rejected - too many API calls for 50-track playlists
 - Parallel batch calls: Rejected - would bypass rate limiter, risk 429 errors
 - Pre-caching artwork: Rejected - over-engineering for current scale
@@ -126,14 +130,21 @@ private async batchFetchAlbums(albumIds: string[], countryCode: string, token: s
 **Artwork URL Pattern**:
 
 The Tidal API returns artwork files in the `included` resources:
+
 ```json
 {
   "type": "artworks",
   "id": "abc123",
   "attributes": {
     "files": [
-      { "href": "https://resources.tidal.com/images/.../160x160.jpg", "meta": { "width": 160, "height": 160 } },
-      { "href": "https://resources.tidal.com/images/.../640x640.jpg", "meta": { "width": 640, "height": 640 } }
+      {
+        "href": "https://resources.tidal.com/images/.../160x160.jpg",
+        "meta": { "width": 160, "height": 160 }
+      },
+      {
+        "href": "https://resources.tidal.com/images/.../640x640.jpg",
+        "meta": { "width": 640, "height": 640 }
+      }
     ]
   }
 }
@@ -142,6 +153,7 @@ The Tidal API returns artwork files in the `included` resources:
 **Implementation**: Find the 160x160 file, or fallback to the smallest available size.
 
 **Alternatives Considered**:
+
 - 640x640 with CSS scaling: Rejected - larger payload, slower SSE
 - Dynamic size selection: Rejected - over-engineering, 160px is fixed per spec
 
@@ -157,23 +169,29 @@ The Tidal API returns artwork files in the `included` resources:
 
 ```typescript
 type ToolCallStartEvent = {
-  type: 'tool_call_start';
+  type: "tool_call_start";
   toolCallId: string;
-  toolName: 'semanticSearch' | 'tidalSearch' | 'batchMetadata' | 'albumTracks' | 'suggestPlaylist';  // Add new
+  toolName:
+    | "semanticSearch"
+    | "tidalSearch"
+    | "batchMetadata"
+    | "albumTracks"
+    | "suggestPlaylist"; // Add new
   input: unknown;
 };
 
 type ToolCallEndEvent = {
-  type: 'tool_call_end';
+  type: "tool_call_end";
   toolCallId: string;
   summary: string;
   resultCount: number;
   durationMs: number;
-  output?: SuggestPlaylistOutput;  // New output type
+  output?: SuggestPlaylistOutput; // New output type
 };
 ```
 
 **Alternatives Considered**:
+
 - New event type `playlist_created`: Rejected - breaks consistency, requires frontend changes to SSE parser
 - Custom streaming (not SSE): Rejected - infrastructure already exists for SSE
 
@@ -189,12 +207,13 @@ type ToolCallEndEvent = {
 
 ```tsx
 // In ToolResultsRenderer
-if (toolName === 'suggestPlaylist' && 'playlist' in data) {
+if (toolName === "suggestPlaylist" && "playlist" in data) {
   return <PlaylistCard playlist={data.playlist} title={data.title} />;
 }
 ```
 
 **PlaylistCard Features**:
+
 - Title header
 - Track rows with 160x160 artwork (or placeholder)
 - Artist/title text
@@ -202,6 +221,7 @@ if (toolName === 'suggestPlaylist' && 'playlist' in data) {
 - Smooth accordion animation
 
 **Alternatives Considered**:
+
 - Extend generic ToolResultsRenderer: Rejected - too different from track/album lists, would bloat component
 - Separate rendering path in ChatMessage: Rejected - duplicates tool invocation state management
 
@@ -256,6 +276,7 @@ if (toolName === 'suggestPlaylist' && 'playlist' in data) {
 ```
 
 **Alternatives Considered**:
+
 - Store only agent input, fetch on load: Rejected - slow, may fail if Tidal unavailable
 - Store base64 encoded images: Rejected - massive payload size, impractical
 
@@ -286,6 +307,7 @@ if (toolName === 'suggestPlaylist' && 'playlist' in data) {
 ```
 
 **Alternatives Considered**:
+
 - Multiple retries: Rejected - increases latency, existing pattern uses single retry
 - Fail entire playlist on any error: Rejected - spec requires graceful degradation (FR-009, FR-016)
 
@@ -318,6 +340,7 @@ If a track cannot be found on Tidal, it will still appear with your provided tit
 ```
 
 **Alternatives Considered**:
+
 - Minimal description: Rejected - agent may misuse tool for search
 - Very detailed description: Rejected - token overhead, agent already understands tools
 
@@ -325,13 +348,13 @@ If a track cannot be found on Tidal, it will still appear with your provided tit
 
 ## Summary
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| Tool pattern | Reuse 011-agent-tools pattern | Consistency, infrastructure reuse |
-| Tidal batching | 20-ID chunks, sequential | API limit compliance, rate limiter |
-| Artwork size | 160x160px | Per spec clarification, balance quality/payload |
-| SSE events | Reuse existing types | No frontend parser changes needed |
-| Playlist display | New PlaylistCard component | Distinct UI from generic tool results |
-| Persistence | Store enriched data | Fast historical load, no re-fetch |
-| Retry strategy | Single retry, graceful fallback | Per spec FR-009a, never error on partial |
-| Agent description | Clear purpose, required fields | Prevent misuse as search tool |
+| Decision          | Choice                          | Rationale                                       |
+| ----------------- | ------------------------------- | ----------------------------------------------- |
+| Tool pattern      | Reuse 011-agent-tools pattern   | Consistency, infrastructure reuse               |
+| Tidal batching    | 20-ID chunks, sequential        | API limit compliance, rate limiter              |
+| Artwork size      | 160x160px                       | Per spec clarification, balance quality/payload |
+| SSE events        | Reuse existing types            | No frontend parser changes needed               |
+| Playlist display  | New PlaylistCard component      | Distinct UI from generic tool results           |
+| Persistence       | Store enriched data             | Fast historical load, no re-fetch               |
+| Retry strategy    | Single retry, graceful fallback | Per spec FR-009a, never error on partial        |
+| Agent description | Clear purpose, required fields  | Prevent misuse as search tool                   |

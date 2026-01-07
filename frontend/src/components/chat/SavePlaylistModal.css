@@ -78,7 +78,9 @@
   padding: 12px;
   font-size: 1rem;
   color: var(--color-text, #ffffff);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .save-playlist-modal__input:focus {
@@ -171,7 +173,9 @@
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.2s, border-color 0.2s;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
 }
 
 .save-playlist-modal__cancel-button:hover:not(:disabled) {
@@ -196,7 +200,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  transition: background 0.2s, opacity 0.2s;
+  transition:
+    background 0.2s,
+    opacity 0.2s;
 }
 
 .save-playlist-modal__save-button:hover:not(:disabled) {
@@ -322,7 +328,9 @@
   border-radius: 4px;
   font-size: 0.75rem;
   cursor: pointer;
-  transition: background 0.2s, border-color 0.2s;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
 }
 
 .save-playlist-modal__warning-cancel:hover {

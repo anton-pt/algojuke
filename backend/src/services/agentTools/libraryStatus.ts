@@ -7,10 +7,10 @@
  * Used by all agent tools that need to determine if tracks are in the user's library.
  */
 
-import { Repository } from 'typeorm';
-import { LibraryTrack } from '../../entities/LibraryTrack.js';
-import { LibraryAlbum, TrackInfo } from '../../entities/LibraryAlbum.js';
-import { logger } from '../../utils/logger.js';
+import { Repository } from "typeorm";
+import { LibraryTrack } from "../../entities/LibraryTrack.js";
+import { LibraryAlbum, TrackInfo } from "../../entities/LibraryAlbum.js";
+import { logger } from "../../utils/logger.js";
 
 /**
  * Check library status for a list of ISRCs
@@ -32,7 +32,7 @@ export async function getLibraryIsrcs(
   libraryTrackRepository: Repository<LibraryTrack>,
   libraryAlbumRepository: Repository<LibraryAlbum>,
   userId: string,
-  logContext: string = 'library_status'
+  logContext: string = "library_status",
 ): Promise<Set<string>> {
   const libraryIsrcs = new Set<string>();
 
@@ -46,9 +46,9 @@ export async function getLibraryIsrcs(
   try {
     // Check standalone library tracks
     const libraryTracks = await libraryTrackRepository
-      .createQueryBuilder('track')
-      .select(['track.metadata'])
-      .where('track.userId = :userId', { userId })
+      .createQueryBuilder("track")
+      .select(["track.metadata"])
+      .where("track.userId = :userId", { userId })
       .andWhere("track.metadata->>'isrc' IS NOT NULL")
       .getMany();
 
@@ -61,9 +61,9 @@ export async function getLibraryIsrcs(
 
     // Check album track listings
     const libraryAlbums = await libraryAlbumRepository
-      .createQueryBuilder('album')
-      .select(['album.trackListing'])
-      .where('album.userId = :userId', { userId })
+      .createQueryBuilder("album")
+      .select(["album.trackListing"])
+      .where("album.userId = :userId", { userId })
       .getMany();
 
     for (const album of libraryAlbums) {
@@ -103,7 +103,7 @@ export async function getLibraryAlbumIds(
   tidalAlbumIds: string[],
   libraryAlbumRepository: Repository<LibraryAlbum>,
   userId: string,
-  logContext: string = 'library_status'
+  logContext: string = "library_status",
 ): Promise<Set<string>> {
   const libraryAlbumIds = new Set<string>();
 
@@ -113,10 +113,10 @@ export async function getLibraryAlbumIds(
 
   try {
     const libraryAlbums = await libraryAlbumRepository
-      .createQueryBuilder('album')
-      .select(['album.tidalAlbumId'])
-      .where('album.userId = :userId', { userId })
-      .andWhere('album.tidalAlbumId IN (:...tidalAlbumIds)', { tidalAlbumIds })
+      .createQueryBuilder("album")
+      .select(["album.tidalAlbumId"])
+      .where("album.userId = :userId", { userId })
+      .andWhere("album.tidalAlbumId IN (:...tidalAlbumIds)", { tidalAlbumIds })
       .getMany();
 
     for (const album of libraryAlbums) {

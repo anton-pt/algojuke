@@ -9,7 +9,10 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { createZeroVector, EMBEDDING_DIMENSIONS } from "../../src/clients/tei.js";
+import {
+  createZeroVector,
+  EMBEDDING_DIMENSIONS,
+} from "../../src/clients/tei.js";
 import { ReccoBeatsAudioFeaturesResponseSchema } from "../../src/clients/reccobeats.js";
 import { MusixmatchLyricsResponseSchema } from "../../src/clients/musixmatch.js";
 
@@ -38,7 +41,7 @@ describe("Track Ingestion Missing Data Handling", () => {
         message: {
           header: {
             status_code: 200,
-            execute_time: 0.010,
+            execute_time: 0.01,
           },
           body: {
             lyrics: {
@@ -125,17 +128,17 @@ describe("Track Ingestion Missing Data Handling", () => {
           },
           {
             isrc: "USRC11700001",
-            acousticness: 0.30,
-            danceability: 0.70,
-            energy: 0.80,
+            acousticness: 0.3,
+            danceability: 0.7,
+            energy: 0.8,
             instrumentalness: 0.0,
             key: 9,
-            liveness: 0.10,
+            liveness: 0.1,
             loudness: -6.0,
             mode: 1,
             speechiness: 0.04,
             tempo: 113.0,
-            valence: 0.60,
+            valence: 0.6,
           },
         ],
       };

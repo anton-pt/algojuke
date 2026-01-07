@@ -5,7 +5,7 @@
 **Status**: Draft
 **Input**: User description: "User login with Google account via Clerk and ability to connect their Tidal account as a social connection with Tidal connection tokens stored in Clerk's private metadata. User signin flow that requires users to sign in with Google and then connect their Tidal account. Users must connect their Tidal account to use the application. A simple landing page explaining that AlgoJuke is an AI-powered music discovery service currently in private beta. Access is restricted to a hardcoded list of Google accounts which currently only includes anton.tcholakov@gmail.com. If another user signs in, don't allow them to connect their Tidal account and simply show them a page thanking them for their interest and notifying them that AlgoJuke is in private beta and they will be notified when access is more widely available."
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - Approved User Signs In and Connects Tidal (Priority: P1)
 
@@ -78,7 +78,7 @@ An approved user signs in with Google but does not complete the Tidal connection
 - What happens if a user's Google session expires? → User is redirected to sign in again with Google.
 - What happens if a non-approved user tries to directly access the Tidal connection endpoint? → They are blocked and shown the waitlist page.
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -110,7 +110,7 @@ An approved user signs in with Google but does not complete the Tidal connection
 - **Tidal Connection**: Represents the link between a user and their Tidal account, including access token, refresh token, and token expiration.
 - **Allowlist**: A configurable list of Google email addresses permitted to access the full application during private beta.
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 

@@ -7,20 +7,20 @@
  * Handles streaming responses and error display.
  */
 
-import { useEffect, useRef, useCallback } from 'react';
-import { useQuery } from '@apollo/client';
-import { useChatStream } from '../../hooks/useChatStream';
-import { useStreaming } from '../../contexts/StreamingContext';
-import { useTidalAuth } from '../../hooks/useTidalAuth';
+import { useEffect, useRef, useCallback } from "react";
+import { useQuery } from "@apollo/client";
+import { useChatStream } from "../../hooks/useChatStream";
+import { useStreaming } from "../../contexts/StreamingContext";
+import { useTidalAuth } from "../../hooks/useTidalAuth";
 import {
   GET_CONVERSATION,
   GetConversationData,
   GetConversationVars,
   isConversationWithMessages,
-} from '../../graphql/chat';
-import { ChatMessage } from './ChatMessage';
-import { ChatInput } from './ChatInput';
-import './ChatView.css';
+} from "../../graphql/chat";
+import { ChatMessage } from "./ChatMessage";
+import { ChatInput } from "./ChatInput";
+import "./ChatView.css";
 
 interface ChatViewProps {
   /** Optional conversation ID to load */
@@ -84,19 +84,21 @@ export function ChatView({
     propsConversationId &&
     !isStreaming &&
     !isLocalConversationRef.current &&
-    propsConversationId !== lastFetchedIdRef.current
+    propsConversationId !== lastFetchedIdRef.current,
   );
 
   // Detect if we're transitioning between states
   // Use lastFetchedIdRef to know if we've actually loaded the target conversation
-  const isTransitioningToNewChat = propsConversationId === null &&
+  const isTransitioningToNewChat =
+    propsConversationId === null &&
     (conversationId !== null || messages.length > 0);
 
   // We're loading a different conversation if:
   // - propsConversationId is set
   // - It's different from what we've actually loaded (lastFetchedIdRef)
   // - We're not in a locally-created conversation
-  const needsToLoadConversation = propsConversationId !== null &&
+  const needsToLoadConversation =
+    propsConversationId !== null &&
     propsConversationId !== lastFetchedIdRef.current &&
     !isLocalConversationRef.current;
 
@@ -109,7 +111,7 @@ export function ChatView({
   >(GET_CONVERSATION, {
     variables: { id: propsConversationId! },
     skip: !shouldFetch,
-    fetchPolicy: 'network-only',
+    fetchPolicy: "network-only",
     onCompleted: (data) => {
       if (isConversationWithMessages(data.conversation)) {
         lastFetchedIdRef.current = data.conversation.conversation.id;
@@ -123,7 +125,11 @@ export function ChatView({
   // This happens when conversationId changes but doesn't match propsConversationId
   // (meaning it wasn't loaded from sidebar, but created by sending a message)
   useEffect(() => {
-    if (conversationId && conversationId !== propsConversationId && !isLocalConversationRef.current) {
+    if (
+      conversationId &&
+      conversationId !== propsConversationId &&
+      !isLocalConversationRef.current
+    ) {
       isLocalConversationRef.current = true;
     }
   }, [conversationId, propsConversationId]);
@@ -132,7 +138,11 @@ export function ChatView({
   // IMPORTANT: Only notify parent when isLocalConversationRef is true
   // This prevents loops when switching between existing conversations
   useEffect(() => {
-    if (conversationId && onConversationChange && isLocalConversationRef.current) {
+    if (
+      conversationId &&
+      onConversationChange &&
+      isLocalConversationRef.current
+    ) {
       onConversationChange(conversationId);
     }
   }, [conversationId, onConversationChange]);
@@ -152,7 +162,10 @@ export function ChatView({
 
     // Skip if parent is just syncing to a conversation we created locally
     // (This happens when onConversationChange notifies parent of new streaming conversation)
-    if (isLocalConversationRef.current && propsConversationId === conversationId) {
+    if (
+      isLocalConversationRef.current &&
+      propsConversationId === conversationId
+    ) {
       lastProcessedPropsIdRef.current = propsConversationId;
       return;
     }
@@ -172,12 +185,18 @@ export function ChatView({
     isLocalConversationRef.current = false;
     setMessages([]);
     setConversationId(propsConversationId ?? null);
-  }, [propsConversationId, conversationId, clearChat, setConversationId, setMessages]);
+  }, [
+    propsConversationId,
+    conversationId,
+    clearChat,
+    setConversationId,
+    setMessages,
+  ]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
 
@@ -195,13 +214,13 @@ export function ChatView({
 
     if (currentCount > prevCount && currentCount > 0) {
       const lastMessage = messages[currentCount - 1];
-      if (lastMessage.role === 'assistant') {
+      if (lastMessage.role === "assistant") {
         // Announce assistant response (truncate if too long)
-        const text = lastMessage.content[0]?.text || 'New response received';
-        const truncated = text.length > 100 ? text.slice(0, 100) + '...' : text;
+        const text = lastMessage.content[0]?.text || "New response received";
+        const truncated = text.length > 100 ? text.slice(0, 100) + "..." : text;
         announceNewMessage(`Assistant: ${truncated}`);
-      } else if (lastMessage.role === 'user') {
-        announceNewMessage('Message sent');
+      } else if (lastMessage.role === "user") {
+        announceNewMessage("Message sent");
       }
     }
 
@@ -215,12 +234,13 @@ export function ChatView({
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
       // Modern browsers require returnValue to show the dialog
-      e.returnValue = 'A response is being generated. Are you sure you want to leave?';
+      e.returnValue =
+        "A response is being generated. Are you sure you want to leave?";
       return e.returnValue;
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [isStreaming]);
 
   // Show loading state when we need to load a conversation that isn't loaded yet
@@ -257,7 +277,11 @@ export function ChatView({
         aria-live="polite"
         aria-atomic="true"
       />
-      <div className="chat-view__messages" role="log" aria-label="Chat messages">
+      <div
+        className="chat-view__messages"
+        role="log"
+        aria-label="Chat messages"
+      >
         {messages.length === 0 || isTransitioningToNewChat ? (
           <div className="chat-view__empty">
             <div className="chat-view__empty-icon">
@@ -267,7 +291,8 @@ export function ChatView({
             </div>
             <h2 className="chat-view__empty-title">Start a conversation</h2>
             <p className="chat-view__empty-text">
-              Describe the mood, theme, or feeling you're looking for, and I'll help you discover music from your library.
+              Describe the mood, theme, or feeling you're looking for, and I'll
+              help you discover music from your library.
             </p>
             <div className="chat-view__empty-examples">
               <p className="chat-view__empty-examples-label">Try asking:</p>
@@ -282,12 +307,15 @@ export function ChatView({
           <>
             {messages.map((message, index) => {
               // Only pass streaming props to the last assistant message (the one being streamed)
-              const isLastAssistant = message.role === 'assistant' && index === messages.length - 1;
+              const isLastAssistant =
+                message.role === "assistant" && index === messages.length - 1;
               return (
                 <ChatMessage
                   key={message.id}
                   message={message}
-                  toolInvocations={isLastAssistant ? toolInvocations : undefined}
+                  toolInvocations={
+                    isLastAssistant ? toolInvocations : undefined
+                  }
                   streamingParts={isLastAssistant ? streamingParts : undefined}
                   hasTidalConnection={hasTidalConnection}
                 />
@@ -301,7 +329,9 @@ export function ChatView({
         {isStreaming && messages.length > 0 && !isTransitioning && (
           <div className="chat-view__streaming-indicator">
             <span className="chat-view__streaming-dot" />
-            <span className="chat-view__streaming-text">Generating response...</span>
+            <span className="chat-view__streaming-text">
+              Generating response...
+            </span>
           </div>
         )}
 
@@ -315,7 +345,7 @@ export function ChatView({
                 onClick={() => {
                   const lastUserMessage = [...messages]
                     .reverse()
-                    .find((m) => m.role === 'user');
+                    .find((m) => m.role === "user");
                   if (lastUserMessage?.content[0]?.text) {
                     sendMessage(lastUserMessage.content[0].text);
                   }

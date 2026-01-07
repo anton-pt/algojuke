@@ -60,7 +60,7 @@ describe("IngestionScheduler", () => {
     mockSendEvent = inngestClient.sendTrackIngestionEvent as Mock;
 
     scheduler = new IngestionScheduler(
-      mockQdrantClient as unknown as BackendQdrantClient
+      mockQdrantClient as unknown as BackendQdrantClient,
     );
   });
 
@@ -81,12 +81,14 @@ describe("IngestionScheduler", () => {
       // Verify result structure
       expect(result).toBeDefined();
       expect(typeof result.scheduled).toBe("boolean");
-      expect(result.reason === undefined || typeof result.reason === "string").toBe(true);
+      expect(
+        result.reason === undefined || typeof result.reason === "string",
+      ).toBe(true);
     });
 
     test("returns scheduled: true for new tracks", async () => {
       mockQdrantClient.checkTracksExist.mockResolvedValue(
-        new Map([["USRC11700001", false]])
+        new Map([["USRC11700001", false]]),
       );
 
       const result = await scheduler.scheduleTrack({
@@ -102,7 +104,7 @@ describe("IngestionScheduler", () => {
 
     test("returns scheduled: false with reason for already indexed tracks", async () => {
       mockQdrantClient.checkTracksExist.mockResolvedValue(
-        new Map([["USRC11700001", true]])
+        new Map([["USRC11700001", true]]),
       );
 
       const result = await scheduler.scheduleTrack({
@@ -118,7 +120,7 @@ describe("IngestionScheduler", () => {
 
     test("sends event to Inngest when track is not indexed", async () => {
       mockQdrantClient.checkTracksExist.mockResolvedValue(
-        new Map([["USRC11700001", false]])
+        new Map([["USRC11700001", false]]),
       );
 
       await scheduler.scheduleTrack({
@@ -138,7 +140,7 @@ describe("IngestionScheduler", () => {
 
     test("does not send event when track is already indexed", async () => {
       mockQdrantClient.checkTracksExist.mockResolvedValue(
-        new Map([["USRC11700001", true]])
+        new Map([["USRC11700001", true]]),
       );
 
       await scheduler.scheduleTrack({
@@ -181,7 +183,7 @@ describe("IngestionScheduler", () => {
         new Map([
           ["USRC11700001", false],
           ["USRC11700002", false],
-        ])
+        ]),
       );
 
       const result = await scheduler.scheduleAlbumTracks({
@@ -204,7 +206,7 @@ describe("IngestionScheduler", () => {
         new Map([
           ["USRC11700001", true], // Already indexed
           ["USRC11700002", false], // New
-        ])
+        ]),
       );
 
       const result = await scheduler.scheduleAlbumTracks({
@@ -262,7 +264,7 @@ describe("IngestionScheduler", () => {
       expect(mockSendEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           isrc: "USRC11700001",
-        })
+        }),
       );
     });
 
@@ -279,7 +281,7 @@ describe("IngestionScheduler", () => {
       expect(mockSendEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           isrc: "USRC11700001",
-        })
+        }),
       );
     });
   });
@@ -290,7 +292,7 @@ describe("IngestionScheduler", () => {
   describe("Duplicate Detection (US3 T030)", () => {
     test("returns already_indexed when track exists in Qdrant", async () => {
       mockQdrantClient.checkTracksExist.mockResolvedValue(
-        new Map([["USRC11700001", true]])
+        new Map([["USRC11700001", true]]),
       );
 
       const result = await scheduler.scheduleTrack({
@@ -306,7 +308,7 @@ describe("IngestionScheduler", () => {
 
     test("does not call Inngest when track exists", async () => {
       mockQdrantClient.checkTracksExist.mockResolvedValue(
-        new Map([["USRC11700001", true]])
+        new Map([["USRC11700001", true]]),
       );
 
       await scheduler.scheduleTrack({
@@ -363,7 +365,7 @@ describe("IngestionScheduler", () => {
   describe("Fail-Open on Qdrant Error (US5 T036)", () => {
     test("returns empty map on Qdrant error and proceeds with scheduling", async () => {
       mockQdrantClient.checkTracksExist.mockRejectedValue(
-        new Error("Qdrant unavailable")
+        new Error("Qdrant unavailable"),
       );
       // Ensure Inngest mock is ready to receive the call
       mockSendEvent.mockResolvedValue(undefined);
@@ -384,7 +386,7 @@ describe("IngestionScheduler", () => {
     test("logs Qdrant error when fail-open triggers", async () => {
       const { logger } = await import("../../src/utils/logger.js");
       mockQdrantClient.checkTracksExist.mockRejectedValue(
-        new Error("Connection timeout")
+        new Error("Connection timeout"),
       );
 
       await scheduler.scheduleTrack({
@@ -441,7 +443,7 @@ describe("IngestionScheduler", () => {
       expect(logger.ingestionSkipped).toHaveBeenCalledWith(
         "",
         "Test Track",
-        "missing_isrc"
+        "missing_isrc",
       );
     });
 
@@ -458,7 +460,7 @@ describe("IngestionScheduler", () => {
       expect(logger.ingestionSkipped).toHaveBeenCalledWith(
         "BAD",
         "Test Track",
-        "invalid_isrc"
+        "invalid_isrc",
       );
     });
   });

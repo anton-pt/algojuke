@@ -91,7 +91,7 @@ describe("withTraceContext", () => {
     expect(() =>
       withTraceContext(context, () => {
         throw new Error("test error");
-      })
+      }),
     ).toThrow("test error");
   });
 });

@@ -7,168 +7,168 @@
  * Written FIRST per Constitution Principle I (Test-First Development).
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from "vitest";
 import {
   SuggestPlaylistInputSchema,
   PlaylistInputTrackSchema,
   ToolName,
-} from '../../../src/schemas/agentTools.js';
+} from "../../../src/schemas/agentTools.js";
 import type {
   SuggestPlaylistOutput,
   EnrichedPlaylistTrack,
-} from '../../../src/types/agentTools.js';
+} from "../../../src/types/agentTools.js";
 
 // -----------------------------------------------------------------------------
 // T008: Contract test for SuggestPlaylistInputSchema validation
 // -----------------------------------------------------------------------------
 
-describe('PlaylistInputTrackSchema', () => {
+describe("PlaylistInputTrackSchema", () => {
   const validTrack = {
-    isrc: 'USRC12345678',
-    title: 'Test Track',
-    artist: 'Test Artist',
-    reasoning: 'This track fits the mood perfectly',
+    isrc: "USRC12345678",
+    title: "Test Track",
+    artist: "Test Artist",
+    reasoning: "This track fits the mood perfectly",
   };
 
-  it('validates a complete valid track', () => {
+  it("validates a complete valid track", () => {
     const result = PlaylistInputTrackSchema.safeParse(validTrack);
     expect(result.success).toBe(true);
   });
 
-  it('rejects empty ISRC', () => {
+  it("rejects empty ISRC", () => {
     const result = PlaylistInputTrackSchema.safeParse({
       ...validTrack,
-      isrc: '',
+      isrc: "",
     });
     expect(result.success).toBe(false);
   });
 
-  it('rejects invalid ISRC format (too short)', () => {
+  it("rejects invalid ISRC format (too short)", () => {
     const result = PlaylistInputTrackSchema.safeParse({
       ...validTrack,
-      isrc: 'ABC123',
+      isrc: "ABC123",
     });
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues[0].message).toContain('ISRC');
+      expect(result.error.issues[0].message).toContain("ISRC");
     }
   });
 
-  it('rejects invalid ISRC format (too long)', () => {
+  it("rejects invalid ISRC format (too long)", () => {
     const result = PlaylistInputTrackSchema.safeParse({
       ...validTrack,
-      isrc: 'USRC1234567890',
+      isrc: "USRC1234567890",
     });
     expect(result.success).toBe(false);
   });
 
-  it('rejects ISRC with special characters', () => {
+  it("rejects ISRC with special characters", () => {
     const result = PlaylistInputTrackSchema.safeParse({
       ...validTrack,
-      isrc: 'USRC-1234567',
+      isrc: "USRC-1234567",
     });
     expect(result.success).toBe(false);
   });
 
-  it('accepts lowercase ISRCs (case insensitive)', () => {
+  it("accepts lowercase ISRCs (case insensitive)", () => {
     const result = PlaylistInputTrackSchema.safeParse({
       ...validTrack,
-      isrc: 'usrc12345678',
+      isrc: "usrc12345678",
     });
     expect(result.success).toBe(true);
   });
 
-  it('rejects empty title', () => {
+  it("rejects empty title", () => {
     const result = PlaylistInputTrackSchema.safeParse({
       ...validTrack,
-      title: '',
+      title: "",
     });
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues[0].message).toContain('empty');
+      expect(result.error.issues[0].message).toContain("empty");
     }
   });
 
-  it('rejects title over 500 characters', () => {
+  it("rejects title over 500 characters", () => {
     const result = PlaylistInputTrackSchema.safeParse({
       ...validTrack,
-      title: 'x'.repeat(501),
+      title: "x".repeat(501),
     });
     expect(result.success).toBe(false);
   });
 
-  it('rejects empty artist', () => {
+  it("rejects empty artist", () => {
     const result = PlaylistInputTrackSchema.safeParse({
       ...validTrack,
-      artist: '',
+      artist: "",
     });
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues[0].message).toContain('empty');
+      expect(result.error.issues[0].message).toContain("empty");
     }
   });
 
-  it('rejects artist over 500 characters', () => {
+  it("rejects artist over 500 characters", () => {
     const result = PlaylistInputTrackSchema.safeParse({
       ...validTrack,
-      artist: 'x'.repeat(501),
+      artist: "x".repeat(501),
     });
     expect(result.success).toBe(false);
   });
 
-  it('rejects empty reasoning', () => {
+  it("rejects empty reasoning", () => {
     const result = PlaylistInputTrackSchema.safeParse({
       ...validTrack,
-      reasoning: '',
+      reasoning: "",
     });
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues[0].message).toContain('empty');
+      expect(result.error.issues[0].message).toContain("empty");
     }
   });
 
-  it('rejects reasoning over 1000 characters', () => {
+  it("rejects reasoning over 1000 characters", () => {
     const result = PlaylistInputTrackSchema.safeParse({
       ...validTrack,
-      reasoning: 'x'.repeat(1001),
+      reasoning: "x".repeat(1001),
     });
     expect(result.success).toBe(false);
   });
 
-  it('accepts reasoning at exactly 1000 characters', () => {
+  it("accepts reasoning at exactly 1000 characters", () => {
     const result = PlaylistInputTrackSchema.safeParse({
       ...validTrack,
-      reasoning: 'x'.repeat(1000),
+      reasoning: "x".repeat(1000),
     });
     expect(result.success).toBe(true);
   });
 });
 
-describe('SuggestPlaylistInputSchema', () => {
+describe("SuggestPlaylistInputSchema", () => {
   const validTrack = {
-    isrc: 'USRC12345678',
-    title: 'Test Track',
-    artist: 'Test Artist',
-    reasoning: 'This track fits the mood perfectly',
+    isrc: "USRC12345678",
+    title: "Test Track",
+    artist: "Test Artist",
+    reasoning: "This track fits the mood perfectly",
   };
 
   const validInput = {
-    title: 'My Awesome Playlist',
+    title: "My Awesome Playlist",
     tracks: [validTrack],
   };
 
-  it('validates minimal valid input (1 track)', () => {
+  it("validates minimal valid input (1 track)", () => {
     const result = SuggestPlaylistInputSchema.safeParse(validInput);
     expect(result.success).toBe(true);
   });
 
-  it('validates input with multiple tracks', () => {
+  it("validates input with multiple tracks", () => {
     const result = SuggestPlaylistInputSchema.safeParse({
-      title: 'Multi-Track Playlist',
+      title: "Multi-Track Playlist",
       tracks: [
         validTrack,
-        { ...validTrack, isrc: 'GBAYE9876543' },
-        { ...validTrack, isrc: 'FRXYZ1234567' },
+        { ...validTrack, isrc: "GBAYE9876543" },
+        { ...validTrack, isrc: "FRXYZ1234567" },
       ],
     });
     expect(result.success).toBe(true);
@@ -177,51 +177,51 @@ describe('SuggestPlaylistInputSchema', () => {
     }
   });
 
-  it('rejects empty title', () => {
+  it("rejects empty title", () => {
     const result = SuggestPlaylistInputSchema.safeParse({
       ...validInput,
-      title: '',
+      title: "",
     });
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues[0].message).toContain('empty');
+      expect(result.error.issues[0].message).toContain("empty");
     }
   });
 
-  it('rejects title over 200 characters', () => {
+  it("rejects title over 200 characters", () => {
     const result = SuggestPlaylistInputSchema.safeParse({
       ...validInput,
-      title: 'x'.repeat(201),
+      title: "x".repeat(201),
     });
     expect(result.success).toBe(false);
   });
 
-  it('accepts title at exactly 200 characters', () => {
+  it("accepts title at exactly 200 characters", () => {
     const result = SuggestPlaylistInputSchema.safeParse({
       ...validInput,
-      title: 'x'.repeat(200),
+      title: "x".repeat(200),
     });
     expect(result.success).toBe(true);
   });
 
-  it('rejects empty tracks array', () => {
+  it("rejects empty tracks array", () => {
     const result = SuggestPlaylistInputSchema.safeParse({
       ...validInput,
       tracks: [],
     });
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues[0].message).toContain('at least 1');
+      expect(result.error.issues[0].message).toContain("at least 1");
     }
   });
 
-  it('accepts 50 tracks (maximum)', () => {
+  it("accepts 50 tracks (maximum)", () => {
     const tracks = Array.from({ length: 50 }, (_, i) => ({
       ...validTrack,
-      isrc: `USRC${String(i).padStart(8, '0')}`,
+      isrc: `USRC${String(i).padStart(8, "0")}`,
     }));
     const result = SuggestPlaylistInputSchema.safeParse({
-      title: 'Big Playlist',
+      title: "Big Playlist",
       tracks,
     });
     expect(result.success).toBe(true);
@@ -230,25 +230,25 @@ describe('SuggestPlaylistInputSchema', () => {
     }
   });
 
-  it('rejects more than 50 tracks', () => {
+  it("rejects more than 50 tracks", () => {
     const tracks = Array.from({ length: 51 }, (_, i) => ({
       ...validTrack,
-      isrc: `USRC${String(i).padStart(8, '0')}`,
+      isrc: `USRC${String(i).padStart(8, "0")}`,
     }));
     const result = SuggestPlaylistInputSchema.safeParse({
-      title: 'Too Big Playlist',
+      title: "Too Big Playlist",
       tracks,
     });
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues[0].message).toContain('50');
+      expect(result.error.issues[0].message).toContain("50");
     }
   });
 
-  it('rejects tracks with invalid ISRC', () => {
+  it("rejects tracks with invalid ISRC", () => {
     const result = SuggestPlaylistInputSchema.safeParse({
       ...validInput,
-      tracks: [{ ...validTrack, isrc: 'invalid' }],
+      tracks: [{ ...validTrack, isrc: "invalid" }],
     });
     expect(result.success).toBe(false);
   });
@@ -258,35 +258,35 @@ describe('SuggestPlaylistInputSchema', () => {
 // T009: Contract test for SuggestPlaylistOutput structure
 // -----------------------------------------------------------------------------
 
-describe('SuggestPlaylistOutput structure', () => {
+describe("SuggestPlaylistOutput structure", () => {
   // Type-level tests to ensure the interface is correctly defined
-  it('has required fields for EnrichedPlaylistTrack', () => {
+  it("has required fields for EnrichedPlaylistTrack", () => {
     const track: EnrichedPlaylistTrack = {
-      isrc: 'USRC12345678',
-      title: 'Test Track',
-      artist: 'Test Artist',
-      album: 'Test Album',
-      artworkUrl: 'https://example.com/art.jpg',
+      isrc: "USRC12345678",
+      title: "Test Track",
+      artist: "Test Artist",
+      album: "Test Album",
+      artworkUrl: "https://example.com/art.jpg",
       duration: 180,
-      reasoning: 'Great track',
+      reasoning: "Great track",
       enriched: true,
-      tidalId: '12345678',
+      tidalId: "12345678",
     };
 
-    expect(track.isrc).toBe('USRC12345678');
+    expect(track.isrc).toBe("USRC12345678");
     expect(track.enriched).toBe(true);
-    expect(track.tidalId).toBe('12345678');
+    expect(track.tidalId).toBe("12345678");
   });
 
-  it('allows null values for optional enrichment fields', () => {
+  it("allows null values for optional enrichment fields", () => {
     const unenrichedTrack: EnrichedPlaylistTrack = {
-      isrc: 'USRC12345678',
-      title: 'Fallback Title',
-      artist: 'Fallback Artist',
+      isrc: "USRC12345678",
+      title: "Fallback Title",
+      artist: "Fallback Artist",
       album: null,
       artworkUrl: null,
       duration: null,
-      reasoning: 'Track not found on Tidal',
+      reasoning: "Track not found on Tidal",
       enriched: false,
       tidalId: null,
     };
@@ -298,31 +298,31 @@ describe('SuggestPlaylistOutput structure', () => {
     expect(unenrichedTrack.tidalId).toBeNull();
   });
 
-  it('has required fields for SuggestPlaylistOutput', () => {
+  it("has required fields for SuggestPlaylistOutput", () => {
     const output: SuggestPlaylistOutput = {
       summary: "Created playlist 'Test' with 2 tracks",
       durationMs: 1500,
-      title: 'Test Playlist',
+      title: "Test Playlist",
       tracks: [
         {
-          isrc: 'USRC12345678',
-          title: 'Track 1',
-          artist: 'Artist 1',
-          album: 'Album 1',
-          artworkUrl: 'https://example.com/art1.jpg',
+          isrc: "USRC12345678",
+          title: "Track 1",
+          artist: "Artist 1",
+          album: "Album 1",
+          artworkUrl: "https://example.com/art1.jpg",
           duration: 180,
-          reasoning: 'Great opener',
+          reasoning: "Great opener",
           enriched: true,
-          tidalId: '11111111',
+          tidalId: "11111111",
         },
         {
-          isrc: 'GBAYE9876543',
-          title: 'Track 2',
-          artist: 'Artist 2',
+          isrc: "GBAYE9876543",
+          title: "Track 2",
+          artist: "Artist 2",
           album: null,
           artworkUrl: null,
           duration: null,
-          reasoning: 'Hidden gem',
+          reasoning: "Hidden gem",
           enriched: false,
           tidalId: null,
         },
@@ -334,20 +334,20 @@ describe('SuggestPlaylistOutput structure', () => {
       },
     };
 
-    expect(output.summary).toContain('Test');
+    expect(output.summary).toContain("Test");
     expect(output.durationMs).toBeGreaterThan(0);
-    expect(output.title).toBe('Test Playlist');
+    expect(output.title).toBe("Test Playlist");
     expect(output.tracks).toHaveLength(2);
     expect(output.stats.totalTracks).toBe(2);
     expect(output.stats.enrichedTracks).toBe(1);
     expect(output.stats.failedTracks).toBe(1);
   });
 
-  it('stats sum correctly', () => {
+  it("stats sum correctly", () => {
     const output: SuggestPlaylistOutput = {
-      summary: 'Test',
+      summary: "Test",
       durationMs: 1000,
-      title: 'Test',
+      title: "Test",
       tracks: [],
       stats: {
         totalTracks: 5,
@@ -357,7 +357,7 @@ describe('SuggestPlaylistOutput structure', () => {
     };
 
     expect(output.stats.enrichedTracks + output.stats.failedTracks).toBe(
-      output.stats.totalTracks
+      output.stats.totalTracks,
     );
   });
 });
@@ -366,43 +366,44 @@ describe('SuggestPlaylistOutput structure', () => {
 // T042: Contract test for partial enrichment output structure (Phase 6)
 // -----------------------------------------------------------------------------
 
-describe('Partial enrichment output structure', () => {
-  it('correctly represents partially enriched playlist', () => {
+describe("Partial enrichment output structure", () => {
+  it("correctly represents partially enriched playlist", () => {
     const partialOutput: SuggestPlaylistOutput = {
-      summary: "Created playlist 'Underground Gems' with 3 tracks (2 without artwork)",
+      summary:
+        "Created playlist 'Underground Gems' with 3 tracks (2 without artwork)",
       durationMs: 2456,
-      title: 'Underground Gems',
+      title: "Underground Gems",
       tracks: [
         {
-          isrc: 'USRC12345678',
-          title: 'Known Track',
-          artist: 'Known Artist',
-          album: 'Known Album',
-          artworkUrl: 'https://resources.tidal.com/images/xyz/160x160.jpg',
+          isrc: "USRC12345678",
+          title: "Known Track",
+          artist: "Known Artist",
+          album: "Known Album",
+          artworkUrl: "https://resources.tidal.com/images/xyz/160x160.jpg",
           duration: 245,
-          reasoning: 'Great indie vibes',
+          reasoning: "Great indie vibes",
           enriched: true,
-          tidalId: '45678901',
+          tidalId: "45678901",
         },
         {
-          isrc: 'ZZUN00000001',
-          title: 'Obscure Track',
-          artist: 'Underground Artist',
+          isrc: "ZZUN00000001",
+          title: "Obscure Track",
+          artist: "Underground Artist",
           album: null,
           artworkUrl: null,
           duration: null,
-          reasoning: 'Hidden gem from the underground scene',
+          reasoning: "Hidden gem from the underground scene",
           enriched: false,
           tidalId: null,
         },
         {
-          isrc: 'ZZUN00000002',
-          title: 'Another Obscure Track',
-          artist: 'Another Underground Artist',
+          isrc: "ZZUN00000002",
+          title: "Another Obscure Track",
+          artist: "Another Underground Artist",
           album: null,
           artworkUrl: null,
           duration: null,
-          reasoning: 'Raw and authentic sound',
+          reasoning: "Raw and authentic sound",
           enriched: false,
           tidalId: null,
         },
@@ -441,11 +442,11 @@ describe('Partial enrichment output structure', () => {
     });
   });
 
-  it('summary reflects partial enrichment status', () => {
+  it("summary reflects partial enrichment status", () => {
     const partialOutput: SuggestPlaylistOutput = {
       summary: "Created playlist 'Test' with 5 tracks (2 without artwork)",
       durationMs: 1000,
-      title: 'Test',
+      title: "Test",
       tracks: [],
       stats: {
         totalTracks: 5,
@@ -454,7 +455,7 @@ describe('Partial enrichment output structure', () => {
       },
     };
 
-    expect(partialOutput.summary).toContain('without artwork');
+    expect(partialOutput.summary).toContain("without artwork");
     expect(partialOutput.stats.failedTracks).toBeGreaterThan(0);
   });
 });
@@ -463,18 +464,18 @@ describe('Partial enrichment output structure', () => {
 // ToolName enum extension verification
 // -----------------------------------------------------------------------------
 
-describe('ToolName enum includes suggestPlaylist', () => {
-  it('includes suggestPlaylist in tool names', () => {
+describe("ToolName enum includes suggestPlaylist", () => {
+  it("includes suggestPlaylist in tool names", () => {
     const names = ToolName.options;
-    expect(names).toContain('suggestPlaylist');
+    expect(names).toContain("suggestPlaylist");
   });
 
-  it('validates suggestPlaylist as valid tool name', () => {
-    const result = ToolName.safeParse('suggestPlaylist');
+  it("validates suggestPlaylist as valid tool name", () => {
+    const result = ToolName.safeParse("suggestPlaylist");
     expect(result.success).toBe(true);
   });
 
-  it('has correct total count of tool names', () => {
+  it("has correct total count of tool names", () => {
     const names = ToolName.options;
     expect(names).toHaveLength(5); // semanticSearch, tidalSearch, batchMetadata, albumTracks, suggestPlaylist
   });

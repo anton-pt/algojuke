@@ -8,12 +8,12 @@
  * Uses virtualization for performance with large lists (50+ conversations).
  */
 
-import { useMemo, useCallback, useRef, useEffect, useState } from 'react';
-import { useMutation } from '@apollo/client';
-import { List } from 'react-window';
-import type { CSSProperties, ReactElement } from 'react';
-import { toast } from 'sonner';
-import { useConversations } from '../../hooks/useConversations';
+import { useMemo, useCallback, useRef, useEffect, useState } from "react";
+import { useMutation } from "@apollo/client";
+import { List } from "react-window";
+import type { CSSProperties, ReactElement } from "react";
+import { toast } from "sonner";
+import { useConversations } from "../../hooks/useConversations";
 import {
   DELETE_CONVERSATION,
   DeleteConversationData,
@@ -21,9 +21,9 @@ import {
   GET_CONVERSATIONS,
   Conversation,
   isDeleteSuccess,
-} from '../../graphql/chat';
-import { LeaveConfirmDialog } from './LeaveConfirmDialog';
-import './ChatSidebar.css';
+} from "../../graphql/chat";
+import { LeaveConfirmDialog } from "./LeaveConfirmDialog";
+import "./ChatSidebar.css";
 
 /** Threshold for enabling virtualization */
 const VIRTUALIZATION_THRESHOLD = 50;
@@ -51,12 +51,12 @@ function formatRelativeTime(isoString: string): string {
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMins < 1) return 'Just now';
+  if (diffMins < 1) return "Just now";
   if (diffMins < 60) return `${diffMins}m ago`;
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays < 7) return `${diffDays}d ago`;
 
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
 /**
@@ -81,20 +81,24 @@ function ConversationItem({
 }: ConversationItemProps) {
   return (
     <div
-      className={`chat-sidebar__item ${isSelected ? 'chat-sidebar__item--selected' : ''}`}
+      className={`chat-sidebar__item ${isSelected ? "chat-sidebar__item--selected" : ""}`}
       onClick={() => onSelect(conversation.id)}
       role="listitem"
       tabIndex={0}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
+        if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           onSelect(conversation.id);
         }
       }}
     >
       <div className="chat-sidebar__item-content">
-        <span className="chat-sidebar__item-preview">{conversation.preview}</span>
-        <span className="chat-sidebar__item-time">{formatRelativeTime(conversation.updatedAt)}</span>
+        <span className="chat-sidebar__item-preview">
+          {conversation.preview}
+        </span>
+        <span className="chat-sidebar__item-time">
+          {formatRelativeTime(conversation.updatedAt)}
+        </span>
       </div>
       <button
         className="chat-sidebar__item-delete"
@@ -128,9 +132,9 @@ interface VirtualizedRowComponentProps extends VirtualizedRowProps {
   index: number;
   style: CSSProperties;
   ariaAttributes: {
-    'aria-posinset': number;
-    'aria-setsize': number;
-    role: 'listitem';
+    "aria-posinset": number;
+    "aria-setsize": number;
+    role: "listitem";
   };
 }
 
@@ -160,13 +164,20 @@ function VirtualizedRow({
   );
 }
 
-export function ChatSidebar({ selectedId, onSelect, isStreaming = false }: ChatSidebarProps) {
-  const { conversations, loading, error, retryable, refetch } = useConversations();
+export function ChatSidebar({
+  selectedId,
+  onSelect,
+  isStreaming = false,
+}: ChatSidebarProps) {
+  const { conversations, loading, error, retryable, refetch } =
+    useConversations();
   const listContainerRef = useRef<HTMLDivElement>(null);
   const [listHeight, setListHeight] = useState(400);
 
   // Confirmation dialog for switching conversations during streaming
-  const [pendingAction, setPendingAction] = useState<{ type: 'select'; id: string } | { type: 'new' } | null>(null);
+  const [pendingAction, setPendingAction] = useState<
+    { type: "select"; id: string } | { type: "new" } | null
+  >(null);
 
   const [deleteConversation, { loading: deleting }] = useMutation<
     DeleteConversationData,
@@ -182,7 +193,7 @@ export function ChatSidebar({ selectedId, onSelect, isStreaming = false }: ChatS
       }
     },
     onError: (error) => {
-      toast.error('Failed to delete conversation', {
+      toast.error("Failed to delete conversation", {
         description: error.message,
       });
     },
@@ -191,7 +202,8 @@ export function ChatSidebar({ selectedId, onSelect, isStreaming = false }: ChatS
   // Sort conversations by updatedAt descending
   const sortedConversations = useMemo(() => {
     return [...conversations].sort(
-      (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      (a, b) =>
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
     );
   }, [conversations]);
 
@@ -205,7 +217,7 @@ export function ChatSidebar({ selectedId, onSelect, isStreaming = false }: ChatS
 
       deleteConversation({ variables: { id: conversation.id } });
     },
-    [isStreaming, selectedId, deleteConversation]
+    [isStreaming, selectedId, deleteConversation],
   );
 
   // Handle selection - show confirmation if streaming on a different conversation
@@ -216,13 +228,13 @@ export function ChatSidebar({ selectedId, onSelect, isStreaming = false }: ChatS
 
       // If streaming, show confirmation dialog
       if (isStreaming) {
-        setPendingAction({ type: 'select', id });
+        setPendingAction({ type: "select", id });
         return;
       }
 
       onSelect(id);
     },
-    [onSelect, selectedId, isStreaming]
+    [onSelect, selectedId, isStreaming],
   );
 
   // Handle new chat click - show confirmation if streaming
@@ -232,7 +244,7 @@ export function ChatSidebar({ selectedId, onSelect, isStreaming = false }: ChatS
 
     // If streaming, show confirmation dialog
     if (isStreaming) {
-      setPendingAction({ type: 'new' });
+      setPendingAction({ type: "new" });
       return;
     }
 
@@ -247,7 +259,7 @@ export function ChatSidebar({ selectedId, onSelect, isStreaming = false }: ChatS
   // Handle confirmation dialog - leave
   const handleLeave = useCallback(() => {
     if (pendingAction) {
-      if (pendingAction.type === 'select') {
+      if (pendingAction.type === "select") {
         onSelect(pendingAction.id);
       } else {
         onSelect(null);
@@ -284,11 +296,19 @@ export function ChatSidebar({ selectedId, onSelect, isStreaming = false }: ChatS
       onSelect: handleSelect,
       onDelete: handleDelete,
     }),
-    [sortedConversations, selectedId, isStreaming, deleting, handleSelect, handleDelete]
+    [
+      sortedConversations,
+      selectedId,
+      isStreaming,
+      deleting,
+      handleSelect,
+      handleDelete,
+    ],
   );
 
   // Determine if we should use virtualization
-  const useVirtualization = sortedConversations.length >= VIRTUALIZATION_THRESHOLD;
+  const useVirtualization =
+    sortedConversations.length >= VIRTUALIZATION_THRESHOLD;
 
   return (
     <aside className="chat-sidebar">
@@ -326,7 +346,9 @@ export function ChatSidebar({ selectedId, onSelect, isStreaming = false }: ChatS
         {!loading && !error && sortedConversations.length === 0 && (
           <div className="chat-sidebar__empty">
             <p>No conversations yet</p>
-            <p className="chat-sidebar__empty-hint">Start a new chat to discover music</p>
+            <p className="chat-sidebar__empty-hint">
+              Start a new chat to discover music
+            </p>
           </div>
         )}
 

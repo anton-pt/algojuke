@@ -32,9 +32,12 @@ export const TrackIngestionRequestedEventSchema = z.object({
   /**
    * ISO 3901 ISRC (12 alphanumeric characters)
    */
-  isrc: z.string().length(12).regex(/^[A-Z0-9]{12}$/i, {
-    message: "ISRC must be 12 alphanumeric characters",
-  }),
+  isrc: z
+    .string()
+    .length(12)
+    .regex(/^[A-Z0-9]{12}$/i, {
+      message: "ISRC must be 12 alphanumeric characters",
+    }),
 
   /**
    * Track title from Tidal API
@@ -112,7 +115,7 @@ export const inngest = new Inngest({
  * @returns Promise<void>
  */
 export async function sendTrackIngestionEvent(
-  data: TrackIngestionRequestedEvent
+  data: TrackIngestionRequestedEvent,
 ): Promise<void> {
   await inngest.send({
     name: "track/ingestion.requested",

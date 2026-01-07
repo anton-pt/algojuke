@@ -4,9 +4,9 @@
  * Provides middleware for protecting routes and checking user authorization.
  */
 
-import { clerkMiddleware, getAuth, clerkClient } from '@clerk/express';
-import type { Request, Response, NextFunction } from 'express';
-import { isApprovedUser } from '../config/allowlist.js';
+import { clerkMiddleware, getAuth, clerkClient } from "@clerk/express";
+import type { Request, Response, NextFunction } from "express";
+import { isApprovedUser } from "../config/allowlist.js";
 
 /**
  * Initialize Clerk middleware for Express
@@ -26,14 +26,14 @@ export { clerkClient };
 export function requireAuth(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void {
   const auth = getAuth(req);
 
   if (!auth?.userId) {
     res.status(401).json({
-      error: 'unauthorized',
-      message: 'Authentication required',
+      error: "unauthorized",
+      message: "Authentication required",
     });
     return;
   }
@@ -48,14 +48,14 @@ export function requireAuth(
 export async function requireApproved(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   const auth = getAuth(req);
 
   if (!auth?.userId) {
     res.status(401).json({
-      error: 'unauthorized',
-      message: 'Authentication required',
+      error: "unauthorized",
+      message: "Authentication required",
     });
     return;
   }
@@ -66,18 +66,18 @@ export async function requireApproved(
 
     if (!email || !isApprovedUser(email)) {
       res.status(403).json({
-        error: 'forbidden',
-        message: 'User not approved for beta access',
+        error: "forbidden",
+        message: "User not approved for beta access",
       });
       return;
     }
 
     next();
   } catch (error) {
-    console.error('Error checking user approval:', error);
+    console.error("Error checking user approval:", error);
     res.status(500).json({
-      error: 'internal_error',
-      message: 'Failed to verify user status',
+      error: "internal_error",
+      message: "Failed to verify user status",
     });
   }
 }

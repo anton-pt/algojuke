@@ -104,7 +104,7 @@ describe("VectorSearchResultSchema", () => {
   it("should validate valid search result", () => {
     const validResult = {
       resultCount: 5,
-      topScores: [0.95, 0.87, 0.82, 0.75, 0.70],
+      topScores: [0.95, 0.87, 0.82, 0.75, 0.7],
       resultIds: ["id1", "id2", "id3", "id4", "id5"],
     };
 

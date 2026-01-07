@@ -7,12 +7,15 @@
  * Allows users to rename the playlist before saving.
  */
 
-import { useState, useEffect, useRef } from 'react';
-import type { TrackForExport, ExportPlaylistResult } from '../../types/playlist';
-import './SavePlaylistModal.css';
+import { useState, useEffect, useRef } from "react";
+import type {
+  TrackForExport,
+  ExportPlaylistResult,
+} from "../../types/playlist";
+import "./SavePlaylistModal.css";
 
 // Re-export for consumers
-export type { TrackForExport } from '../../types/playlist';
+export type { TrackForExport } from "../../types/playlist";
 
 // Alias for backward compatibility
 export type ExportSuccessResult = ExportPlaylistResult;
@@ -55,7 +58,7 @@ export function SavePlaylistModal({
   const [showCancelWarning, setShowCancelWarning] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
-  const modalId = 'save-playlist-modal';
+  const modalId = "save-playlist-modal";
   const titleId = `${modalId}-title`;
 
   // Reset name and warning when modal opens or defaultName changes
@@ -94,13 +97,13 @@ export function SavePlaylistModal({
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         handleCancelAttempt();
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, isLoading, onCancel]);
 
   // Focus trap
@@ -109,13 +112,13 @@ export function SavePlaylistModal({
 
     const modal = modalRef.current;
     const focusableElements = modal.querySelectorAll<HTMLElement>(
-      'input:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      'input:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])',
     );
     const firstElement = focusableElements[0];
     const lastElement = focusableElements[focusableElements.length - 1];
 
     const handleTab = (e: KeyboardEvent) => {
-      if (e.key !== 'Tab') return;
+      if (e.key !== "Tab") return;
 
       if (e.shiftKey) {
         if (document.activeElement === firstElement) {
@@ -130,8 +133,8 @@ export function SavePlaylistModal({
       }
     };
 
-    modal.addEventListener('keydown', handleTab);
-    return () => modal.removeEventListener('keydown', handleTab);
+    modal.addEventListener("keydown", handleTab);
+    return () => modal.removeEventListener("keydown", handleTab);
   }, [isOpen]);
 
   if (!isOpen) {
@@ -152,7 +155,7 @@ export function SavePlaylistModal({
 
     const trimmedName = name.trim();
     if (!trimmedName) {
-      setValidationError('Playlist name is required');
+      setValidationError("Playlist name is required");
       return;
     }
 
@@ -161,12 +164,14 @@ export function SavePlaylistModal({
 
   const handleBlur = () => {
     if (!name.trim()) {
-      setValidationError('Playlist name is required');
+      setValidationError("Playlist name is required");
     }
   };
 
-  const isRetryableError = errorCode === 'rate_limit_exceeded' || errorCode === 'tidal_unavailable';
-  const isAuthError = errorCode === 'no_tidal_connection' || errorCode === 'token_refresh_failed';
+  const isRetryableError =
+    errorCode === "rate_limit_exceeded" || errorCode === "tidal_unavailable";
+  const isAuthError =
+    errorCode === "no_tidal_connection" || errorCode === "token_refresh_failed";
   const trackCount = tracks.length;
   const characterCount = name.length;
   const isApproachingLimit = characterCount >= 140;
@@ -186,19 +191,22 @@ export function SavePlaylistModal({
         </h2>
 
         <p className="save-playlist-modal__track-count">
-          {trackCount} {trackCount === 1 ? 'track' : 'tracks'}
+          {trackCount} {trackCount === 1 ? "track" : "tracks"}
         </p>
 
         <form onSubmit={handleSubmit} className="save-playlist-modal__form">
           <div className="save-playlist-modal__field">
-            <label htmlFor="playlist-name" className="save-playlist-modal__label">
+            <label
+              htmlFor="playlist-name"
+              className="save-playlist-modal__label"
+            >
               Playlist Name
             </label>
             <input
               ref={inputRef}
               id="playlist-name"
               type="text"
-              className={`save-playlist-modal__input ${validationError ? 'save-playlist-modal__input--error' : ''}`}
+              className={`save-playlist-modal__input ${validationError ? "save-playlist-modal__input--error" : ""}`}
               value={name}
               onChange={handleNameChange}
               onBlur={handleBlur}
@@ -210,13 +218,17 @@ export function SavePlaylistModal({
             <div className="save-playlist-modal__input-meta">
               <span
                 id="name-hint"
-                className={`save-playlist-modal__char-count ${isApproachingLimit ? 'save-playlist-modal__char-count--warning' : ''}`}
+                className={`save-playlist-modal__char-count ${isApproachingLimit ? "save-playlist-modal__char-count--warning" : ""}`}
               >
                 {characterCount} / {MAX_NAME_LENGTH}
               </span>
             </div>
             {validationError && (
-              <span id="name-error" className="save-playlist-modal__error" role="alert">
+              <span
+                id="name-error"
+                className="save-playlist-modal__error"
+                role="alert"
+              >
                 {validationError}
               </span>
             )}
@@ -224,7 +236,9 @@ export function SavePlaylistModal({
 
           {error && !successResult && (
             <div className="save-playlist-modal__api-error" role="alert">
-              <span className="save-playlist-modal__error-message">{error}</span>
+              <span className="save-playlist-modal__error-message">
+                {error}
+              </span>
               {isRetryableError && (
                 <button
                   type="submit"
@@ -244,14 +258,22 @@ export function SavePlaylistModal({
 
           {successResult && (
             <div className="save-playlist-modal__success" role="status">
-              <svg className="save-playlist-modal__success-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <svg
+                className="save-playlist-modal__success-icon"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+              >
                 <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
               </svg>
               <span className="save-playlist-modal__success-message">
-                Saved '{successResult.playlistName}' with {successResult.tracksAdded} {successResult.tracksAdded === 1 ? 'track' : 'tracks'}
+                Saved '{successResult.playlistName}' with{" "}
+                {successResult.tracksAdded}{" "}
+                {successResult.tracksAdded === 1 ? "track" : "tracks"}
                 {successResult.tracksSkipped > 0 && (
                   <span className="save-playlist-modal__skipped-info">
-                    {' '}({successResult.tracksSkipped} unavailable)
+                    {" "}
+                    ({successResult.tracksSkipped} unavailable)
                   </span>
                 )}
               </span>
@@ -298,11 +320,15 @@ export function SavePlaylistModal({
             >
               {isLoading ? (
                 <>
-                  <span className="save-playlist-modal__spinner" role="progressbar" aria-label="Saving" />
+                  <span
+                    className="save-playlist-modal__spinner"
+                    role="progressbar"
+                    aria-label="Saving"
+                  />
                   Saving...
                 </>
               ) : (
-                'Save'
+                "Save"
               )}
             </button>
           </div>

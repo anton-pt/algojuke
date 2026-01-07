@@ -112,7 +112,13 @@ async function main() {
   searchSpan.end({
     resultCount: 15,
     topScores: [0.95, 0.92, 0.89, 0.87, 0.85],
-    resultIds: ["track-101", "track-102", "track-103", "track-104", "track-105"],
+    resultIds: [
+      "track-101",
+      "track-102",
+      "track-103",
+      "track-104",
+      "track-105",
+    ],
   });
   console.log("  ✓ Found 15 similar tracks");
 
@@ -142,7 +148,11 @@ async function main() {
     body: {
       tracks: [
         { id: "track-101", title: "Midnight Jazz", artist: "Blue Note Trio" },
-        { id: "track-102", title: "Electric Dreams", artist: "Synth Collective" },
+        {
+          id: "track-102",
+          title: "Electric Dreams",
+          artist: "Synth Collective",
+        },
         { id: "track-103", title: "Calm Waters", artist: "Ambient Orchestra" },
       ],
     },

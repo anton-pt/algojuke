@@ -2,7 +2,7 @@
  * Structured logging utility for API calls, errors, and cache operations
  */
 
-type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+type LogLevel = "debug" | "info" | "warn" | "error";
 
 interface LogContext {
   [key: string]: unknown;
@@ -12,7 +12,7 @@ class Logger {
   private isDevelopment: boolean;
 
   constructor() {
-    this.isDevelopment = process.env.NODE_ENV === 'development';
+    this.isDevelopment = process.env.NODE_ENV === "development";
   }
 
   private log(level: LogLevel, message: string, context?: LogContext): void {
@@ -26,9 +26,9 @@ class Logger {
 
     // In development, use pretty printing
     if (this.isDevelopment) {
-      console[level === 'error' || level === 'warn' ? level : 'log'](
+      console[level === "error" || level === "warn" ? level : "log"](
         `[${timestamp}] ${level.toUpperCase()}: ${message}`,
-        context || ''
+        context || "",
       );
     } else {
       // In production, use JSON for log aggregation
@@ -38,34 +38,34 @@ class Logger {
 
   debug(message: string, context?: LogContext): void {
     if (this.isDevelopment) {
-      this.log('debug', message, context);
+      this.log("debug", message, context);
     }
   }
 
   info(message: string, context?: LogContext): void {
-    this.log('info', message, context);
+    this.log("info", message, context);
   }
 
   warn(message: string, context?: LogContext): void {
-    this.log('warn', message, context);
+    this.log("warn", message, context);
   }
 
   error(message: string, context?: LogContext): void {
-    this.log('error', message, context);
+    this.log("error", message, context);
   }
 
   // Convenience methods for common scenarios
   searchRequest(query: string, limit: number, offset: number): void {
-    this.info('search_request', { query, limit, offset });
+    this.info("search_request", { query, limit, offset });
   }
 
   searchResponse(
     query: string,
     albumCount: number,
     trackCount: number,
-    cached: boolean
+    cached: boolean,
   ): void {
-    this.info('search_response', {
+    this.info("search_response", {
       query,
       albumCount,
       trackCount,
@@ -74,23 +74,23 @@ class Logger {
   }
 
   cacheHit(key: string): void {
-    this.debug('cache_hit', { key });
+    this.debug("cache_hit", { key });
   }
 
   cacheMiss(key: string): void {
-    this.debug('cache_miss', { key });
+    this.debug("cache_miss", { key });
   }
 
   cacheSet(key: string, ttl: number): void {
-    this.debug('cache_set', { key, ttl });
+    this.debug("cache_set", { key, ttl });
   }
 
   apiCall(endpoint: string, method: string): void {
-    this.info('api_call', { endpoint, method });
+    this.info("api_call", { endpoint, method });
   }
 
   apiError(endpoint: string, status: number, error: string): void {
-    this.error('api_error', { endpoint, status, error });
+    this.error("api_error", { endpoint, status, error });
   }
 
   // ============================================================================
@@ -103,12 +103,12 @@ class Logger {
   ingestionScheduled(
     isrc: string,
     trackTitle: string,
-    durationMs: number
+    durationMs: number,
   ): void {
-    this.info('ingestion_scheduled', {
+    this.info("ingestion_scheduled", {
       isrc,
       trackTitle,
-      result: 'success',
+      result: "success",
       durationMs,
     });
   }
@@ -119,12 +119,12 @@ class Logger {
   ingestionSkipped(
     isrc: string,
     trackTitle: string | undefined,
-    reason: 'already_indexed' | 'missing_isrc' | 'invalid_isrc'
+    reason: "already_indexed" | "missing_isrc" | "invalid_isrc",
   ): void {
-    this.info('ingestion_skipped', {
+    this.info("ingestion_skipped", {
       isrc,
       trackTitle,
-      result: 'skipped',
+      result: "skipped",
       reason,
     });
   }
@@ -136,12 +136,12 @@ class Logger {
     isrc: string | undefined,
     trackTitle: string | undefined,
     error: string,
-    durationMs?: number
+    durationMs?: number,
   ): void {
-    this.error('ingestion_error', {
+    this.error("ingestion_error", {
       isrc,
       trackTitle,
-      result: 'error',
+      result: "error",
       error,
       durationMs,
     });
@@ -155,9 +155,9 @@ class Logger {
     totalTracks: number,
     scheduledCount: number,
     skippedCount: number,
-    durationMs: number
+    durationMs: number,
   ): void {
-    this.info('album_ingestion_batch', {
+    this.info("album_ingestion_batch", {
       albumTitle,
       totalTracks,
       scheduledCount,
@@ -170,7 +170,7 @@ class Logger {
    * Log album track listing error
    */
   albumTrackListingError(albumTitle: string, error: string): void {
-    this.error('album_track_listing_error', {
+    this.error("album_track_listing_error", {
       albumTitle,
       error,
     });
@@ -180,7 +180,7 @@ class Logger {
    * Log Qdrant check error (fail-open scenario)
    */
   qdrantCheckError(isrcCount: number, error: string): void {
-    this.warn('qdrant_check_error', {
+    this.warn("qdrant_check_error", {
       isrcCount,
       error,
     });
@@ -190,7 +190,7 @@ class Logger {
    * Log Inngest send error
    */
   inngestSendError(isrc: string, error: string): void {
-    this.error('inngest_send_error', {
+    this.error("inngest_send_error", {
       isrc,
       error,
     });

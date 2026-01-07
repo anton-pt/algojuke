@@ -6,7 +6,7 @@
  * for authentication and Tidal connection endpoints.
  */
 
-import { z } from 'zod';
+import { z } from "zod";
 
 // ============================================================================
 // Request Schemas
@@ -17,10 +17,10 @@ import { z } from 'zod';
  * POST /api/auth/tidal/tokens
  */
 export const TidalTokensInputSchema = z.object({
-  accessToken: z.string().min(1, 'Access token is required'),
-  refreshToken: z.string().min(1, 'Refresh token is required'),
-  expiresAt: z.number().positive('Expiration must be a positive timestamp'),
-  scopes: z.array(z.string()).min(1, 'At least one scope is required'),
+  accessToken: z.string().min(1, "Access token is required"),
+  refreshToken: z.string().min(1, "Refresh token is required"),
+  expiresAt: z.number().positive("Expiration must be a positive timestamp"),
+  scopes: z.array(z.string()).min(1, "At least one scope is required"),
 });
 
 export type TidalTokensInput = z.infer<typeof TidalTokensInputSchema>;
@@ -105,12 +105,12 @@ export type TidalTokens = z.infer<typeof TidalTokensSchema>;
  * Required Tidal OAuth scopes
  */
 export const REQUIRED_TIDAL_SCOPES = [
-  'collection.read',
-  'playlists.read',
-  'playlists.write',
-  'recommendations.read',
-  'search.read',
-  'user.read',
+  "collection.read",
+  "playlists.read",
+  "playlists.write",
+  "recommendations.read",
+  "search.read",
+  "user.read",
 ] as const;
 
 export type TidalScope = (typeof REQUIRED_TIDAL_SCOPES)[number];
@@ -119,7 +119,5 @@ export type TidalScope = (typeof REQUIRED_TIDAL_SCOPES)[number];
  * Validate that all required scopes are present
  */
 export function hasRequiredScopes(scopes: string[]): boolean {
-  return REQUIRED_TIDAL_SCOPES.every((required) =>
-    scopes.includes(required)
-  );
+  return REQUIRED_TIDAL_SCOPES.every((required) => scopes.includes(required));
 }

@@ -6,19 +6,27 @@
  * Hook for exporting playlists to Tidal via GraphQL mutation.
  */
 
-import { useState, useCallback } from 'react';
-import { useMutation, gql } from '@apollo/client';
+import { useState, useCallback } from "react";
+import { useMutation, gql } from "@apollo/client";
 import type {
   TrackForExport,
   ExportPlaylistResult,
   PlaylistExportError,
-} from '../types/playlist';
+} from "../types/playlist";
 
 // Re-export types for consumers
-export type { TrackForExport, SkippedTrack, ExportPlaylistResult, PlaylistExportError } from '../types/playlist';
+export type {
+  TrackForExport,
+  SkippedTrack,
+  ExportPlaylistResult,
+  PlaylistExportError,
+} from "../types/playlist";
 
 export interface UsePlaylistExportReturn {
-  exportPlaylist: (name: string, tracks: TrackForExport[]) => Promise<ExportPlaylistResult | null>;
+  exportPlaylist: (
+    name: string,
+    tracks: TrackForExport[],
+  ) => Promise<ExportPlaylistResult | null>;
   isLoading: boolean;
   error: PlaylistExportError | null;
   result: ExportPlaylistResult | null;
@@ -80,10 +88,15 @@ export function usePlaylistExport(): UsePlaylistExportReturn {
   const [error, setError] = useState<PlaylistExportError | null>(null);
   const [result, setResult] = useState<ExportPlaylistResult | null>(null);
 
-  const [mutate, { loading: isLoading }] = useMutation(EXPORT_PLAYLIST_MUTATION);
+  const [mutate, { loading: isLoading }] = useMutation(
+    EXPORT_PLAYLIST_MUTATION,
+  );
 
   const exportPlaylist = useCallback(
-    async (name: string, tracks: TrackForExport[]): Promise<ExportPlaylistResult | null> => {
+    async (
+      name: string,
+      tracks: TrackForExport[],
+    ): Promise<ExportPlaylistResult | null> => {
       setError(null);
       setResult(null);
 
@@ -105,14 +118,14 @@ export function usePlaylistExport(): UsePlaylistExportReturn {
 
         if (!data) {
           setError({
-            code: 'unknown_error',
-            message: 'No response from server',
+            code: "unknown_error",
+            message: "No response from server",
           });
           return null;
         }
 
         // Use __typename for robust type discrimination
-        if (data.__typename === 'ExportPlaylistSuccess') {
+        if (data.__typename === "ExportPlaylistSuccess") {
           const successResult: ExportPlaylistResult = {
             playlistId: data.playlistId,
             playlistName: data.playlistName,
@@ -127,11 +140,11 @@ export function usePlaylistExport(): UsePlaylistExportReturn {
         // All error types have __typename, code, and message
         const errorTypename = data.__typename;
         if (
-          errorTypename === 'NoTidalConnectionError' ||
-          errorTypename === 'TokenRefreshFailedError' ||
-          errorTypename === 'NoTracksAvailableError' ||
-          errorTypename === 'PlaylistCreationFailedError' ||
-          errorTypename === 'PlaylistValidationError'
+          errorTypename === "NoTidalConnectionError" ||
+          errorTypename === "TokenRefreshFailedError" ||
+          errorTypename === "NoTracksAvailableError" ||
+          errorTypename === "PlaylistCreationFailedError" ||
+          errorTypename === "PlaylistValidationError"
         ) {
           const errorResult: PlaylistExportError = {
             code: data.code,
@@ -145,22 +158,23 @@ export function usePlaylistExport(): UsePlaylistExportReturn {
 
         // Unexpected response type
         setError({
-          code: 'unknown_error',
+          code: "unknown_error",
           message: `Unexpected response type: ${data.__typename}`,
         });
         return null;
       } catch (err) {
         // Network or GraphQL error
-        const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+        const errorMessage =
+          err instanceof Error ? err.message : "An error occurred";
         setError({
-          code: 'network_error',
+          code: "network_error",
           message: errorMessage,
           retryable: true,
         });
         return null;
       }
     },
-    [mutate]
+    [mutate],
   );
 
   const clearError = useCallback(() => {

@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import type { DiscoveryResult } from '../../graphql/discovery';
-import './DiscoveryTrackItem.css';
+import { useState } from "react";
+import type { DiscoveryResult } from "../../graphql/discovery";
+import "./DiscoveryTrackItem.css";
 
 /**
  * Individual track item in discovery results
@@ -29,7 +29,7 @@ export function DiscoveryTrackItem({
   const showPlaceholder = imageError || !track.artworkUrl;
 
   return (
-    <div className={`discovery-track-item ${isExpanded ? 'expanded' : ''}`}>
+    <div className={`discovery-track-item ${isExpanded ? "expanded" : ""}`}>
       <button
         className="discovery-track-header"
         onClick={onClick}
@@ -59,7 +59,7 @@ export function DiscoveryTrackItem({
         </div>
 
         <div className="discovery-track-expand-icon" aria-hidden="true">
-          {isExpanded ? '▲' : '▼'}
+          {isExpanded ? "▲" : "▼"}
         </div>
       </button>
 

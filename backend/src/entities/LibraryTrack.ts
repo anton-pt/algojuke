@@ -1,4 +1,4 @@
-import 'reflect-metadata';
+import "reflect-metadata";
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -6,35 +6,40 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Index,
-} from 'typeorm';
+} from "typeorm";
 
-@Entity('library_tracks')
-@Index(['tidalTrackId', 'userId'], { unique: true })  // Composite unique - per-user
-@Index(['userId'])
-@Index(['artistName', 'title'])
+@Entity("library_tracks")
+@Index(["tidalTrackId", "userId"], { unique: true }) // Composite unique - per-user
+@Index(["userId"])
+@Index(["artistName", "title"])
 export class LibraryTrack {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column({ name: 'tidal_track_id', type: 'varchar', length: 255 })  // Removed unique: true
+  @Column({ name: "tidal_track_id", type: "varchar", length: 255 }) // Removed unique: true
   tidalTrackId!: string;
 
-  @Column({ type: 'varchar', length: 255 })
+  @Column({ type: "varchar", length: 255 })
   title!: string;
 
-  @Column({ name: 'artist_name', type: 'varchar', length: 255 })
+  @Column({ name: "artist_name", type: "varchar", length: 255 })
   artistName!: string;
 
-  @Column({ name: 'album_name', type: 'varchar', length: 255, nullable: true })
+  @Column({ name: "album_name", type: "varchar", length: 255, nullable: true })
   albumName: string | null = null;
 
-  @Column({ type: 'integer' })
+  @Column({ type: "integer" })
   duration!: number;
 
-  @Column({ name: 'cover_art_url', type: 'varchar', length: 500, nullable: true })
+  @Column({
+    name: "cover_art_url",
+    type: "varchar",
+    length: 500,
+    nullable: true,
+  })
   coverArtUrl: string | null = null;
 
-  @Column({ type: 'jsonb', nullable: true, default: () => "'{}'" })
+  @Column({ type: "jsonb", nullable: true, default: () => "'{}'" })
   metadata: {
     isrc?: string;
     explicitContent?: boolean;
@@ -42,12 +47,12 @@ export class LibraryTrack {
     genres?: string[];
   } = {};
 
-  @Column({ name: 'user_id', type: 'varchar', length: 255 })
+  @Column({ name: "user_id", type: "varchar", length: 255 })
   userId!: string;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ name: "updated_at" })
   updatedAt!: Date;
 }

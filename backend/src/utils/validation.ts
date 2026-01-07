@@ -1,4 +1,4 @@
-import { EmptyQueryError, InvalidQueryError } from '../types/errors.js';
+import { EmptyQueryError, InvalidQueryError } from "../types/errors.js";
 
 /**
  * Validates search query input per FR-010 and FR-011
@@ -19,7 +19,7 @@ export function validateQuery(query: string): string {
 
   // Check length constraints
   if (trimmed.length > 200) {
-    throw new InvalidQueryError('Search query must not exceed 200 characters');
+    throw new InvalidQueryError("Search query must not exceed 200 characters");
   }
 
   return trimmed;
@@ -59,10 +59,10 @@ export function validateOffset(offset: number | undefined): number {
  * Validates country code (basic check for 2-letter ISO 3166-1 format)
  */
 export function validateCountryCode(countryCode: string | undefined): string {
-  const code = countryCode ?? 'US';
+  const code = countryCode ?? "US";
 
   if (code.length !== 2) {
-    return 'US';
+    return "US";
   }
 
   return code.toUpperCase();

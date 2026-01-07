@@ -305,7 +305,6 @@ cd services/observability && npm test
 3. **Embedding generation** - Each query is converted to a 1024-dimensional vector
 
 4. **Hybrid search** - Qdrant searches using:
-
    - Vector similarity on track interpretation embeddings
    - BM25 keyword matching on interpretation text
    - BM25 keyword matching on lyrics text

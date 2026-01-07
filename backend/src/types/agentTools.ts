@@ -14,7 +14,7 @@ import type {
   SuggestPlaylistInput,
   PlaylistInputTrack,
   ToolNameType,
-} from '../schemas/agentTools.js';
+} from "../schemas/agentTools.js";
 
 // -----------------------------------------------------------------------------
 // Audio Features
@@ -249,17 +249,22 @@ export type ToolOutput =
  * Tool call start event - sent when tool execution begins
  */
 export interface ToolCallStartEvent {
-  type: 'tool_call_start';
+  type: "tool_call_start";
   toolCallId: string; // Unique ID for this invocation
   toolName: ToolNameType;
-  input: SemanticSearchInput | TidalSearchInput | BatchMetadataInput | AlbumTracksInput | SuggestPlaylistInput;
+  input:
+    | SemanticSearchInput
+    | TidalSearchInput
+    | BatchMetadataInput
+    | AlbumTracksInput
+    | SuggestPlaylistInput;
 }
 
 /**
  * Tool call end event - sent when tool completes successfully
  */
 export interface ToolCallEndEvent {
-  type: 'tool_call_end';
+  type: "tool_call_end";
   toolCallId: string; // Matches start event
   summary: string; // Human-readable summary
   resultCount: number; // Number of results
@@ -271,7 +276,7 @@ export interface ToolCallEndEvent {
  * Tool call error event - sent when tool execution fails
  */
 export interface ToolCallErrorEvent {
-  type: 'tool_call_error';
+  type: "tool_call_error";
   toolCallId: string; // Matches start event
   error: string; // Human-readable error message
   retryable: boolean; // Whether the operation can be retried
@@ -281,7 +286,10 @@ export interface ToolCallErrorEvent {
 /**
  * Union of tool-related SSE events
  */
-export type ToolSSEEvent = ToolCallStartEvent | ToolCallEndEvent | ToolCallErrorEvent;
+export type ToolSSEEvent =
+  | ToolCallStartEvent
+  | ToolCallEndEvent
+  | ToolCallErrorEvent;
 
 // -----------------------------------------------------------------------------
 // Tool Execution Types
@@ -311,7 +319,7 @@ export function createToolError(
   message: string,
   retryable: boolean,
   wasRetried: boolean,
-  code?: string
+  code?: string,
 ): ToolError {
   const error = new Error(message) as ToolError;
   error.retryable = retryable;

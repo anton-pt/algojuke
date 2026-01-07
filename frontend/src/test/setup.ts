@@ -1,6 +1,6 @@
-import { afterEach, vi } from 'vitest';
-import { cleanup } from '@testing-library/react';
-import '@testing-library/jest-dom';
+import { afterEach, vi } from "vitest";
+import { cleanup } from "@testing-library/react";
+import "@testing-library/jest-dom";
 
 // Mock ResizeObserver for tests
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

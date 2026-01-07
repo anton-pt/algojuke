@@ -23,7 +23,10 @@ export const DiscoveryQuerySchema = z.object({
     .min(1, "Query must not be empty")
     .max(2000, "Query must be no more than 2000 characters")
     .transform((s) => s.trim())
-    .refine((s) => s.length > 0, "Query must contain non-whitespace characters"),
+    .refine(
+      (s) => s.length > 0,
+      "Query must contain non-whitespace characters",
+    ),
 });
 
 /**
@@ -44,7 +47,9 @@ export const SparseVectorSchema = z
  */
 export const DiscoveryResultSchema = z.object({
   id: z.string(),
-  isrc: z.string().regex(/^[A-Z0-9]{12}$/i, "ISRC must be 12 alphanumeric characters"),
+  isrc: z
+    .string()
+    .regex(/^[A-Z0-9]{12}$/i, "ISRC must be 12 alphanumeric characters"),
   title: z.string(),
   artist: z.string(),
   album: z.string(),
@@ -98,7 +103,9 @@ export type SparseVector = z.infer<typeof SparseVectorSchema>;
 export type DiscoveryResult = z.infer<typeof DiscoveryResultSchema>;
 
 /** Complete response for a discovery search request */
-export type DiscoverySearchResponse = z.infer<typeof DiscoverySearchResponseSchema>;
+export type DiscoverySearchResponse = z.infer<
+  typeof DiscoverySearchResponseSchema
+>;
 
 /** Result from LLM query expansion */
 export type QueryExpansionResult = z.infer<typeof QueryExpansionResultSchema>;
@@ -135,13 +142,15 @@ export interface DiscoverySearchError {
 /**
  * Union type for discovery search result (success or error).
  */
-export type DiscoverySearchResult = DiscoverySearchResponse | DiscoverySearchError;
+export type DiscoverySearchResult =
+  | DiscoverySearchResponse
+  | DiscoverySearchError;
 
 /**
  * Type guard to check if result is an error.
  */
 export function isDiscoverySearchError(
-  result: DiscoverySearchResult
+  result: DiscoverySearchResult,
 ): result is DiscoverySearchError {
   return "code" in result && "retryable" in result;
 }

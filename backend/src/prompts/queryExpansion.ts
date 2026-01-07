@@ -53,7 +53,10 @@ Example response format:
 export const QUERY_EXPANSION_EXAMPLES = [
   {
     input: "summer vibes",
-    output: ["upbeat songs about summer and warm weather", "carefree sunshine and beach music"],
+    output: [
+      "upbeat songs about summer and warm weather",
+      "carefree sunshine and beach music",
+    ],
   },
   {
     input: "songs about heartbreak and moving on",

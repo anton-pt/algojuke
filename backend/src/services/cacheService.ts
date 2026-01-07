@@ -1,4 +1,4 @@
-import { logger } from '../utils/logger.js';
+import { logger } from "../utils/logger.js";
 
 interface CacheEntry<T> {
   data: T;
@@ -91,7 +91,7 @@ export class CacheService {
    */
   clear(): void {
     this.cache.clear();
-    logger.info('cache_cleared');
+    logger.info("cache_cleared");
   }
 
   /**
