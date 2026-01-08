@@ -79,31 +79,6 @@ export function ChatPage() {
 
   return (
     <div className="chat-page">
-      {/* Hamburger menu button - visible only on mobile */}
-      <button
-        ref={hamburgerRef}
-        className="chat-page__hamburger"
-        onClick={handleOpenDrawer}
-        aria-label="Open conversation history"
-        aria-expanded={isDrawerOpen}
-        aria-controls="mobile-drawer"
-      >
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <line x1="3" y1="6" x2="21" y2="6" />
-          <line x1="3" y1="12" x2="21" y2="12" />
-          <line x1="3" y1="18" x2="21" y2="18" />
-        </svg>
-      </button>
-
       <ChatSidebar
         selectedId={selectedConversationId}
         onSelect={handleSelectConversation}
@@ -112,6 +87,33 @@ export function ChatPage() {
         onToggleCollapse={handleToggleCollapse}
       />
       <main className="chat-page__main">
+        {/* Mobile header with hamburger - visible only on mobile */}
+        <div className="chat-page__mobile-header">
+          <button
+            ref={hamburgerRef}
+            className="chat-page__hamburger"
+            onClick={handleOpenDrawer}
+            aria-label="Open conversation history"
+            aria-expanded={isDrawerOpen}
+            aria-controls="mobile-drawer"
+          >
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+          <span className="chat-page__mobile-title">Conversations</span>
+        </div>
         <ChatView
           conversationId={selectedConversationId}
           onConversationChange={handleConversationChange}

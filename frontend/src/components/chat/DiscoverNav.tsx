@@ -49,15 +49,6 @@ export function DiscoverNav() {
     <>
       <nav className="discover-nav">
         <NavLink
-          to="/discover/search"
-          className={({ isActive }) =>
-            isActive ? "nav-link active" : "nav-link"
-          }
-          onClick={(e) => handleNavClick(e, "/discover/search")}
-        >
-          Search
-        </NavLink>
-        <NavLink
           to="/discover/chat"
           className={({ isActive }) =>
             isActive ? "nav-link active" : "nav-link"
@@ -65,6 +56,15 @@ export function DiscoverNav() {
           onClick={(e) => handleNavClick(e, "/discover/chat")}
         >
           Chat
+        </NavLink>
+        <NavLink
+          to="/discover/search"
+          className={({ isActive }) =>
+            isActive ? "nav-link active" : "nav-link"
+          }
+          onClick={(e) => handleNavClick(e, "/discover/search")}
+        >
+          Search
         </NavLink>
       </nav>
       <LeaveConfirmDialog
