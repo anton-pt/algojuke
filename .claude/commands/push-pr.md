@@ -52,20 +52,11 @@
    "
    ```
 
-7. **Optionally update Linear issue status**:
-   Use Linear MCP to set status to "In Review":
-
-   ```
-   mcp__linear-server__update_issue with:
-   - id: ALG-${NUM}
-   - state: "In Review"
-   ```
-
-8. **Output the PR URL** for the user.
+7. **Output the PR URL** for the user.
 
 ## Notes
 
 - The PR body uses "Closes ALG-{NUM}" to reference the Linear issue
-- GitHub will not auto-close Linear issues, but the reference provides traceability
+- Linear automation will automatically update the issue status to "In Review" when the PR is created
 - If the branch already has a PR, `gh pr create` will fail - use `gh pr view` instead
 - Always run verification before pushing to catch issues early
