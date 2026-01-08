@@ -5,6 +5,9 @@
  *
  * Note: These are contract-level tests validating the session data structure.
  * Actual browser refresh behavior is handled by Clerk SDK and requires E2E testing.
+ *
+ * Updated for Feature #45: Open Access - Removed isApproved field and allowlist checks.
+ * All authenticated users are implicitly approved.
  */
 
 import { describe, it, expect } from "vitest";
@@ -12,7 +15,6 @@ import {
   AuthStatusSchema,
   TidalTokenStatusSchema,
 } from "../../../src/schemas/auth.js";
-import { isApprovedUser } from "../../../src/config/allowlist.js";
 
 describe("Session Persistence Integration", () => {
   describe("Auth status across requests", () => {
@@ -20,9 +22,8 @@ describe("Session Persistence Integration", () => {
       // Simulates multiple requests from same authenticated session
       const authStatus = {
         isAuthenticated: true,
-        isApproved: true,
         hasTidalConnection: true,
-        email: "anton.tcholakov@gmail.com",
+        email: "user@example.com",
         userId: "user_persistent_123",
       };
 
@@ -38,20 +39,7 @@ describe("Session Persistence Integration", () => {
       if (result1.success && result2.success) {
         expect(result1.data.userId).toBe(result2.data.userId);
         expect(result1.data.isAuthenticated).toBe(result2.data.isAuthenticated);
-        expect(result1.data.isApproved).toBe(result2.data.isApproved);
       }
-    });
-
-    it("maintains approval status across session", () => {
-      const email = "anton.tcholakov@gmail.com";
-
-      // Approval status is deterministic based on allowlist
-      const firstCheck = isApprovedUser(email);
-      const secondCheck = isApprovedUser(email);
-
-      expect(firstCheck).toBe(true);
-      expect(secondCheck).toBe(true);
-      expect(firstCheck).toBe(secondCheck);
     });
   });
 
@@ -101,7 +89,6 @@ describe("Session Persistence Integration", () => {
       // Before sign-in or after sign-out
       const unauthStatus = {
         isAuthenticated: false,
-        isApproved: false,
         hasTidalConnection: false,
       };
 
@@ -114,39 +101,19 @@ describe("Session Persistence Integration", () => {
       }
     });
 
-    it("handles authenticated but not approved state", () => {
-      // Non-allowlisted user
-      const notApprovedStatus = {
-        isAuthenticated: true,
-        isApproved: false,
-        hasTidalConnection: false,
-        email: "random.user@example.com",
-        userId: "user_random_456",
-      };
-
-      const result = AuthStatusSchema.safeParse(notApprovedStatus);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.isAuthenticated).toBe(true);
-        expect(result.data.isApproved).toBe(false);
-      }
-    });
-
-    it("handles authenticated and approved but no Tidal state", () => {
-      // Approved user who hasn't connected Tidal yet
+    it("handles authenticated but no Tidal state", () => {
+      // User who hasn't connected Tidal yet
       const noTidalStatus = {
         isAuthenticated: true,
-        isApproved: true,
         hasTidalConnection: false,
-        email: "anton.tcholakov@gmail.com",
-        userId: "user_approved_789",
+        email: "user@example.com",
+        userId: "user_no_tidal_789",
       };
 
       const result = AuthStatusSchema.safeParse(noTidalStatus);
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.isAuthenticated).toBe(true);
-        expect(result.data.isApproved).toBe(true);
         expect(result.data.hasTidalConnection).toBe(false);
       }
     });
@@ -155,9 +122,8 @@ describe("Session Persistence Integration", () => {
       // Full access user
       const fullyConnectedStatus = {
         isAuthenticated: true,
-        isApproved: true,
         hasTidalConnection: true,
-        email: "anton.tcholakov@gmail.com",
+        email: "user@example.com",
         userId: "user_full_101",
       };
 
@@ -165,7 +131,6 @@ describe("Session Persistence Integration", () => {
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.isAuthenticated).toBe(true);
-        expect(result.data.isApproved).toBe(true);
         expect(result.data.hasTidalConnection).toBe(true);
       }
     });
@@ -176,9 +141,8 @@ describe("Session Persistence Integration", () => {
       // Frontend routing depends on these fields
       const authStatus = {
         isAuthenticated: true,
-        isApproved: true,
         hasTidalConnection: false,
-        email: "anton.tcholakov@gmail.com",
+        email: "user@example.com",
         userId: "user_route_202",
       };
 
@@ -187,7 +151,6 @@ describe("Session Persistence Integration", () => {
       if (result.success) {
         // ProtectedRoute uses these to determine redirect
         expect(typeof result.data.isAuthenticated).toBe("boolean");
-        expect(typeof result.data.isApproved).toBe("boolean");
         expect(typeof result.data.hasTidalConnection).toBe("boolean");
       }
     });
@@ -195,7 +158,6 @@ describe("Session Persistence Integration", () => {
     it("session fields are nullable for unauthenticated users", () => {
       const unauthStatus = {
         isAuthenticated: false,
-        isApproved: false,
         hasTidalConnection: false,
       };
 
