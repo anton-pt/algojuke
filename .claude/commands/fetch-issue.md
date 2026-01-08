@@ -30,18 +30,24 @@ Examples: `ALG-27`, `27`, `alg-27`
    - `relations.blockedBy`: Issues blocking this
    - `relations.relatedTo`: Related issues
 
-4. For each related issue (from relations):
+4. Parse description for mentioned issues:
+   - Search for patterns: `ALG-\d+` (case-insensitive)
+   - Extract unique issue identifiers mentioned in description
+   - These are treated as "linked" issues alongside formal relations
+   - Example: `[ALG-13](https://linear.app/...)` → extract `ALG-13`
+
+5. For each linked issue (from relations AND description mentions):
    - Check if `specs/alg-{related-num}-*/` exists
    - If exists, read the summary section from spec.md
    - Collect related specs for context
 
-5. Derive kebab-slug from title:
+6. Derive kebab-slug from title:
    - Lowercase the title
    - Replace spaces and special chars with hyphens
    - Remove consecutive hyphens
    - Truncate to reasonable length (40 chars max)
 
-6. Create branch and spec directory:
+7. Create branch and spec directory:
 
    ```bash
    NUM={extracted number}
@@ -50,7 +56,7 @@ Examples: `ALG-27`, `27`, `alg-27`
    mkdir -p specs/alg-${NUM}-${SLUG}
    ```
 
-7. Output context summary:
+8. Output context summary:
    - Issue identifier and title
    - Description preview
    - Labels and status
