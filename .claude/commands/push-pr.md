@@ -32,21 +32,23 @@
    TITLE=$(head -1 specs/alg-${NUM}-*/spec.md | sed 's/^# //')
    ```
 
-6. **Create PR with gh CLI**:
+6. **Create PR with gh CLI** (following `.github/PULL_REQUEST_TEMPLATE.md`):
 
    ```bash
    gh pr create \
      --title "${TITLE}" \
      --body "## Summary
 
-   Closes ALG-${NUM}
+   Resolves [ALG-${NUM}](https://linear.app/algojuke/issue/ALG-${NUM})
 
    See [spec.md](specs/alg-${NUM}-*/spec.md) for full specification.
 
    ## Changes
+
    $(git log main..HEAD --oneline)
 
    ## Verification
+
    - [x] Type check passes
    - [x] Tests pass
    "
@@ -56,7 +58,7 @@
 
 ## Notes
 
-- The PR body uses "Closes ALG-{NUM}" to reference the Linear issue
+- The PR body uses "Resolves [ALG-XX](url)" to link the Linear issue
 - Linear automation will automatically update the issue status to "In Review" when the PR is created
 - If the branch already has a PR, `gh pr create` will fail - use `gh pr view` instead
 - Always run verification before pushing to catch issues early
