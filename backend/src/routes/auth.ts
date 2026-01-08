@@ -5,8 +5,7 @@
  */
 
 import { Router, Request, Response } from "express";
-import { getAuth, clerkClient } from "../middleware/clerkAuth.js";
-import { requireAuth } from "../middleware/clerkAuth.js";
+import { getAuth, clerkClient, requireAuth } from "../middleware/clerkAuth.js";
 import {
   getTidalTokens,
   storeTidalTokens,
