@@ -25,12 +25,11 @@
    git push -u origin $BRANCH
    ```
 
-5. **Extract PR title from spec**:
-
-   ```bash
-   # Get first line of spec.md (the # heading)
-   TITLE=$(head -1 specs/alg-${NUM}-*/spec.md | sed 's/^# //')
-   ```
+5. **Generate PR title** using [Conventional Commits](https://www.conventionalcommits.org/):
+   - Read `specs/alg-${NUM}-*/spec.md` to understand the feature
+   - Generate a title like: `feat(scope): short description`
+   - **Types**: `feat` (new feature), `fix` (bug fix), `refactor`, `perf`, `docs`, `chore`
+   - **Scope**: optional component name, e.g. `feat(search):`, `fix(auth):`
 
 6. **Create PR with gh CLI** (following `.github/PULL_REQUEST_TEMPLATE.md`):
 

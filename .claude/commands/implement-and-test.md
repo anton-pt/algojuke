@@ -22,11 +22,14 @@
    - Use existing codebase conventions
    - Keep changes focused on the story
 
-   b. **Commit implementation** with explicit file paths:
+   b. **Commit implementation** using [Conventional Commits](https://www.conventionalcommits.org/):
 
    ```bash
-   git commit -m "spec: ALG-${NUM} - {description}" -- path/to/file1.ts path/to/file2.ts
+   git commit -m "feat(scope): description (ALG-${NUM})" -- path/to/file1.ts path/to/file2.ts
    ```
+
+   **Types**: `feat` (new feature), `fix` (bug fix), `refactor`, `perf`, `docs`, `chore`
+   **Scope**: optional, e.g. `feat(search):`, `fix(api):`
 
    Using explicit paths prevents accidentally including test files.
 
@@ -47,10 +50,10 @@
    npm test --workspaces --if-present
    ```
 
-   f. **Commit tests** with explicit file paths:
+   f. **Commit tests** using Conventional Commits:
 
    ```bash
-   git commit -m "test: ALG-${NUM} - {description}" -- tests/path/to/test.ts
+   git commit -m "test(scope): description (ALG-${NUM})" -- tests/path/to/test.ts
    ```
 
 4. **Final verification**:
@@ -61,13 +64,23 @@
 
 ## Commit Convention
 
-```bash
-# Implementation commits (use explicit file paths)
-git commit -m "spec: ALG-27 - add semantic search service" -- backend/src/services/search.ts
+Follow [Conventional Commits](https://www.conventionalcommits.org/):
 
-# Test commits (use explicit file paths)
-git commit -m "test: ALG-27 - add semantic search tests" -- backend/tests/services/search.test.ts
+```bash
+# Feature commits
+git commit -m "feat(search): add semantic search service (ALG-27)" -- backend/src/services/search.ts
+
+# Bug fix commits
+git commit -m "fix(api): handle null response from Tidal (ALG-27)" -- backend/src/services/tidal.ts
+
+# Test commits
+git commit -m "test(search): add semantic search tests (ALG-27)" -- backend/tests/services/search.test.ts
+
+# Refactor commits
+git commit -m "refactor(chat): extract message parsing logic (ALG-27)" -- backend/src/services/chat.ts
 ```
+
+**Types**: `feat`, `fix`, `test`, `refactor`, `perf`, `docs`, `chore`, `ci`, `build`
 
 ## Testing Guidelines
 
