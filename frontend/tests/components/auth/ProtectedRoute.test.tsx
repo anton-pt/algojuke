@@ -2,6 +2,10 @@
  * Component tests for ProtectedRoute
  *
  * Tests the route guard component for various authentication states.
+ *
+ * Updated for Feature #45: Open Access - Removed waitlist redirect tests.
+ * All authenticated users are allowed to proceed; only Tidal connection
+ * is checked when requireTidal=true.
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -45,10 +49,6 @@ describe("ProtectedRoute", () => {
         <Routes>
           <Route path="/" element={<div data-testid="landing">Landing</div>} />
           <Route
-            path="/waitlist"
-            element={<div data-testid="waitlist">Waitlist</div>}
-          />
-          <Route
             path="/connect-tidal"
             element={<div data-testid="connect">Connect Tidal</div>}
           />
@@ -79,7 +79,7 @@ describe("ProtectedRoute", () => {
     });
   });
 
-  describe("when signed in but not approved", () => {
+  describe("when signed in but no Tidal connection", () => {
     beforeEach(() => {
       mockUseUser.mockReturnValue({ isLoaded: true, isSignedIn: true });
       mockFetch.mockResolvedValue({
@@ -87,30 +87,6 @@ describe("ProtectedRoute", () => {
         json: () =>
           Promise.resolve({
             isAuthenticated: true,
-            isApproved: false,
-            hasTidalConnection: false,
-          }),
-      });
-    });
-
-    it("redirects to waitlist page", async () => {
-      renderWithRouter("/protected");
-
-      await waitFor(() => {
-        expect(screen.getByTestId("waitlist")).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe("when approved but no Tidal connection", () => {
-    beforeEach(() => {
-      mockUseUser.mockReturnValue({ isLoaded: true, isSignedIn: true });
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            isAuthenticated: true,
-            isApproved: true,
             hasTidalConnection: false,
           }),
       });
@@ -141,7 +117,6 @@ describe("ProtectedRoute", () => {
         json: () =>
           Promise.resolve({
             isAuthenticated: true,
-            isApproved: true,
             hasTidalConnection: true,
             tidalTokenExpired: false,
           }),
@@ -191,7 +166,6 @@ describe("ProtectedRoute", () => {
             json: () =>
               Promise.resolve({
                 isAuthenticated: true,
-                isApproved: true,
                 hasTidalConnection: true,
                 tidalTokenExpired: true,
               }),
@@ -202,7 +176,6 @@ describe("ProtectedRoute", () => {
           json: () =>
             Promise.resolve({
               isAuthenticated: true,
-              isApproved: true,
               hasTidalConnection: true,
               tidalTokenExpired: false,
             }),
@@ -232,7 +205,6 @@ describe("ProtectedRoute", () => {
         json: () =>
           Promise.resolve({
             isAuthenticated: true,
-            isApproved: true,
             hasTidalConnection: true,
             tidalTokenExpired: true,
           }),
