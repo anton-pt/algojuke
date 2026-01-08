@@ -73,22 +73,21 @@ npm run type-check
 
 ## Authentication
 
-The backend uses Clerk for authentication with a private beta allowlist.
+The backend uses Clerk for authentication.
 
 ### Architecture
 
 1. **Clerk Middleware**: All requests pass through `clerkMiddleware()` which validates JWT tokens
-2. **Allowlist**: Only approved emails (defined in `src/config/allowlist.ts`) can access protected routes
-3. **Tidal Tokens**: Stored in Clerk private metadata (8KB limit)
+2. **Tidal Tokens**: Stored in Clerk private metadata (8KB limit)
 
 ### Auth Endpoints
 
-| Endpoint                  | Method | Auth Required  | Description                           |
-| ------------------------- | ------ | -------------- | ------------------------------------- |
-| `/api/auth/status`        | GET    | No             | Get current user's auth state         |
-| `/api/auth/tidal/tokens`  | GET    | Yes            | Get Tidal token status                |
-| `/api/auth/tidal/tokens`  | POST   | Yes + Approved | Store Tidal OAuth tokens              |
-| `/api/auth/tidal/refresh` | POST   | Yes + Approved | Update Tidal tokens after SDK refresh |
+| Endpoint                  | Method | Auth Required | Description                           |
+| ------------------------- | ------ | ------------- | ------------------------------------- |
+| `/api/auth/status`        | GET    | No            | Get current user's auth state         |
+| `/api/auth/tidal/tokens`  | GET    | Yes           | Get Tidal token status                |
+| `/api/auth/tidal/tokens`  | POST   | Yes           | Store Tidal OAuth tokens              |
+| `/api/auth/tidal/refresh` | POST   | Yes           | Update Tidal tokens after SDK refresh |
 
 #### GET /api/auth/status
 
@@ -97,7 +96,6 @@ Returns the current user's authentication state:
 ```json
 {
   "isAuthenticated": true,
-  "isApproved": true,
   "hasTidalConnection": true,
   "tidalTokenExpired": false,
   "email": "user@example.com",
@@ -129,34 +127,20 @@ Stores Tidal OAuth tokens. Validates that all required scopes are present:
 
 Returns 400 if required scopes are missing.
 
-### Adding Approved Users
-
-Edit `src/config/allowlist.ts`:
-
-```typescript
-export const APPROVED_EMAILS = [
-  "anton.tcholakov@gmail.com",
-  "new.user@example.com", // Add new users here
-] as const;
-```
-
 ### Key Files
 
-| File                               | Purpose                          |
-| ---------------------------------- | -------------------------------- |
-| `src/config/allowlist.ts`          | Approved email addresses         |
-| `src/middleware/clerkAuth.ts`      | Clerk middleware and auth guards |
-| `src/routes/auth.ts`               | Auth API endpoints               |
-| `src/services/tidalAuthService.ts` | Tidal token storage/retrieval    |
-| `src/schemas/auth.ts`              | Zod schemas for auth contracts   |
+| File                               | Purpose                       |
+| ---------------------------------- | ----------------------------- |
+| `src/middleware/clerkAuth.ts`      | Clerk middleware and auth     |
+| `src/routes/auth.ts`               | Auth API endpoints            |
+| `src/services/tidalAuthService.ts` | Tidal token storage/retrieval |
+| `src/schemas/auth.ts`              | Zod schemas for auth          |
 
 ## Project Structure
 
 ```
 backend/
 ├── src/
-│   ├── config/
-│   │   └── allowlist.ts        # Beta allowlist
 │   ├── middleware/
 │   │   └── clerkAuth.ts        # Auth middleware
 │   ├── routes/
@@ -174,10 +158,6 @@ backend/
 
 ## Troubleshooting
 
-### "User not approved for beta access"
-
-The signed-in user's email is not in the allowlist. Add their email to `src/config/allowlist.ts`.
-
 ### Clerk middleware not authenticating
 
 1. Verify `CLERK_SECRET_KEY` is set correctly in `.env`
@@ -186,6 +166,5 @@ The signed-in user's email is not in the allowlist. Add their email to `src/conf
 
 ### Tidal token storage failing
 
-1. Verify the user is approved (in allowlist)
-2. Check that token data matches the `TidalTokensInputSchema`
-3. Review Clerk private metadata limits (8KB max)
+1. Check that token data matches the `TidalTokensInputSchema`
+2. Review Clerk private metadata limits (8KB max)

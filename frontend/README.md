@@ -58,33 +58,29 @@ npm run type-check
 
 ## Authentication Flow
 
-The app uses a three-tier authentication flow:
+The app uses a two-tier authentication flow:
 
 1. **Landing Page** (`/`): Public page with "Sign in with Google" button
 2. **Clerk OAuth**: User signs in with Google via Clerk
-3. **Allowlist Check**:
-   - If approved → Tidal Connect Page
-   - If not approved → Waitlist Page
-4. **Tidal OAuth**: User connects their Tidal account
-5. **Main App** (`/discover`): Full access to music discovery features
+3. **Tidal OAuth**: User connects their Tidal account
+4. **Main App** (`/discover`): Full access to music discovery features
 
 ### Auth Routes
 
-| Route                  | Component        | Access                       |
-| ---------------------- | ---------------- | ---------------------------- |
-| `/`                    | LandingPage      | Public                       |
-| `/waitlist`            | WaitlistPage     | Authenticated (non-approved) |
-| `/connect-tidal`       | TidalConnectPage | Authenticated + Approved     |
-| `/auth/tidal/callback` | CallbackPage     | Authenticated + Approved     |
-| `/discover`            | DiscoverChat     | Fully Connected              |
+| Route                  | Component        | Access          |
+| ---------------------- | ---------------- | --------------- |
+| `/`                    | LandingPage      | Public          |
+| `/connect-tidal`       | TidalConnectPage | Authenticated   |
+| `/auth/tidal/callback` | CallbackPage     | Authenticated   |
+| `/discover`            | DiscoverChat     | Fully Connected |
 
 ### Key Components
 
-| Component            | Purpose                                         |
-| -------------------- | ----------------------------------------------- |
-| `ProtectedRoute`     | Route guard checking auth/approval/Tidal status |
-| `TidalConnectButton` | Initiates Tidal OAuth flow                      |
-| `AuthLayout`         | Centered layout for auth pages                  |
+| Component            | Purpose                               |
+| -------------------- | ------------------------------------- |
+| `ProtectedRoute`     | Route guard checking auth/Tidal state |
+| `TidalConnectButton` | Initiates Tidal OAuth flow            |
+| `AuthLayout`         | Centered layout for auth pages        |
 
 ### Key Hooks
 
@@ -108,7 +104,6 @@ frontend/
 │   │   └── useTidalAuth.ts
 │   ├── pages/
 │   │   ├── LandingPage.tsx
-│   │   ├── WaitlistPage.tsx
 │   │   ├── TidalConnectPage.tsx
 │   │   ├── CallbackPage.tsx
 │   │   └── DiscoverChat.tsx
@@ -143,10 +138,6 @@ If you see this error:
 1. Verify the redirect URI in Tidal Developer Portal matches exactly
 2. The URI should be: `https://localhost:5173/auth/tidal/callback`
 3. Include the full path, not just the domain
-
-### User Stuck on Waitlist
-
-The user's email is not in the backend allowlist. Add their email to `backend/src/config/allowlist.ts`.
 
 ### OAuth Callback Errors
 

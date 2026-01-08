@@ -35,7 +35,6 @@ export type TidalTokensInput = z.infer<typeof TidalTokensInputSchema>;
  */
 export const AuthStatusSchema = z.object({
   isAuthenticated: z.boolean(),
-  isApproved: z.boolean(),
   hasTidalConnection: z.boolean(),
   /** True if Tidal access token is expired; frontend should trigger refresh */
   tidalTokenExpired: z.boolean().optional(),
