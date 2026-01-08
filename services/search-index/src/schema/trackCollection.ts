@@ -102,6 +102,7 @@ export function getCollectionConfig(
   _collectionName: string,
 ): Schemas["CreateCollection"] {
   return {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
     vectors: getVectorConfig() as any, // Type assertion needed for complex schema
     hnsw_config: HNSW_CONFIG,
     optimizers_config: OPTIMIZER_CONFIG,
@@ -109,6 +110,7 @@ export function getCollectionConfig(
     // IDF modifier enables BM25-style weighting
     sparse_vectors: {
       text_sparse: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
         modifier: "idf" as any, // BM25 weighting (required for keyword search)
       },
     },

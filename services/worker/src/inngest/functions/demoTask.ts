@@ -15,7 +15,11 @@
  */
 
 import { inngest } from "../client.js";
-import { createStepResult, type DemoTaskResult } from "../events.js";
+import {
+  createStepResult,
+  type DemoTaskResult,
+  type StepResult,
+} from "../events.js";
 
 /**
  * Demo Task Inngest Function
@@ -48,7 +52,7 @@ export const demoTask = inngest.createFunction(
   async ({ event, step }) => {
     const { taskId, simulateFailure, failAtStep, delayMs = 1000 } = event.data;
 
-    const steps: any[] = [];
+    const steps: StepResult[] = [];
     const startTime = Date.now();
 
     /**
@@ -161,7 +165,7 @@ export const demoTask = inngest.createFunction(
      * Step 5: Finalize
      * Accumulates all step results and returns complete demo task result
      */
-    const step5 = await step.run("step-5-finalize", async () => {
+    const step5 = await step.run("step-5-finalize", () => {
       const stepStart = Date.now();
 
       console.log(`[${taskId}] Step 5: Finalizing task`);

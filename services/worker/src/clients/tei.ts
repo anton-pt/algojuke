@@ -57,7 +57,7 @@ export interface TEIClient {
  * Used when no lyrics are available for a track (instrumentals).
  */
 export function createZeroVector(): number[] {
-  return new Array(EMBEDDING_DIMENSIONS).fill(0);
+  return new Array<number>(EMBEDDING_DIMENSIONS).fill(0);
 }
 
 /**
@@ -115,16 +115,16 @@ export function createTEIClient(baseUrl?: string): TEIClient {
 
       // TEI returns array of embeddings even for single input
       // Extract the first (and only) embedding
-      const data = response.data;
+      const data = response.data as unknown;
 
       // Handle both single embedding and array of embeddings response formats
       let embedding: number[];
       if (Array.isArray(data) && Array.isArray(data[0])) {
         // Array of embeddings: [[...numbers...]]
-        embedding = data[0];
+        embedding = data[0] as number[];
       } else if (Array.isArray(data) && typeof data[0] === "number") {
         // Single embedding: [...numbers...]
-        embedding = data;
+        embedding = data as number[];
       } else {
         throw createAPIError(
           500,

@@ -13,17 +13,10 @@
  */
 
 import { inngest } from "../client.js";
-import {
-  createReccoBeatsClient,
-  type AudioFeatures,
-} from "../../clients/reccobeats.js";
-import {
-  createMusixmatchClient,
-  type LyricsContent,
-} from "../../clients/musixmatch.js";
+import { createReccoBeatsClient } from "../../clients/reccobeats.js";
+import { createMusixmatchClient } from "../../clients/musixmatch.js";
 import {
   createAnthropicClient,
-  type InterpretationResult,
   CLAUDE_MODEL,
 } from "../../clients/anthropic.js";
 import {
@@ -111,7 +104,15 @@ export const trackIngestion = inngest.createFunction(
   },
   { event: "track/ingestion.requested" },
   async ({ event, step, runId }) => {
-    const { isrc, title, artist, album, artworkUrl, force } = event.data;
+    const {
+      isrc,
+      title,
+      artist,
+      album,
+      artworkUrl,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      force: _force,
+    } = event.data;
     const startTime = Date.now();
 
     // Create observability trace for this ingestion
