@@ -68,7 +68,7 @@ export async function getLibraryIsrcs(
 
     for (const album of libraryAlbums) {
       if (!album.trackListing) continue;
-      for (const track of album.trackListing as TrackInfo[]) {
+      for (const track of album.trackListing) {
         const trackIsrc = track.isrc?.toUpperCase();
         if (trackIsrc && normalizedIsrcs.includes(trackIsrc)) {
           libraryIsrcs.add(trackIsrc);

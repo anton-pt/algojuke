@@ -249,7 +249,7 @@ export class ChatStreamService {
         'Search the user\'s indexed library by lyrical themes and interpreted meaning. IMPORTANT: This tool matches based on LYRICS INTERPRETATION, not musical style or audio features. A query like "ambient music" will find tracks with ambient themes in lyrics, NOT necessarily ambient-sounding music. For style/genre recommendations, use your music knowledge with tidalSearch instead. Results include shortDescription for each track.',
       inputSchema: SemanticSearchInputSchema,
       execute: async (input, options) => {
-        const typedInput = input as SemanticSearchInput;
+        const typedInput = input;
         const toolCallId = options.toolCallId;
 
         // Track tool call for persistence (Task 4.2)
@@ -350,7 +350,7 @@ export class ChatStreamService {
         "Search the Tidal music catalogue by artist name, album name, or track title. IMPORTANT: This tool only supports text-based keyword search - it does NOT understand mood, theme, or semantic queries. For mood-based requests, use semanticSearch first, then use this tool with specific artist/album names you know match the mood. Returns results with library and index status flags.",
       inputSchema: TidalSearchInputSchema,
       execute: async (input, options) => {
-        const typedInput = input as TidalSearchInput;
+        const typedInput = input;
         const toolCallId = options.toolCallId;
 
         // Track tool call for persistence (Task 4.2)
@@ -450,7 +450,7 @@ export class ChatStreamService {
         "Get all tracks from a specific album by its Tidal album ID. Use this after tidalSearch to see the full track listing of an album.",
       inputSchema: AlbumTracksInputSchema,
       execute: async (input, options) => {
-        const typedInput = input as AlbumTracksInput;
+        const typedInput = input;
         const toolCallId = options.toolCallId;
 
         // Track tool call for persistence (Task 4.2)
@@ -549,7 +549,7 @@ export class ChatStreamService {
         "Get full metadata (lyrics, interpretation, audio features) for multiple tracks by their ISRCs. Use this to get detailed information about specific tracks you want to recommend. Maximum 100 ISRCs per request.",
       inputSchema: BatchMetadataInputSchema,
       execute: async (input, options) => {
-        const typedInput = input as BatchMetadataInput;
+        const typedInput = input;
         const toolCallId = options.toolCallId;
 
         // Track tool call for persistence (Task 4.2)
@@ -647,7 +647,7 @@ export class ChatStreamService {
         "Present a curated playlist to the user with visual album artwork. Use this ONLY when you have finalized your track selection and are ready to present the playlist. The tool enriches each track with Tidal metadata (album artwork, duration). Provide a descriptive title and include a one-sentence reasoning for each track explaining why it fits the playlist.",
       inputSchema: SuggestPlaylistInputSchema,
       execute: async (input, options) => {
-        const typedInput = input as SuggestPlaylistInput;
+        const typedInput = input;
         const toolCallId = options.toolCallId;
 
         // Track tool call for persistence (Task 4.2)
@@ -871,7 +871,7 @@ export class ChatStreamService {
       onEvent({
         type: "message_start",
         messageId: tempMessageId,
-        conversationId: conversationId!,
+        conversationId: conversationId,
       });
 
       // Track timing for SC-001 (first token within 3 seconds)
@@ -1238,7 +1238,7 @@ export class ChatStreamService {
 
       // Save assistant message
       const assistantMessage = await this.chatService.addAssistantMessage(
-        conversationId!,
+        conversationId,
         userId,
         contentBlocks.length > 0 ? contentBlocks : [{ type: "text", text: "" }],
       );
@@ -1295,7 +1295,7 @@ export class ChatStreamService {
       });
 
       return {
-        conversationId: conversationId!,
+        conversationId: conversationId,
         assistantMessageId,
         inputTokens,
         outputTokens,
@@ -1404,7 +1404,7 @@ export class ChatStreamService {
       // Check for specific error types
       let code = "INTERNAL_ERROR";
       let userMessage = "An unexpected error occurred. Please try again.";
-      let retryable = true;
+      const retryable = true;
 
       if (
         errorMessage.includes("API key") ||

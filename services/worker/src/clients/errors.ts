@@ -43,7 +43,8 @@ const RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503, 504, 408]);
  * - 403: Forbidden (fix permissions)
  * - 404: Not found (graceful degradation, not an error)
  */
-const NON_RETRYABLE_STATUS_CODES = new Set([400, 401, 403]);
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _NON_RETRYABLE_STATUS_CODES = new Set([400, 401, 403]);
 
 /**
  * Determine if an error should trigger a retry

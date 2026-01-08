@@ -92,6 +92,31 @@ algojuke/
 
 ## Commands
 
+### Monorepo Commands (Root)
+
+```bash
+# Install all dependencies (from repo root)
+npm install
+
+# Run across all workspaces (parallel via Turbo)
+npm run lint              # Lint all packages
+npm run lint:fix          # Fix lint issues in all packages
+npm run type-check        # Type check all packages
+npm run test              # Test all packages
+
+# Target specific package
+npm run lint -- --filter=backend
+npm run lint -- --filter=frontend
+npm run test -- --filter=@algojuke/worker
+npm run type-check -- --filter=@algojuke/search-index
+
+# Force re-run (ignore cache)
+npm run test -- --force
+
+# See what would run
+npm run lint -- --dry-run
+```
+
 ### Worker Service (Background Tasks)
 
 ```bash
@@ -360,4 +385,4 @@ Configured in `.claude/settings.json`:
 
 - **Notification hooks**: macOS notifications for idle/permission prompts
 - **Stop hook**: Notification when response completes
-- **PostToolUse hook**: Auto-format with Prettier on Write/Edit
+- **PostToolUse hook**: Auto-format with Prettier and auto-fix ESLint on Write/Edit

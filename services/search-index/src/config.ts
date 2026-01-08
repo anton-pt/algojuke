@@ -64,5 +64,5 @@ export function getEmbeddingProvider(): "gemini" | "local" {
  */
 export function createZeroVector(): number[] {
   const dimensions = getEmbeddingDimensions();
-  return new Array(dimensions).fill(0);
+  return new Array<number>(dimensions).fill(0);
 }

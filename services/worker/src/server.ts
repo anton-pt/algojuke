@@ -23,25 +23,23 @@ app.get("/health", (req, res) => {
 });
 
 // Serve Inngest functions at /api/inngest
-app.use(
-  "/api/inngest",
-  serve({
-    client: inngest,
-    functions: functions,
-  }),
-);
+// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+app.use("/api/inngest", serve({ client: inngest, functions }));
 
 // Start server
 app.listen(port, () => {
-  console.log(`✓ Worker service listening on port ${port}`);
+  console.log(`✓ Worker service listening on port ${String(port)}`);
   console.log(
-    `✓ Inngest functions served at http://localhost:${port}/api/inngest`,
+    `✓ Inngest functions served at http://localhost:${String(port)}/api/inngest`,
   );
-  console.log(`✓ Health check available at http://localhost:${port}/health`);
-  console.log(`✓ Registered functions: ${functions.length}`);
-  functions.forEach((fn) => {
-    console.log(`  - ${fn.name || fn.id}`);
-  });
+  console.log(
+    `✓ Health check available at http://localhost:${String(port)}/health`,
+  );
+  console.log(`✓ Registered functions: ${String(functions.length)}`);
+  for (const fn of functions) {
+    // eslint-disable-next-line @typescript-eslint/unbound-method, @typescript-eslint/restrict-template-expressions
+    console.log(`  - ${fn.id}`);
+  }
 });
 
 // Graceful shutdown

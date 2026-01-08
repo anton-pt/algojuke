@@ -107,7 +107,7 @@ export function createAuthRoutes(): Router {
       }
 
       try {
-        const connectedAt = await storeTidalTokens(auth!.userId!, parsed.data);
+        const connectedAt = await storeTidalTokens(auth.userId!, parsed.data);
 
         const response: TidalTokensResponse = {
           success: true,
@@ -135,7 +135,7 @@ export function createAuthRoutes(): Router {
       const auth = getAuth(req);
 
       try {
-        const tokens = await getTidalTokens(auth!.userId!);
+        const tokens = await getTidalTokens(auth.userId!);
 
         if (!tokens) {
           const response: TidalTokenStatus = {
@@ -145,7 +145,7 @@ export function createAuthRoutes(): Router {
           return;
         }
 
-        const expired = await isTokenExpired(auth!.userId!);
+        const expired = await isTokenExpired(auth.userId!);
 
         const response: TidalTokenStatus = {
           hasTokens: true,
@@ -195,7 +195,7 @@ export function createAuthRoutes(): Router {
           }
 
           // Use refreshTidalTokens which includes structured logging
-          const result = await refreshTidalTokens(auth!.userId!, parsed.data);
+          const result = await refreshTidalTokens(auth.userId!, parsed.data);
 
           const response: TidalTokenStatus = {
             hasTokens: true,
@@ -208,7 +208,7 @@ export function createAuthRoutes(): Router {
         }
 
         // No body - just return current token status
-        const tokens = await getTidalTokens(auth!.userId!);
+        const tokens = await getTidalTokens(auth.userId!);
 
         if (!tokens) {
           res.status(422).json({
@@ -218,7 +218,7 @@ export function createAuthRoutes(): Router {
           return;
         }
 
-        const expired = await isTokenExpired(auth!.userId!);
+        const expired = await isTokenExpired(auth.userId!);
 
         const response: TidalTokenStatus = {
           hasTokens: true,
