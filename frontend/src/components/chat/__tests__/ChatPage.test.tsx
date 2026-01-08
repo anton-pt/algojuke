@@ -36,6 +36,21 @@ vi.mock("@tidal-music/auth", () => ({
   },
 }));
 
+// Mock window.matchMedia
+Object.defineProperty(window, "matchMedia", {
+  writable: true,
+  value: vi.fn().mockImplementation((query: string) => ({
+    matches: query === "(min-width: 769px)", // Default to desktop view
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })),
+});
+
 // Mock the useChatStream hook
 vi.mock("../../../hooks/useChatStream", () => ({
   useChatStream: vi.fn(() => ({
@@ -102,9 +117,9 @@ describe("ChatPage Navigation Blocking", () => {
   it("renders ChatSidebar and ChatView", async () => {
     renderChatPage();
 
-    // Should render the sidebar
-    expect(screen.getByText("Conversations")).toBeInTheDocument();
-    expect(screen.getByText("+ New Chat")).toBeInTheDocument();
+    // Should render the sidebar (use getAllByText since "Conversations" appears in both sidebar and mobile header)
+    expect(screen.getAllByText("Conversations").length).toBeGreaterThan(0);
+    expect(screen.getByLabelText("Start new chat")).toBeInTheDocument();
 
     // Should render the chat view empty state
     await waitFor(() => {
@@ -165,7 +180,7 @@ describe("ChatPage Navigation Blocking", () => {
     });
 
     // Try to click New Chat while streaming
-    fireEvent.click(screen.getByText("+ New Chat"));
+    fireEvent.click(screen.getByLabelText("Start new chat"));
 
     // Should show confirmation dialog
     await waitFor(() => {
@@ -215,7 +230,7 @@ describe("ChatPage Navigation Blocking", () => {
     });
 
     // Try to click New Chat
-    fireEvent.click(screen.getByText("+ New Chat"));
+    fireEvent.click(screen.getByLabelText("Start new chat"));
 
     // Wait for dialog
     await waitFor(() => {
@@ -271,7 +286,7 @@ describe("ChatPage Navigation Blocking", () => {
     });
 
     // Try to click New Chat
-    fireEvent.click(screen.getByText("+ New Chat"));
+    fireEvent.click(screen.getByLabelText("Start new chat"));
 
     // Wait for dialog
     await waitFor(() => {
@@ -309,7 +324,7 @@ describe("ChatPage Navigation Blocking", () => {
     });
 
     // Try to click New Chat
-    fireEvent.click(screen.getByText("+ New Chat"));
+    fireEvent.click(screen.getByLabelText("Start new chat"));
 
     // Wait for dialog
     await waitFor(() => {

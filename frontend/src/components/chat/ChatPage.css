@@ -1,7 +1,7 @@
 /**
  * Chat Page Styles
  *
- * Feature: 010-discover-chat
+ * Feature: 010-discover-chat, 029-chat-default-mobile-friendly
  */
 
 .chat-page {
@@ -17,8 +17,57 @@
   overflow: hidden;
 }
 
-/* Mobile: full width main content */
+/* Mobile header - hidden on desktop */
+.chat-page__mobile-header {
+  display: none;
+}
+
+/* Hamburger menu button */
+.chat-page__hamburger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background-color: var(--bg-primary, #ffffff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 8px;
+  color: var(--text-primary, #1a1a1a);
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s;
+  flex-shrink: 0;
+}
+
+.chat-page__hamburger:hover {
+  background-color: var(--bg-secondary, #f9fafb);
+  border-color: var(--text-tertiary, #9ca3af);
+}
+
+.chat-page__hamburger:focus {
+  outline: 2px solid var(--accent-color, #6366f1);
+  outline-offset: 2px;
+}
+
+.chat-page__mobile-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary, #1a1a1a);
+}
+
+/* Mobile: show header with hamburger */
 @media (max-width: 768px) {
+  .chat-page__mobile-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color, #e5e7eb);
+    background-color: var(--bg-primary, #ffffff);
+  }
+
   .chat-page__main {
     width: 100%;
   }

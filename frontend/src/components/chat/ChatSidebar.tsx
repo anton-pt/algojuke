@@ -38,6 +38,10 @@ interface ChatSidebarProps {
   onSelect: (id: string | null) => void;
   /** Whether streaming is active (disable delete for active conversation) */
   isStreaming?: boolean;
+  /** Whether the sidebar is collapsed (desktop only) */
+  isCollapsed?: boolean;
+  /** Callback to toggle collapse state */
+  onToggleCollapse?: () => void;
 }
 
 /**
@@ -168,6 +172,8 @@ export function ChatSidebar({
   selectedId,
   onSelect,
   isStreaming = false,
+  isCollapsed = false,
+  onToggleCollapse,
 }: ChatSidebarProps) {
   const { conversations, loading, error, retryable, refetch } =
     useConversations();
@@ -311,15 +317,40 @@ export function ChatSidebar({
     sortedConversations.length >= VIRTUALIZATION_THRESHOLD;
 
   return (
-    <aside className="chat-sidebar">
+    <aside
+      className={`chat-sidebar ${isCollapsed ? "chat-sidebar--collapsed" : ""}`}
+    >
       <div className="chat-sidebar__header">
+        {onToggleCollapse && (
+          <button
+            className="chat-sidebar__collapse-toggle"
+            onClick={onToggleCollapse}
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-expanded={!isCollapsed}
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={`chat-sidebar__collapse-icon ${isCollapsed ? "chat-sidebar__collapse-icon--collapsed" : ""}`}
+            >
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
+        )}
         <h2 className="chat-sidebar__title">Conversations</h2>
         <button
           className="chat-sidebar__new-button"
           onClick={handleNewChat}
           aria-label="Start new chat"
         >
-          + New Chat
+          <span className="chat-sidebar__new-button-icon">+</span>
+          <span className="chat-sidebar__new-button-text">New Chat</span>
         </button>
       </div>
 

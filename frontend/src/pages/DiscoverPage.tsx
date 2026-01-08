@@ -17,16 +17,11 @@ export function DiscoverPage() {
   return (
     <StreamingProvider>
       <div className="discover-page">
-        <header className="discover-header">
-          <h1>Discover Music</h1>
-          <p>Find music by mood, theme, or conversation</p>
-        </header>
-
         <DiscoverNav />
 
         <div className="discover-content">
           <Routes>
-            <Route path="/" element={<Navigate to="search" replace />} />
+            <Route path="/" element={<Navigate to="chat" replace />} />
             <Route path="search" element={<DiscoverSearchView />} />
             <Route path="chat" element={<DiscoverChatView />} />
           </Routes>
