@@ -9,7 +9,7 @@
 
 import { Repository } from "typeorm";
 import { LibraryTrack } from "../../entities/LibraryTrack.js";
-import { LibraryAlbum, TrackInfo } from "../../entities/LibraryAlbum.js";
+import { LibraryAlbum } from "../../entities/LibraryAlbum.js";
 import { logger } from "../../utils/logger.js";
 
 /**

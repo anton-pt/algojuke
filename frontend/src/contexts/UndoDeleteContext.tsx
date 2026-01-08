@@ -40,12 +40,14 @@ export function UndoDeleteProvider({ children }: { children: ReactNode }) {
 
   // Cleanup on unmount
   useEffect(() => {
+    // Capture ref value at effect time for cleanup
+    const pendingDeletions = pendingDeletionsRef.current;
     return () => {
       // Clear all pending timeouts
-      pendingDeletionsRef.current.forEach((deletion) => {
+      pendingDeletions.forEach((deletion) => {
         clearTimeout(deletion.timeoutId);
       });
-      pendingDeletionsRef.current.clear();
+      pendingDeletions.clear();
     };
   }, []);
 
@@ -83,6 +85,28 @@ export function UndoDeleteProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Handle undo - must be defined before handleDelete since it's used there
+  const handleUndo = useCallback((id: string) => {
+    const pending = pendingDeletionsRef.current.get(id);
+    if (!pending) return;
+
+    // Cancel the timeout
+    clearTimeout(pending.timeoutId);
+
+    // Remove from deleted state
+    pendingDeletionsRef.current.delete(id);
+    setDeletedIds((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+
+    // Show restored toast
+    toast.success(`${pending.itemName} restored`, {
+      description: pending.label,
+    });
+  }, []);
+
   // Handle delete with undo functionality
   const handleDelete = useCallback(
     (
@@ -117,30 +141,8 @@ export function UndoDeleteProvider({ children }: { children: ReactNode }) {
         duration: 10000,
       });
     },
-    [finalizeDelete],
+    [finalizeDelete, handleUndo],
   );
-
-  // Handle undo
-  const handleUndo = useCallback((id: string) => {
-    const pending = pendingDeletionsRef.current.get(id);
-    if (!pending) return;
-
-    // Cancel the timeout
-    clearTimeout(pending.timeoutId);
-
-    // Remove from deleted state
-    pendingDeletionsRef.current.delete(id);
-    setDeletedIds((prev) => {
-      const next = new Set(prev);
-      next.delete(id);
-      return next;
-    });
-
-    // Show restored toast
-    toast.success(`${pending.itemName} restored`, {
-      description: pending.label,
-    });
-  }, []);
 
   return (
     <UndoDeleteContext.Provider value={{ isDeleted, handleDelete, handleUndo }}>

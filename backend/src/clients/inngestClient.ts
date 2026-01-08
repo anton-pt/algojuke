@@ -85,9 +85,10 @@ export type TrackIngestionRequestedEvent = z.infer<
  * Note: Type assertion is needed because Inngest's types expect Zod v3
  * but we're using Zod v4. Runtime behavior is unchanged.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
 const backendEvents = new EventSchemas().fromZod({
   "track/ingestion.requested": {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
     data: TrackIngestionRequestedEventSchema as any,
   },
 });

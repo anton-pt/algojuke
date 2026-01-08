@@ -95,8 +95,6 @@ export function createToolSpan(
     };
   }
 
-  const startTime = Date.now();
-
   // Create span under parent trace
   const span = trace.span({
     name: `tool-${options.toolName}`,
@@ -247,13 +245,14 @@ export async function executeToolWithTracing<
   } catch (error) {
     const durationMs = Date.now() - startTime;
     const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorWithProps = error as Record<string, unknown>;
     const retryable =
       error instanceof Error && "retryable" in error
-        ? (error as any).retryable
+        ? Boolean(errorWithProps.retryable)
         : true;
     const wasRetried =
       error instanceof Error && "wasRetried" in error
-        ? (error as any).wasRetried
+        ? Boolean(errorWithProps.wasRetried)
         : false;
 
     span.endError({

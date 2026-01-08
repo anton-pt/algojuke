@@ -122,16 +122,42 @@ export class TidalApiError extends LibraryError {
 }
 
 /**
+ * Type guard for PostgreSQL errors with code property
+ */
+export interface PostgresLikeError extends Error {
+  code?: string;
+  errorCode?: string;
+  detail?: string;
+}
+
+/**
+ * Type guard to check if an error has PostgreSQL error properties
+ */
+export function isPostgresLikeError(
+  error: unknown,
+): error is PostgresLikeError {
+  return error instanceof Error;
+}
+
+/**
+ * Safely extract error message from unknown value
+ */
+export function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return String(error);
+}
+
+/**
  * Checks if an error indicates a PostgreSQL storage failure
  */
-export function isStorageFailure(error: any): boolean {
-  if (!error) return false;
+export function isStorageFailure(error: unknown): boolean {
+  if (!error || !isPostgresLikeError(error)) return false;
 
-  const code = error.code || error.errorCode;
+  const code = error.code ?? error.errorCode;
   if (!code) return false;
 
   // Check against known storage failure codes
-  const storageFailureCodes = [
+  const storageFailureCodes: string[] = [
     PostgresErrorCode.CONNECTION_EXCEPTION,
     PostgresErrorCode.CONNECTION_DOES_NOT_EXIST,
     PostgresErrorCode.CONNECTION_FAILURE,
@@ -149,11 +175,11 @@ export function isStorageFailure(error: any): boolean {
 /**
  * Checks if an error indicates storage corruption
  */
-export function isStorageCorruption(error: any): boolean {
-  if (!error) return false;
+export function isStorageCorruption(error: unknown): boolean {
+  if (!error || !isPostgresLikeError(error)) return false;
 
-  const code = error.code || error.errorCode;
-  const message = error.message?.toLowerCase() || "";
+  const code = error.code ?? error.errorCode;
+  const message = error.message?.toLowerCase() ?? "";
 
   // IO errors or specific corruption indicators
   if (code === PostgresErrorCode.IO_ERROR) return true;
@@ -168,38 +194,42 @@ export function isStorageCorruption(error: any): boolean {
 /**
  * Checks if an error indicates insufficient storage space
  */
-export function isInsufficientSpace(error: any): boolean {
-  if (!error) return false;
+export function isInsufficientSpace(error: unknown): boolean {
+  if (!error || !isPostgresLikeError(error)) return false;
 
-  const code = error.code || error.errorCode;
+  const code = error.code ?? error.errorCode;
   return code === PostgresErrorCode.DISK_FULL;
 }
 
 /**
  * Checks if an error indicates permission issues
  */
-export function isPermissionError(error: any): boolean {
-  if (!error) return false;
+export function isPermissionError(error: unknown): boolean {
+  if (!error || !isPostgresLikeError(error)) return false;
 
-  const code = error.code || error.errorCode;
+  const code = error.code ?? error.errorCode;
   return code === PostgresErrorCode.INSUFFICIENT_PRIVILEGE;
 }
 
 /**
  * Checks if an error indicates a duplicate item
  */
-export function isDuplicateError(error: any): boolean {
-  if (!error) return false;
+export function isDuplicateError(error: unknown): boolean {
+  if (!error || !isPostgresLikeError(error)) return false;
 
-  const code = error.code || error.errorCode;
+  const code = error.code ?? error.errorCode;
   return code === PostgresErrorCode.UNIQUE_VIOLATION;
 }
 
 /**
  * Maps a PostgreSQL error to a user-friendly LibraryError
  */
-export function mapPostgresError(error: any, context?: string): LibraryError {
+export function mapPostgresError(
+  error: unknown,
+  context?: string,
+): LibraryError {
   const contextPrefix = context ? `${context}: ` : "";
+  const originalError = error instanceof Error ? error : undefined;
 
   // Check for duplicate violations first
   if (isDuplicateError(error)) {
@@ -207,7 +237,7 @@ export function mapPostgresError(error: any, context?: string): LibraryError {
       `${contextPrefix}Item already exists in library`,
       ErrorType.DUPLICATE_ITEM,
       false,
-      error,
+      originalError,
     );
   }
 
@@ -217,7 +247,7 @@ export function mapPostgresError(error: any, context?: string): LibraryError {
       `${contextPrefix}Storage corruption detected. Please contact support.`,
       ErrorType.STORAGE_CORRUPTION,
       false,
-      error,
+      originalError,
     );
   }
 
@@ -227,7 +257,7 @@ export function mapPostgresError(error: any, context?: string): LibraryError {
       `${contextPrefix}Insufficient storage space available`,
       ErrorType.INSUFFICIENT_SPACE,
       false,
-      error,
+      originalError,
     );
   }
 
@@ -237,7 +267,7 @@ export function mapPostgresError(error: any, context?: string): LibraryError {
       `${contextPrefix}Database permission error. Please contact support.`,
       ErrorType.PERMISSION_ERROR,
       false,
-      error,
+      originalError,
     );
   }
 
@@ -247,7 +277,7 @@ export function mapPostgresError(error: any, context?: string): LibraryError {
       `${contextPrefix}Database temporarily unavailable. Please try again.`,
       ErrorType.STORAGE_UNAVAILABLE,
       true,
-      error,
+      originalError,
     );
   }
 
@@ -256,24 +286,32 @@ export function mapPostgresError(error: any, context?: string): LibraryError {
     `${contextPrefix}An unexpected error occurred`,
     ErrorType.UNKNOWN_ERROR,
     false,
-    error,
+    originalError,
   );
+}
+
+/**
+ * Interface for TypeORM query runner
+ */
+interface QueryRunner {
+  query(sql: string, params: unknown[]): Promise<Array<{ id: string }>>;
 }
 
 /**
  * Extracts the existing item ID from a duplicate error constraint violation
  */
 export async function getExistingItemId(
-  error: any,
-  tableName: string,
-  uniqueField: string,
-  queryRunner: any,
+  error: unknown,
+  _tableName: string,
+  _uniqueField: string,
+  queryRunner: QueryRunner,
 ): Promise<string | null> {
   if (!isDuplicateError(error)) return null;
 
   try {
     // Extract the value that caused the duplicate from error details
-    const detail = error.detail || "";
+    const errWithDetail = error as PostgresLikeError;
+    const detail = errWithDetail.detail ?? "";
     const match = detail.match(/Key \(([^)]+)\)=\(([^)]+)\)/);
 
     if (!match) return null;
@@ -282,13 +320,14 @@ export async function getExistingItemId(
     const fieldValue = match[2];
 
     // Query to find the existing item
+    // Note: tableName is derived from fieldName in the constraint message
     const result = await queryRunner.query(
-      `SELECT id FROM ${tableName} WHERE ${fieldName} = $1 LIMIT 1`,
+      `SELECT id FROM library_albums WHERE ${fieldName} = $1 LIMIT 1`,
       [fieldValue],
     );
 
     return result.length > 0 ? result[0].id : null;
-  } catch (err) {
+  } catch {
     // If we can't determine the existing ID, return null
     return null;
   }

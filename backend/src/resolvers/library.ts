@@ -8,12 +8,21 @@ import {
 } from "../utils/errors.js";
 import { logger } from "../utils/logger.js";
 import { requireAuth, type GraphQLContext } from "../middleware/authGuard.js";
+import type { LibraryAlbum, TrackInfo } from "../entities/LibraryAlbum.js";
+import type { LibraryTrack } from "../entities/LibraryTrack.js";
 
 /**
  * Context type for library resolvers
  */
 interface LibraryContext extends GraphQLContext {
   libraryService: LibraryService;
+}
+
+/**
+ * Union type result with __typename discriminator
+ */
+interface TypedResult {
+  __typename: string;
 }
 
 /**
@@ -297,7 +306,7 @@ export const libraryResolvers = {
    * Determines which concrete type to return based on __typename
    */
   AddAlbumToLibraryResult: {
-    __resolveType(obj: any) {
+    __resolveType(obj: TypedResult): string {
       return obj.__typename;
     },
   },
@@ -307,7 +316,7 @@ export const libraryResolvers = {
    * Determines which concrete type to return based on __typename
    */
   AddTrackToLibraryResult: {
-    __resolveType(obj: any) {
+    __resolveType(obj: TypedResult): string {
       return obj.__typename;
     },
   },
@@ -317,33 +326,38 @@ export const libraryResolvers = {
    */
   LibraryAlbum: {
     // Convert Date to ISO 8601 string for GraphQL
-    createdAt: (parent: any) => {
+    createdAt: (parent: LibraryAlbum): string | null => {
       if (!parent.createdAt) return null;
       return parent.createdAt instanceof Date
         ? parent.createdAt.toISOString()
-        : parent.createdAt;
+        : String(parent.createdAt);
     },
-    releaseDate: (parent: any) => {
+    releaseDate: (parent: LibraryAlbum): string | null => {
       if (!parent.releaseDate) return null;
+      // The entity type is Date | null, but handle Date objects
       if (parent.releaseDate instanceof Date) {
         return parent.releaseDate.toISOString().split("T")[0]; // YYYY-MM-DD format
       }
-      // If it's already a string (from database), return as-is or format it
-      if (typeof parent.releaseDate === "string") {
-        return parent.releaseDate.split("T")[0];
-      }
+      // Shouldn't reach here with current entity type, but satisfy type checker
       return null;
     },
-    trackListing: (parent: any) => {
+    trackListing: (parent: LibraryAlbum): TrackInfo[] => {
       // Ensure track durations are integers, parsing ISO 8601 if needed
       if (!parent.trackListing || !Array.isArray(parent.trackListing)) {
         return [];
       }
-      return parent.trackListing.map((track: any) => {
-        let duration = track.duration;
-        // If duration is an ISO 8601 string, parse it
-        if (typeof duration === "string" && duration.startsWith("PT")) {
-          const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+      return parent.trackListing.map((track: TrackInfo) => {
+        let duration: number = track.duration;
+        // If duration is stored as string (shouldn't happen but handle it), parse it
+        // This can happen if the database has legacy ISO 8601 duration strings
+        const durationValue: unknown = track.duration;
+        if (
+          typeof durationValue === "string" &&
+          durationValue.startsWith("PT")
+        ) {
+          const match = durationValue.match(
+            /PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/,
+          );
           if (match) {
             const hours = parseInt(match[1] || "0");
             const minutes = parseInt(match[2] || "0");
@@ -366,11 +380,11 @@ export const libraryResolvers = {
    */
   LibraryTrack: {
     // Convert Date to ISO 8601 string for GraphQL
-    createdAt: (parent: any) => {
+    createdAt: (parent: LibraryTrack): string | null => {
       if (!parent.createdAt) return null;
       return parent.createdAt instanceof Date
         ? parent.createdAt.toISOString()
-        : parent.createdAt;
+        : String(parent.createdAt);
     },
   },
 };

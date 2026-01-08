@@ -37,7 +37,7 @@ async function parallelWithLimit<T, R>(
   fn: (item: T) => Promise<R>,
   concurrency: number,
 ): Promise<R[]> {
-  const results: R[] = new Array(items.length);
+  const results = new Array<R>(items.length);
   let index = 0;
 
   async function worker(): Promise<void> {

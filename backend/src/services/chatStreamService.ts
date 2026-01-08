@@ -36,21 +36,8 @@ import {
   AlbumTracksInputSchema,
   BatchMetadataInputSchema,
   SuggestPlaylistInputSchema,
-  type SemanticSearchInput,
-  type TidalSearchInput,
-  type AlbumTracksInput,
-  type BatchMetadataInput,
-  type SuggestPlaylistInput,
 } from "../schemas/agentTools.js";
-import type {
-  SemanticSearchOutput,
-  OptimizedSemanticSearchOutput,
-  TidalSearchOutput,
-  AlbumTracksOutput,
-  BatchMetadataOutput,
-  SuggestPlaylistOutput,
-  ToolError,
-} from "../types/agentTools.js";
+import type { ToolError } from "../types/agentTools.js";
 import {
   executeSemanticSearch,
   type SemanticSearchContext,
@@ -965,10 +952,13 @@ export class ChatStreamService {
       // Add tools if tool support is available
       // In AI SDK v6, use stopWhen: stepCountIs(N) instead of maxSteps for multi-step tool calling
       if (toolContext) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         streamOptions.tools = this.createTools(toolContext);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         streamOptions.stopWhen = stepCountIs(MAX_STEPS);
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const result = streamText(streamOptions);
 
       logger.info("chat_stream_llm_started", { conversationId });

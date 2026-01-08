@@ -39,7 +39,7 @@ export function isValidIsrc(isrc: string | null | undefined): isrc is string {
  */
 export function normalizeIsrc(isrc: string): string {
   if (!isValidIsrc(isrc)) {
-    throw new Error(`Invalid ISRC format: ${isrc}`);
+    throw new Error(`Invalid ISRC format: ${String(isrc)}`);
   }
   return isrc.toUpperCase();
 }
