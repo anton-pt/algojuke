@@ -1,7 +1,7 @@
 /**
  * Auth Layout Component
  *
- * Layout wrapper for authentication-related pages (landing, waitlist, connect).
+ * Layout wrapper for authentication-related pages (landing, connect).
  * Provides consistent styling and branding for the auth flow.
  */
 

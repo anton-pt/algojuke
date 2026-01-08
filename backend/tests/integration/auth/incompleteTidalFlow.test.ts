@@ -2,24 +2,25 @@
  * Integration tests for incomplete Tidal flow
  *
  * Tests the user experience when Tidal connection is interrupted.
+ *
+ * Updated for Feature #45: Open Access - Removed allowlist/approval references.
+ * Any authenticated user can proceed to connect Tidal.
  */
 
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
   AuthStatusSchema,
   TidalTokenStatusSchema,
 } from "../../../src/schemas/auth.js";
-import { isApprovedUser } from "../../../src/config/allowlist.js";
 
 describe("Incomplete Tidal Flow Integration", () => {
-  describe("Approved user without Tidal connection", () => {
-    it("identifies approved user state correctly", () => {
-      // Approved user who has not completed Tidal connection
+  describe("Authenticated user without Tidal connection", () => {
+    it("identifies user state correctly", () => {
+      // Authenticated user who has not completed Tidal connection
       const authStatus = {
         isAuthenticated: true,
-        isApproved: true,
         hasTidalConnection: false,
-        email: "anton.tcholakov@gmail.com",
+        email: "user@example.com",
         userId: "user_123",
       };
 
@@ -27,7 +28,6 @@ describe("Incomplete Tidal Flow Integration", () => {
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.isAuthenticated).toBe(true);
-        expect(result.data.isApproved).toBe(true);
         expect(result.data.hasTidalConnection).toBe(false);
       }
     });
@@ -48,16 +48,12 @@ describe("Incomplete Tidal Flow Integration", () => {
   });
 
   describe("Returning user flow", () => {
-    it("user approval persists across sessions", () => {
-      // User was approved in previous session
-      expect(isApprovedUser("anton.tcholakov@gmail.com")).toBe(true);
-
-      // Auth status shows approved but no Tidal
+    it("user authentication persists across sessions", () => {
+      // Auth status shows authenticated but no Tidal
       const authStatus = {
         isAuthenticated: true,
-        isApproved: true,
         hasTidalConnection: false,
-        email: "anton.tcholakov@gmail.com",
+        email: "user@example.com",
         userId: "user_456",
       };
 
@@ -89,12 +85,11 @@ describe("Incomplete Tidal Flow Integration", () => {
 
   describe("OAuth cancellation scenarios", () => {
     it("handles cancelled OAuth flow", () => {
-      // User cancelled OAuth - returns to approved but no Tidal state
+      // User cancelled OAuth - returns to authenticated but no Tidal state
       const authStatus = {
         isAuthenticated: true,
-        isApproved: true,
         hasTidalConnection: false,
-        email: "anton.tcholakov@gmail.com",
+        email: "user@example.com",
         userId: "user_789",
       };
 
@@ -106,7 +101,7 @@ describe("Incomplete Tidal Flow Integration", () => {
     });
 
     it("handles failed OAuth with retry option", () => {
-      // After failed OAuth attempt, status remains approved without Tidal
+      // After failed OAuth attempt, status remains authenticated without Tidal
       // User should be able to retry connection
       const tokenStatus = {
         hasTokens: false,

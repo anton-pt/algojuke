@@ -20,18 +20,16 @@ interface ProtectedRouteProps {
 
 interface AuthStatus {
   isAuthenticated: boolean;
-  isApproved: boolean;
   hasTidalConnection: boolean;
   tidalTokenExpired?: boolean;
 }
 
 /**
- * Route guard that checks authentication, approval status, and Tidal connection.
+ * Route guard that checks authentication and Tidal connection.
  *
  * Redirect logic:
  * - Not signed in → Landing page (/)
- * - Signed in but not approved → Waitlist page (/waitlist)
- * - Approved but no Tidal connection (when requireTidal=true) → Connect page (/connect-tidal)
+ * - Signed in but no Tidal connection (when requireTidal=true) → Connect page (/connect-tidal)
  * - Token expired → Attempt refresh via SDK
  * - Otherwise → Render children
  */
@@ -156,12 +154,7 @@ export function ProtectedRoute({
     );
   }
 
-  // Signed in but not approved → Waitlist
-  if (!authStatus.isApproved) {
-    return <Navigate to="/waitlist" state={{ from: location }} replace />;
-  }
-
-  // Approved but no Tidal connection (when required) → Connect page
+  // Signed in but no Tidal connection (when required) → Connect page
   // Pass through the original destination URL
   if (requireTidal && !authStatus.hasTidalConnection) {
     return (

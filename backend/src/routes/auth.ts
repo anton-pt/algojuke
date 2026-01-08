@@ -5,9 +5,7 @@
  */
 
 import { Router, Request, Response } from "express";
-import { getAuth, clerkClient } from "../middleware/clerkAuth.js";
-import { requireAuth, requireApproved } from "../middleware/clerkAuth.js";
-import { isApprovedUser } from "../config/allowlist.js";
+import { getAuth, clerkClient, requireAuth } from "../middleware/clerkAuth.js";
 import {
   getTidalTokens,
   storeTidalTokens,
@@ -41,7 +39,6 @@ export function createAuthRoutes(): Router {
     if (!auth?.userId) {
       const response: AuthStatus = {
         isAuthenticated: false,
-        isApproved: false,
         hasTidalConnection: false,
       };
       res.json(response);
@@ -51,7 +48,6 @@ export function createAuthRoutes(): Router {
     try {
       const user = await clerkClient.users.getUser(auth.userId);
       const email = user.primaryEmailAddress?.emailAddress;
-      const approved = email ? isApprovedUser(email) : false;
       const hasTidal = await hasTidalConnection(auth.userId);
 
       // Check if token is expired (for frontend to trigger refresh)
@@ -63,7 +59,6 @@ export function createAuthRoutes(): Router {
 
       const response: AuthStatus & { tidalTokenExpired?: boolean } = {
         isAuthenticated: true,
-        isApproved: approved,
         hasTidalConnection: hasTidal,
         tidalTokenExpired,
         email: email,
@@ -81,12 +76,11 @@ export function createAuthRoutes(): Router {
 
   /**
    * POST /api/auth/tidal/tokens
-   * Store Tidal OAuth tokens (requires approved user)
+   * Store Tidal OAuth tokens
    */
   router.post(
     "/tidal/tokens",
     requireAuth,
-    requireApproved,
     async (req: Request, res: Response) => {
       const auth = getAuth(req);
 
@@ -181,7 +175,6 @@ export function createAuthRoutes(): Router {
   router.post(
     "/tidal/refresh",
     requireAuth,
-    requireApproved,
     async (req: Request, res: Response) => {
       const auth = getAuth(req);
 

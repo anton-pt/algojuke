@@ -1,12 +1,14 @@
 /**
- * Integration tests for approved user auth flow
+ * Integration tests for user authentication flow
  *
- * Tests the complete authentication flow for approved users.
+ * Tests the complete authentication flow for any authenticated user.
  * Note: These tests mock Clerk and focus on the integration between components.
+ *
+ * Updated for Feature #45: Open Access - Removed allowlist checking.
+ * Any user with Google authentication can access the application.
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { isApprovedUser } from "../../../src/config/allowlist.js";
 import {
   TidalTokensInputSchema,
   AuthStatusSchema,
@@ -25,25 +27,9 @@ vi.mock("@clerk/express", () => ({
   },
 }));
 
-describe("Approved User Auth Flow Integration", () => {
+describe("User Auth Flow Integration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  describe("Allowlist verification", () => {
-    it("approves anton.tcholakov@gmail.com", () => {
-      expect(isApprovedUser("anton.tcholakov@gmail.com")).toBe(true);
-    });
-
-    it("approves email case-insensitively", () => {
-      expect(isApprovedUser("Anton.Tcholakov@Gmail.com")).toBe(true);
-      expect(isApprovedUser("ANTON.TCHOLAKOV@GMAIL.COM")).toBe(true);
-    });
-
-    it("rejects non-approved emails", () => {
-      expect(isApprovedUser("random@example.com")).toBe(false);
-      expect(isApprovedUser("notanton@gmail.com")).toBe(false);
-    });
   });
 
   describe("Token storage flow", () => {
@@ -81,9 +67,8 @@ describe("Approved User Auth Flow Integration", () => {
     it("produces correct auth status after connection", () => {
       const authStatus = {
         isAuthenticated: true,
-        isApproved: true,
         hasTidalConnection: true,
-        email: "anton.tcholakov@gmail.com",
+        email: "user@example.com",
         userId: "user_123",
       };
 
@@ -91,60 +76,59 @@ describe("Approved User Auth Flow Integration", () => {
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.isAuthenticated).toBe(true);
-        expect(result.data.isApproved).toBe(true);
         expect(result.data.hasTidalConnection).toBe(true);
       }
     });
   });
 
   describe("User state transitions", () => {
-    it("tracks state: Unauthenticated → Authenticated → Approved → Connected", () => {
+    it("tracks state: Unauthenticated -> Authenticated -> Connected", () => {
       // State 1: Unauthenticated
       const unauthenticated = {
         isAuthenticated: false,
-        isApproved: false,
         hasTidalConnection: false,
       };
       expect(AuthStatusSchema.parse(unauthenticated).isAuthenticated).toBe(
         false,
       );
 
-      // State 2: Authenticated but not approved (this user should go to waitlist)
-      const authenticatedNotApproved = {
+      // State 2: Authenticated but no Tidal (should go to connect page)
+      const authenticatedNoTidal = {
         isAuthenticated: true,
-        isApproved: false,
         hasTidalConnection: false,
-        email: "random@example.com",
-        userId: "user_random",
+        email: "user@example.com",
+        userId: "user_123",
       };
-      expect(AuthStatusSchema.parse(authenticatedNotApproved).isApproved).toBe(
-        false,
-      );
-
-      // State 3: Approved but no Tidal
-      const approvedNoTidal = {
-        isAuthenticated: true,
-        isApproved: true,
-        hasTidalConnection: false,
-        email: "anton.tcholakov@gmail.com",
-        userId: "user_anton",
-      };
-      const parsed = AuthStatusSchema.parse(approvedNoTidal);
-      expect(parsed.isApproved).toBe(true);
+      const parsed = AuthStatusSchema.parse(authenticatedNoTidal);
+      expect(parsed.isAuthenticated).toBe(true);
       expect(parsed.hasTidalConnection).toBe(false);
 
-      // State 4: Fully connected
+      // State 3: Fully connected
       const connected = {
         isAuthenticated: true,
-        isApproved: true,
         hasTidalConnection: true,
-        email: "anton.tcholakov@gmail.com",
-        userId: "user_anton",
+        email: "user@example.com",
+        userId: "user_123",
       };
       const connectedParsed = AuthStatusSchema.parse(connected);
       expect(connectedParsed.isAuthenticated).toBe(true);
-      expect(connectedParsed.isApproved).toBe(true);
       expect(connectedParsed.hasTidalConnection).toBe(true);
+    });
+
+    it("any email can complete the flow (no allowlist)", () => {
+      // Previously only allowlisted emails could proceed
+      // Now any authenticated user can connect Tidal
+      const anyUserStatus = {
+        isAuthenticated: true,
+        hasTidalConnection: false,
+        email: "anyuser@example.com",
+        userId: "user_any",
+      };
+
+      const result = AuthStatusSchema.parse(anyUserStatus);
+      expect(result.isAuthenticated).toBe(true);
+      // User should be able to proceed to Tidal connection
+      expect(result.hasTidalConnection).toBe(false);
     });
   });
 });
