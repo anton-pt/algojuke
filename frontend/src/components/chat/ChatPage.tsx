@@ -8,7 +8,7 @@
  * Includes mobile drawer for conversation history on narrow screens.
  */
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { ChatSidebar } from "./ChatSidebar";
 import { ChatView } from "./ChatView";
 import { MobileDrawer } from "./MobileDrawer";
@@ -26,8 +26,6 @@ export function ChatPage() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true";
   });
-
-  const hamburgerRef = useRef<HTMLButtonElement>(null);
 
   // Handle conversation selection from sidebar
   const handleSelectConversation = useCallback((id: string | null) => {
@@ -90,7 +88,6 @@ export function ChatPage() {
         {/* Mobile header with hamburger - visible only on mobile */}
         <div className="chat-page__mobile-header">
           <button
-            ref={hamburgerRef}
             className="chat-page__hamburger"
             onClick={handleOpenDrawer}
             aria-label="Open conversation history"

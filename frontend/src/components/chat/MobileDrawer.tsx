@@ -7,7 +7,7 @@
  * Renders on screens narrower than 768px when hamburger menu is tapped.
  */
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { useMutation } from "@apollo/client";
 import { toast } from "sonner";
 import { useConversations } from "../../hooks/useConversations";
@@ -20,7 +20,6 @@ import {
   isDeleteSuccess,
 } from "../../graphql/chat";
 import { LeaveConfirmDialog } from "./LeaveConfirmDialog";
-import { useState } from "react";
 import "./MobileDrawer.css";
 
 /**

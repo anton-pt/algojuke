@@ -186,10 +186,10 @@ describe("ChatSidebar", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("+ New Chat")).toBeInTheDocument();
+      expect(screen.getByLabelText("Start new chat")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText("+ New Chat"));
+    fireEvent.click(screen.getByLabelText("Start new chat"));
     expect(onSelect).toHaveBeenCalledWith(null);
   });
 
