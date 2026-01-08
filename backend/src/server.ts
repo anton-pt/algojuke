@@ -214,12 +214,13 @@ async function startServer() {
     app.use(
       "/graphql",
       expressMiddleware(server, {
-        context: async ({ req }) => {
+        context: ({ req }) => {
           // Extract userId from Clerk authentication
           const auth = getAuth(req);
-          const userId = auth?.userId;
+          // Convert null to undefined to match GraphQLContext.userId?: string
+          const userId = auth?.userId ?? undefined;
 
-          return {
+          return Promise.resolve({
             tidalService,
             cache,
             libraryService,
@@ -232,7 +233,7 @@ async function startServer() {
             dataSources: {
               db: AppDataSource,
             },
-          };
+          });
         },
       }),
     );
@@ -260,4 +261,4 @@ async function startServer() {
   }
 }
 
-startServer();
+void startServer();

@@ -8,8 +8,6 @@ import type {
   TidalAlbumAttributes,
   TidalTrackAttributes,
   TidalArtistAttributes,
-  TidalAlbumDetailsResponse,
-  TidalCoverArtResponse,
   TidalTrackBatchResponse,
   TidalAlbumBatchResponse,
   TidalArtworkAttributes,
@@ -61,7 +59,7 @@ export class TidalService {
   async search(
     query: string,
     limit: number = 20,
-    offset: number = 0,
+    _offset: number = 0,
     countryCode: string = "US",
   ): Promise<SearchResults> {
     const token = await this.tokenService.getValidToken();
@@ -253,7 +251,8 @@ export class TidalService {
             trackToAlbumMap.set(track.id, albumRelationship[0].id);
           } else if (albumRelationship && !Array.isArray(albumRelationship)) {
             // Single album relationship (not array)
-            trackToAlbumMap.set(track.id, (albumRelationship as any).id);
+            const singleRelation = albumRelationship as { id: string };
+            trackToAlbumMap.set(track.id, singleRelation.id);
           }
         });
 
@@ -357,7 +356,9 @@ export class TidalService {
     batchNumber: number,
     totalBatches: number,
   ): Promise<Map<string, { artistNames: string[]; coverUrl: string | null }>> {
-    return this.rateLimiter.executeWithRetry(async () => {
+    return this.rateLimiter.executeWithRetry<
+      Map<string, { artistNames: string[]; coverUrl: string | null }>
+    >(async () => {
       // Manually construct query string to ensure proper encoding
       const queryParams = new URLSearchParams({
         countryCode,
@@ -665,9 +666,21 @@ export class TidalService {
       });
 
       // Transform JSON:API response to track listing
-      const trackListing = (response.data.included || [])
-        .filter((item: any) => item.type === "tracks")
-        .map((track: any, index: number) => ({
+      // Type the included resources from JSON:API response
+      interface IncludedTrack {
+        type: string;
+        id: string;
+        attributes?: {
+          title?: string;
+          duration?: string;
+          explicit?: boolean;
+        };
+      }
+      const included = (response.data as { included?: IncludedTrack[] })
+        .included;
+      const trackListing = (included || [])
+        .filter((item) => item.type === "tracks")
+        .map((track, index) => ({
           position: index + 1,
           title: track.attributes?.title || "Unknown Track",
           duration: track.attributes?.duration
@@ -741,9 +754,18 @@ export class TidalService {
       const chunk = tidalIds.slice(i, i + BATCH_SIZE);
 
       try {
+        // Type for track batch response
+        interface TrackBatchItem {
+          id: string;
+          attributes?: { isrc?: string };
+        }
+        interface TrackBatchJsonApiResponse {
+          data: TrackBatchItem[];
+        }
+
         const url = `${this.apiBaseUrl}/v2/tracks`;
         const response = await this.rateLimiter.executeWithRetry(async () => {
-          return await axios.get(url, {
+          return await axios.get<TrackBatchJsonApiResponse>(url, {
             headers: {
               accept: "application/vnd.api+json",
               Authorization: `Bearer ${token}`,
@@ -757,10 +779,10 @@ export class TidalService {
         });
 
         // Extract ISRCs from response
-        const tracks = response.data.data || [];
+        const tracks = response.data.data ?? [];
         for (const track of tracks) {
           const isrc = track.attributes?.isrc;
-          result.set(track.id, isrc || undefined);
+          result.set(track.id, isrc ?? undefined);
         }
 
         // Mark any tracks not in response as undefined
@@ -774,9 +796,7 @@ export class TidalService {
           chunkIndex: Math.floor(i / BATCH_SIZE),
           chunkSize: chunk.length,
           totalTracks: tidalIds.length,
-          isrcsFound: tracks.filter(
-            (t: { attributes?: { isrc?: string } }) => t.attributes?.isrc,
-          ).length,
+          isrcsFound: tracks.filter((t) => t.attributes?.isrc).length,
         });
       } catch (error) {
         logger.error("batch_track_isrcs_error", {
@@ -794,7 +814,10 @@ export class TidalService {
         // Re-throw for critical errors
         if (axios.isAxiosError(error)) {
           if (error.response?.status === 429) {
-            const retryAfter = error.response.headers?.["retry-after"];
+            const headers = error.response.headers as
+              | Record<string, string>
+              | undefined;
+            const retryAfter = headers?.["retry-after"];
             throw new RateLimitError(
               retryAfter ? parseInt(retryAfter) : undefined,
             );
@@ -845,9 +868,24 @@ export class TidalService {
     });
     const url = `${this.apiBaseUrl}/v2/albums/${albumId}?${queryParams.toString()}`;
 
+    // Type for album response from JSON:API
+    interface AlbumJsonApiResponse {
+      data: {
+        id: string;
+        attributes?: TidalAlbumAttributes;
+        relationships?: {
+          artists?: { data?: Array<{ id: string }> };
+          coverArt?: { data?: Array<{ id: string }> };
+        };
+      };
+      included?: JsonApiResource<
+        TidalArtistAttributes | TidalArtworkAttributes
+      >[];
+    }
+
     try {
       const response = await this.rateLimiter.executeWithRetry(async () => {
-        return await axios.get(url, {
+        return await axios.get<AlbumJsonApiResponse>(url, {
           headers: {
             accept: "application/vnd.api+json",
             Authorization: `Bearer ${token}`,
@@ -857,8 +895,7 @@ export class TidalService {
       });
 
       const album = response.data.data;
-      const attributes = album.attributes || {};
-      const included = response.data.included || [];
+      const included = response.data.included ?? [];
 
       // Build lookup maps from included resources
       const lookupMaps = this.buildLookupMaps(included);
@@ -879,19 +916,24 @@ export class TidalService {
         coverUrl = lookupMaps.artworkMap.get(coverArtData[0].id) || undefined;
       }
 
+      // Build album data with safe fallbacks
+      // Note: attributes comes from typed AlbumJsonApiResponse
+      const attrs = album.attributes;
       const albumData = {
         id: album.id,
-        title: attributes.title || "Unknown Album",
+        title: attrs?.title ?? "Unknown Album",
         artist: {
           id: artistId,
           name: artistName,
         },
         cover: coverUrl,
-        releaseDate: attributes.releaseDate,
-        numberOfTracks: attributes.numberOfTracks,
-        duration: attributes.duration,
-        explicit: attributes.explicit || false,
-        popularity: attributes.popularity,
+        releaseDate: attrs?.releaseDate,
+        numberOfTracks: attrs?.numberOfItems,
+        duration: attrs?.duration
+          ? this.parseDuration(attrs.duration)
+          : undefined,
+        explicit: attrs?.explicit ?? false,
+        popularity: attrs?.popularity ?? 0,
       };
 
       logger.info("album_fetched", { albumId, title: albumData.title });
@@ -1301,9 +1343,24 @@ export class TidalService {
     });
     const url = `${this.apiBaseUrl}/v2/tracks/${trackId}?${queryParams.toString()}`;
 
+    // Type for track response from JSON:API
+    interface TrackJsonApiResponse {
+      data: {
+        id: string;
+        attributes?: TidalTrackAttributes;
+        relationships?: {
+          artists?: { data?: Array<{ id: string }> };
+          albums?: { data?: Array<{ id: string }> };
+        };
+      };
+      included?: JsonApiResource<
+        TidalArtistAttributes | TidalArtworkAttributes
+      >[];
+    }
+
     try {
       const response = await this.rateLimiter.executeWithRetry(async () => {
-        return await axios.get(url, {
+        return await axios.get<TrackJsonApiResponse>(url, {
           headers: {
             accept: "application/vnd.api+json",
             Authorization: `Bearer ${token}`,
@@ -1313,10 +1370,7 @@ export class TidalService {
       });
 
       const track = response.data.data;
-      const attributes = track.attributes || {};
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const included: Array<JsonApiResource<any>> =
-        response.data.included || [];
+      const included = response.data.included ?? [];
 
       // Build lookup maps from included resources
       const lookupMaps = this.buildLookupMaps(included);
@@ -1340,7 +1394,9 @@ export class TidalService {
         const albumResource = included.find(
           (resource) => resource.type === "albums" && resource.id === albumId,
         );
-        const albumTitle = albumResource?.attributes?.title || "Unknown Album";
+        const albumTitle =
+          (albumResource?.attributes as TidalAlbumAttributes | undefined)
+            ?.title ?? "Unknown Album";
 
         // Fetch full album details to get cover art
         try {
@@ -1364,20 +1420,20 @@ export class TidalService {
         }
       }
 
+      // Build track data with safe fallbacks
+      const attrs = track.attributes;
       const trackData = {
         id: track.id,
-        title: attributes.title || "Unknown Track",
+        title: attrs?.title ?? "Unknown Track",
         artist: {
           id: artistId,
           name: artistName,
         },
         album: albumData,
-        duration: attributes.duration
-          ? this.parseDuration(attributes.duration)
-          : 0,
-        isrc: attributes.isrc,
-        explicit: attributes.explicit || false,
-        popularity: attributes.popularity,
+        duration: attrs?.duration ? this.parseDuration(attrs.duration) : 0,
+        isrc: attrs?.isrc,
+        explicit: attrs?.explicit ?? false,
+        popularity: attrs?.popularity,
       };
 
       logger.info("track_fetched", { trackId, title: trackData.title });
@@ -1465,7 +1521,9 @@ export class TidalService {
         });
       });
 
-      const playlistId = response.data?.data?.id;
+      // Type the response to avoid unsafe any
+      const responseData = response.data as { data?: { id?: string } } | null;
+      const playlistId = responseData?.data?.id;
       if (!playlistId) {
         throw new Error("No playlist ID returned from Tidal API");
       }

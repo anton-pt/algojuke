@@ -7,7 +7,7 @@
  * Allows users to rename the playlist before saving.
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import type {
   TrackForExport,
   ExportPlaylistResult,
@@ -73,13 +73,13 @@ export function SavePlaylistModal({
   }, [isOpen, defaultName]);
 
   // Handle cancel attempt - show warning if saving
-  const handleCancelAttempt = () => {
+  const handleCancelAttempt = useCallback(() => {
     if (isLoading) {
       setShowCancelWarning(true);
     } else {
       onCancel();
     }
-  };
+  }, [isLoading, onCancel]);
 
   // Confirm cancel during save
   const handleConfirmCancel = () => {
@@ -104,7 +104,7 @@ export function SavePlaylistModal({
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, isLoading, onCancel]);
+  }, [isOpen, handleCancelAttempt]);
 
   // Focus trap
   useEffect(() => {

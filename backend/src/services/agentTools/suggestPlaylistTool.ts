@@ -209,7 +209,7 @@ export async function enrichPlaylistTracks(
   // Build enriched tracks maintaining original order
   const enrichedTracks: EnrichedPlaylistTrack[] = [];
 
-  tracks.forEach((track, index) => {
+  tracks.forEach((track, _index) => {
     const normalizedIsrc = track.isrc.toUpperCase();
     const tidalTrack = trackDataMap.get(normalizedIsrc);
 

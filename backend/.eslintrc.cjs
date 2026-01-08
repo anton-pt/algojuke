@@ -13,21 +13,21 @@ module.exports = {
   ],
   rules: {
     "@typescript-eslint/explicit-function-return-type": "off",
-    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/no-explicit-any": "error",
     "@typescript-eslint/no-unused-vars": [
-      "warn",
+      "error",
       { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
     ],
-    // Relaxed type-checking rules (pre-existing technical debt)
-    "@typescript-eslint/no-unsafe-assignment": "off",
-    "@typescript-eslint/no-unsafe-member-access": "off",
-    "@typescript-eslint/no-unsafe-call": "off",
-    "@typescript-eslint/no-unsafe-return": "off",
-    "@typescript-eslint/no-unsafe-argument": "off",
-    "@typescript-eslint/no-floating-promises": "off",
-    "@typescript-eslint/no-misused-promises": "off",
-    "@typescript-eslint/restrict-template-expressions": "off",
-    "@typescript-eslint/require-await": "off",
+    // Strict type-checking rules (ALG-30)
+    "@typescript-eslint/no-unsafe-assignment": "error",
+    "@typescript-eslint/no-unsafe-member-access": "error",
+    "@typescript-eslint/no-unsafe-call": "error",
+    "@typescript-eslint/no-unsafe-return": "error",
+    "@typescript-eslint/no-unsafe-argument": "error",
+    "@typescript-eslint/no-floating-promises": "error",
+    "@typescript-eslint/no-misused-promises": "error",
+    "@typescript-eslint/restrict-template-expressions": "error",
+    "@typescript-eslint/require-await": "error",
   },
   env: {
     node: true,

@@ -39,16 +39,12 @@ import {
   type SemanticSearchInput,
 } from "../../schemas/agentTools.js";
 import type {
-  SemanticSearchOutput,
   IndexedTrackResult,
   AudioFeatures,
   OptimizedIndexedTrackResult,
   OptimizedSemanticSearchOutput,
 } from "../../types/agentTools.js";
-import {
-  isDiscoverySearchError,
-  type DiscoverySearchResponse,
-} from "../../types/discovery.js";
+import { type DiscoverySearchResponse } from "../../types/discovery.js";
 import { createToolError, type ToolError } from "../../types/agentTools.js";
 import { getLibraryIsrcs } from "./libraryStatus.js";
 import { logger } from "../../utils/logger.js";
@@ -76,7 +72,7 @@ export interface SemanticSearchContext {
 /**
  * Transform discovery results to IndexedTrackResult with full metadata
  */
-async function enrichResults(
+async function _enrichResults(
   discoveryResults: DiscoverySearchResponse,
   trackMetadataService: TrackMetadataService,
   libraryIsrcs: Set<string>,

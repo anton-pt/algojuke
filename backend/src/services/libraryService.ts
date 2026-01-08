@@ -8,8 +8,9 @@ import {
   LibraryError,
   DuplicateItemError,
   TidalApiError,
-  isDuplicateError,
   mapPostgresError,
+  ErrorType,
+  getErrorMessage,
 } from "../utils/errors.js";
 import {
   TimeoutError,
@@ -75,11 +76,11 @@ export class LibraryService {
       let albumData;
       try {
         albumData = await this.tidalService.getAlbumById(tidalAlbumId);
-      } catch (error: any) {
+      } catch (error: unknown) {
         logger.error("tidal_api_get_album_failed", {
           tidalAlbumId,
           error: String(error),
-          message: error.message,
+          message: getErrorMessage(error),
         });
 
         // Re-throw Tidal service errors as TidalApiError
@@ -99,7 +100,7 @@ export class LibraryService {
         throw new TidalApiError(
           "Failed to fetch album from Tidal",
           false,
-          error,
+          error instanceof Error ? error : undefined,
         );
       }
 
@@ -108,7 +109,7 @@ export class LibraryService {
       try {
         trackListing =
           await this.tidalService.getAlbumTrackListing(tidalAlbumId);
-      } catch (error: any) {
+      } catch (error: unknown) {
         logger.error("tidal_api_get_track_listing_failed", {
           tidalAlbumId,
           error: String(error),
@@ -131,7 +132,7 @@ export class LibraryService {
         throw new TidalApiError(
           "Failed to fetch album track listing from Tidal",
           false,
-          error,
+          error instanceof Error ? error : undefined,
         );
       }
 
@@ -156,11 +157,11 @@ export class LibraryService {
             totalTracks: trackListing.length,
             isrcsFound: trackListing.filter((t) => t.isrc).length,
           });
-        } catch (error: any) {
+        } catch (error: unknown) {
           // Log error but don't fail the album addition - proceed without ISRCs
           logger.albumTrackListingError(
             albumData.title,
-            `Failed to fetch ISRCs: ${error instanceof Error ? error.message : String(error)}`,
+            `Failed to fetch ISRCs: ${getErrorMessage(error)}`,
           );
         }
       }
@@ -233,7 +234,7 @@ export class LibraryService {
         }
 
         return savedAlbum;
-      } catch (error: any) {
+      } catch (error: unknown) {
         logger.error("database_save_album_failed", {
           tidalAlbumId,
           userId,
@@ -243,7 +244,7 @@ export class LibraryService {
         // Map PostgreSQL errors to appropriate LibraryError types
         throw mapPostgresError(error, "Failed to save album to library");
       }
-    } catch (error) {
+    } catch (error: unknown) {
       // Re-throw library errors as-is
       if (error instanceof LibraryError) {
         throw error;
@@ -257,9 +258,9 @@ export class LibraryService {
       });
       throw new LibraryError(
         "An unexpected error occurred while adding album to library",
-        "UNKNOWN_ERROR" as any,
+        ErrorType.UNKNOWN_ERROR,
         false,
-        error as Error,
+        error instanceof Error ? error : undefined,
       );
     }
   }
@@ -303,7 +304,7 @@ export class LibraryService {
       let trackData;
       try {
         trackData = await this.tidalService.getTrackById(tidalTrackId);
-      } catch (error: any) {
+      } catch (error: unknown) {
         logger.error("tidal_api_get_track_failed", {
           tidalTrackId,
           error: String(error),
@@ -326,7 +327,7 @@ export class LibraryService {
         throw new TidalApiError(
           "Failed to fetch track from Tidal",
           false,
-          error,
+          error instanceof Error ? error : undefined,
         );
       }
 
@@ -381,7 +382,7 @@ export class LibraryService {
         }
 
         return savedTrack;
-      } catch (error: any) {
+      } catch (error: unknown) {
         logger.error("database_save_track_failed", {
           tidalTrackId,
           userId,
@@ -391,7 +392,7 @@ export class LibraryService {
         // Map PostgreSQL errors to appropriate LibraryError types
         throw mapPostgresError(error, "Failed to save track to library");
       }
-    } catch (error) {
+    } catch (error: unknown) {
       // Re-throw library errors as-is
       if (error instanceof LibraryError) {
         throw error;
@@ -405,9 +406,9 @@ export class LibraryService {
       });
       throw new LibraryError(
         "An unexpected error occurred while adding track to library",
-        "UNKNOWN_ERROR" as any,
+        ErrorType.UNKNOWN_ERROR,
         false,
-        error as Error,
+        error instanceof Error ? error : undefined,
       );
     }
   }
@@ -435,7 +436,7 @@ export class LibraryService {
         count: albums.length,
       });
       return albums;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("get_library_albums_failed", {
         userId,
         error: String(error),
@@ -467,7 +468,7 @@ export class LibraryService {
         count: tracks.length,
       });
       return tracks;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("get_library_tracks_failed", {
         userId,
         error: String(error),
@@ -499,7 +500,7 @@ export class LibraryService {
       }
 
       return album;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("get_library_album_failed", {
         id,
         userId,
@@ -532,7 +533,7 @@ export class LibraryService {
       }
 
       return track;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("get_library_track_failed", {
         id,
         userId,
@@ -561,7 +562,7 @@ export class LibraryService {
         logger.info("album_not_found_for_removal", { id, userId });
         throw new LibraryError(
           "Album not found in library",
-          "NOT_FOUND" as any,
+          ErrorType.NOT_FOUND,
           false,
         );
       }
@@ -574,7 +575,7 @@ export class LibraryService {
         performanceCheck: duration < 1000 ? "PASS" : "FAIL",
       });
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof LibraryError) {
         throw error;
       }
@@ -607,7 +608,7 @@ export class LibraryService {
         logger.info("track_not_found_for_removal", { id, userId });
         throw new LibraryError(
           "Track not found in library",
-          "NOT_FOUND" as any,
+          ErrorType.NOT_FOUND,
           false,
         );
       }
@@ -620,7 +621,7 @@ export class LibraryService {
         performanceCheck: duration < 1000 ? "PASS" : "FAIL",
       });
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof LibraryError) {
         throw error;
       }

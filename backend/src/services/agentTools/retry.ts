@@ -67,12 +67,13 @@ function isRetryableError(error: unknown): boolean {
 
   // Check for HTTP status codes
   if (error instanceof Error && "status" in error) {
-    const status = (error as any).status;
-    if (RETRYABLE_STATUS_CODES.includes(status)) {
+    const errorWithStatus = error as Error & { status?: unknown };
+    const status = errorWithStatus.status;
+    if (typeof status === "number" && RETRYABLE_STATUS_CODES.includes(status)) {
       return true;
     }
     // 400, 401, 403, 404 are not retryable
-    if (status >= 400 && status < 500) {
+    if (typeof status === "number" && status >= 400 && status < 500) {
       return false;
     }
   }

@@ -55,7 +55,7 @@ export class RateLimiter {
       };
 
       this.queue.push(queuedRequest);
-      this.processQueue();
+      void this.processQueue();
     });
   }
 
@@ -97,7 +97,7 @@ export class RateLimiter {
       this.lastRequestTime = Date.now();
       this.activeRequests++;
 
-      this.executeRequest(request).finally(() => {
+      void this.executeRequest(request).finally(() => {
         this.activeRequests--;
       });
     }
@@ -131,7 +131,7 @@ export class RateLimiter {
         // Wait and re-queue
         await this.sleep(delay);
         this.queue.unshift(request); // Add back to front of queue
-        this.processQueue(); // Resume processing
+        void this.processQueue(); // Resume processing
       } else {
         // Max retries exceeded or non-retriable error
         if (is429) {

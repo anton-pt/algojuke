@@ -83,14 +83,14 @@ export function createAnthropicClient(): AnthropicClient {
         // Parse the JSON response
         let queries: string[];
         try {
-          const parsed = JSON.parse(text.trim());
+          const parsed: unknown = JSON.parse(text.trim());
           queries = QueryExpansionResponseSchema.parse(parsed);
         } catch (parseError) {
           // If JSON parsing fails, try to extract queries from the text
           // Sometimes the model wraps the response or adds explanation
           const jsonMatch = text.match(/\[[\s\S]*\]/);
           if (jsonMatch) {
-            const parsed = JSON.parse(jsonMatch[0]);
+            const parsed: unknown = JSON.parse(jsonMatch[0]);
             queries = QueryExpansionResponseSchema.parse(parsed);
           } else {
             logger.warn("query_expansion_parse_failed", {

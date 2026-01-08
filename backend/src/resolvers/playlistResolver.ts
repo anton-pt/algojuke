@@ -6,10 +6,7 @@
  * GraphQL resolver for exporting playlists to Tidal.
  */
 
-import {
-  PlaylistExportRequestSchema,
-  type PlaylistExportErrorCode,
-} from "../schemas/playlist.js";
+import { PlaylistExportRequestSchema } from "../schemas/playlist.js";
 import {
   getTidalTokens,
   isTokenExpired,

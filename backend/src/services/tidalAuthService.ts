@@ -169,7 +169,12 @@ export async function attemptTokenRefresh(
       },
     );
 
-    const { access_token, refresh_token, expires_in } = response.data;
+    const responseData = response.data as {
+      access_token: string;
+      refresh_token?: string;
+      expires_in: number;
+    };
+    const { access_token, refresh_token, expires_in } = responseData;
 
     // Calculate new expiration (expires_in is in seconds)
     const expiresAt = Date.now() + expires_in * 1000;
@@ -177,7 +182,7 @@ export async function attemptTokenRefresh(
     // Update tokens in Clerk metadata
     const updatedTokens: TidalTokens = {
       accessToken: access_token,
-      refreshToken: refresh_token || existingTokens.refreshToken, // Some OAuth flows don't return new refresh token
+      refreshToken: refresh_token ?? existingTokens.refreshToken, // Some OAuth flows don't return new refresh token
       expiresAt,
       scopes: existingTokens.scopes,
       connectedAt: existingTokens.connectedAt,

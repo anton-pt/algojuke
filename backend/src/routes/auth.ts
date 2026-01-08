@@ -6,6 +6,7 @@
 
 import { Router, Request, Response } from "express";
 import { getAuth, clerkClient, requireAuth } from "../middleware/clerkAuth.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 import {
   getTidalTokens,
   storeTidalTokens,
@@ -32,47 +33,50 @@ export function createAuthRoutes(): Router {
    * GET /api/auth/status
    * Get current user's authentication status
    */
-  router.get("/status", async (req: Request, res: Response) => {
-    const auth = getAuth(req);
+  router.get(
+    "/status",
+    asyncHandler(async (req: Request, res: Response) => {
+      const auth = getAuth(req);
 
-    // Not authenticated
-    if (!auth?.userId) {
-      const response: AuthStatus = {
-        isAuthenticated: false,
-        hasTidalConnection: false,
-      };
-      res.json(response);
-      return;
-    }
-
-    try {
-      const user = await clerkClient.users.getUser(auth.userId);
-      const email = user.primaryEmailAddress?.emailAddress;
-      const hasTidal = await hasTidalConnection(auth.userId);
-
-      // Check if token is expired (for frontend to trigger refresh)
-      let tidalTokenExpired: boolean | undefined;
-      if (hasTidal) {
-        const expired = await isTokenExpired(auth.userId);
-        tidalTokenExpired = expired ?? undefined;
+      // Not authenticated
+      if (!auth?.userId) {
+        const response: AuthStatus = {
+          isAuthenticated: false,
+          hasTidalConnection: false,
+        };
+        res.json(response);
+        return;
       }
 
-      const response: AuthStatus & { tidalTokenExpired?: boolean } = {
-        isAuthenticated: true,
-        hasTidalConnection: hasTidal,
-        tidalTokenExpired,
-        email: email,
-        userId: auth.userId,
-      };
-      res.json(response);
-    } catch (error) {
-      console.error("Error fetching auth status:", error);
-      res.status(500).json({
-        error: "internal_error",
-        message: "Failed to fetch auth status",
-      });
-    }
-  });
+      try {
+        const user = await clerkClient.users.getUser(auth.userId);
+        const email = user.primaryEmailAddress?.emailAddress;
+        const hasTidal = await hasTidalConnection(auth.userId);
+
+        // Check if token is expired (for frontend to trigger refresh)
+        let tidalTokenExpired: boolean | undefined;
+        if (hasTidal) {
+          const expired = await isTokenExpired(auth.userId);
+          tidalTokenExpired = expired ?? undefined;
+        }
+
+        const response: AuthStatus & { tidalTokenExpired?: boolean } = {
+          isAuthenticated: true,
+          hasTidalConnection: hasTidal,
+          tidalTokenExpired,
+          email: email,
+          userId: auth.userId,
+        };
+        res.json(response);
+      } catch (error) {
+        console.error("Error fetching auth status:", error);
+        res.status(500).json({
+          error: "internal_error",
+          message: "Failed to fetch auth status",
+        });
+      }
+    }),
+  );
 
   /**
    * POST /api/auth/tidal/tokens
@@ -81,7 +85,7 @@ export function createAuthRoutes(): Router {
   router.post(
     "/tidal/tokens",
     requireAuth,
-    async (req: Request, res: Response) => {
+    asyncHandler(async (req: Request, res: Response) => {
       const auth = getAuth(req);
 
       // Validate request body
@@ -121,7 +125,7 @@ export function createAuthRoutes(): Router {
           message: "Failed to store Tidal tokens",
         });
       }
-    },
+    }),
   );
 
   /**
@@ -131,7 +135,7 @@ export function createAuthRoutes(): Router {
   router.get(
     "/tidal/tokens",
     requireAuth,
-    async (req: Request, res: Response) => {
+    asyncHandler(async (req: Request, res: Response) => {
       const auth = getAuth(req);
 
       try {
@@ -161,7 +165,7 @@ export function createAuthRoutes(): Router {
           message: "Failed to fetch Tidal token status",
         });
       }
-    },
+    }),
   );
 
   /**
@@ -175,12 +179,13 @@ export function createAuthRoutes(): Router {
   router.post(
     "/tidal/refresh",
     requireAuth,
-    async (req: Request, res: Response) => {
+    asyncHandler(async (req: Request, res: Response) => {
       const auth = getAuth(req);
 
       try {
         // Check if tokens are provided (frontend refreshed via SDK)
-        const hasBody = req.body && Object.keys(req.body).length > 0;
+        const body = req.body as Record<string, unknown>;
+        const hasBody = body && Object.keys(body).length > 0;
 
         if (hasBody) {
           // Validate and update tokens
@@ -234,7 +239,7 @@ export function createAuthRoutes(): Router {
           message: "Failed to refresh Tidal tokens",
         });
       }
-    },
+    }),
   );
 
   return router;
