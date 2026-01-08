@@ -26,7 +26,7 @@ export function DiscoverPage() {
 
         <div className="discover-content">
           <Routes>
-            <Route path="/" element={<Navigate to="search" replace />} />
+            <Route path="/" element={<Navigate to="chat" replace />} />
             <Route path="search" element={<DiscoverSearchView />} />
             <Route path="chat" element={<DiscoverChatView />} />
           </Routes>
