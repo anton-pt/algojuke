@@ -1,0 +1,71 @@
+# Push Branch and Create Pull Request
+
+## Steps
+
+1. **Get current feature from branch**:
+
+   ```bash
+   BRANCH=$(git rev-parse --abbrev-ref HEAD)
+   NUM=$(echo "$BRANCH" | grep -oE 'alg-([0-9]+)' | grep -oE '[0-9]+')
+   ```
+
+2. **Run verification**:
+
+   ```bash
+   npm run type-check --workspaces --if-present
+   npm test --workspaces --if-present
+   ```
+
+3. **If verification fails**, stop and report errors.
+   Do NOT proceed to create a PR with failing checks.
+
+4. **Push branch to remote**:
+
+   ```bash
+   git push -u origin $BRANCH
+   ```
+
+5. **Extract PR title from spec**:
+
+   ```bash
+   # Get first line of spec.md (the # heading)
+   TITLE=$(head -1 specs/alg-${NUM}-*/spec.md | sed 's/^# //')
+   ```
+
+6. **Create PR with gh CLI**:
+
+   ```bash
+   gh pr create \
+     --title "${TITLE}" \
+     --body "## Summary
+
+   Closes ALG-${NUM}
+
+   See [spec.md](specs/alg-${NUM}-*/spec.md) for full specification.
+
+   ## Changes
+   $(git log main..HEAD --oneline)
+
+   ## Verification
+   - [x] Type check passes
+   - [x] Tests pass
+   "
+   ```
+
+7. **Optionally update Linear issue status**:
+   Use Linear MCP to set status to "In Review":
+
+   ```
+   mcp__linear-server__update_issue with:
+   - id: ALG-${NUM}
+   - state: "In Review"
+   ```
+
+8. **Output the PR URL** for the user.
+
+## Notes
+
+- The PR body uses "Closes ALG-{NUM}" to reference the Linear issue
+- GitHub will not auto-close Linear issues, but the reference provides traceability
+- If the branch already has a PR, `gh pr create` will fail - use `gh pr view` instead
+- Always run verification before pushing to catch issues early
