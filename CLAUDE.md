@@ -295,52 +295,60 @@ Tool invocations are streamed via SSE and displayed inline in chat messages usin
 
 ### Slash Commands
 
-| Command                | Description                                                      |
-| ---------------------- | ---------------------------------------------------------------- |
-| `/spec <description>`  | Create a feature specification and GitHub issue                  |
-| `/research [guidance]` | Document technical decisions (optional: implementation guidance) |
-| `/implement`           | Implement the feature on the current branch                      |
-| `/develop`             | Parallel implementation + testing via subagents (single tab)     |
-| `/test`                | Write tests for recent spec commits                              |
-| `/verify`              | Run type-check and all tests                                     |
-| `/commit-pr`           | Create PR with verification                                      |
-| `/review`              | Code simplification pass                                         |
+| Command                       | Description                                |
+| ----------------------------- | ------------------------------------------ |
+| `/fetch-issue <ALG-XX>`       | Fetch Linear issue and create branch       |
+| `/plan-spec`                  | Plan specification (enters plan mode)      |
+| `/plan-research [guidelines]` | Plan technical research (enters plan mode) |
+| `/implement-and-test`         | Implement feature with interleaved testing |
+| `/review-and-simplify`        | Review and simplify implementation         |
+| `/push-pr`                    | Push branch and create GitHub PR           |
 
 ### Feature Workflow
 
 ```bash
-# 1. Create spec and GitHub issue
-/spec Add dark mode toggle to user preferences
-# Creates issue #42, specs/42-dark-mode-toggle/spec.md, branch 42-dark-mode-toggle
+# 1. Fetch Linear issue and create branch
+/fetch-issue ALG-27
+# Creates branch alg-27-feature-name, specs/alg-27-feature-name/
 
-# 2. Research and document decisions
-/research Use CSS custom properties for theming
+# 2. Plan and write specification (enters plan mode)
+/plan-spec
+# Asks clarifying questions, proposes spec structure, writes after approval
 
-# 3. Implement with parallel testing (recommended)
-/develop
-# Or manually: /implement in Tab 1, /test in Tab 2
+# 3. Plan and document technical decisions (enters plan mode)
+/plan-research focus on SSE streaming
+# Explores codebase, proposes research plan, writes after approval
 
-# 4. Create PR
-/commit-pr
+# 4. Implement with interleaved testing
+/implement-and-test
+# Implements each user story, writes unit/integration tests, commits frequently
+
+# 5. Review and simplify
+/review-and-simplify
+# Identifies dead code, over-abstraction, simplifies
+
+# 6. Create PR
+/push-pr
+# Runs verification, pushes branch, creates GitHub PR
 ```
 
 ### Commit Convention
 
 ```
-spec: #42 - description    # Implementation commits (links to GitHub issue)
-test: #42 - description    # Test commits
-fix: #42 - description     # Bug fixes
-refactor: description      # Refactoring (no spec needed)
+spec: ALG-27 - description    # Implementation commits (references Linear issue)
+test: ALG-27 - description    # Test commits
+fix: ALG-27 - description     # Bug fixes
+refactor: description         # Refactoring (no issue needed)
 ```
 
 ### Spec Directory Structure
 
 ```
 specs/
-├── 20-tidal-search/
+├── alg-5-tidal-search/
 │   ├── spec.md            # Feature specification (user stories, requirements)
 │   └── research.md        # Technical decisions with rationale
-├── 21-library-management/
+├── alg-6-library-management/
 │   ├── spec.md
 │   └── research.md
 ...
