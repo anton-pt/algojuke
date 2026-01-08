@@ -95,8 +95,6 @@ export function createToolSpan(
     };
   }
 
-  const _startTime = Date.now();
-
   // Create span under parent trace
   const span = trace.span({
     name: `tool-${options.toolName}`,
