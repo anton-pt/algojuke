@@ -7,19 +7,48 @@
 
 .library-header {
   margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
 }
 
-.library-header h1 {
+.library-header__content h1 {
   font-size: 2rem;
   font-weight: 700;
   color: #111827;
   margin: 0 0 0.5rem 0;
 }
 
-.library-header p {
+.library-header__content p {
   font-size: 1rem;
   color: #6b7280;
   margin: 0;
+}
+
+.library-header__sync-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.library-header__sync-button:hover {
+  background: #2563eb;
+}
+
+.library-header__sync-button svg {
+  width: 1.125rem;
+  height: 1.125rem;
 }
 
 .tracks-placeholder {
@@ -34,11 +63,20 @@
     padding: 1rem;
   }
 
-  .library-header h1 {
+  .library-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .library-header__content h1 {
     font-size: 1.5rem;
   }
 
-  .library-header p {
+  .library-header__content p {
     font-size: 0.875rem;
+  }
+
+  .library-header__sync-button {
+    justify-content: center;
   }
 }
