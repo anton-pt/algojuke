@@ -1,26 +1,24 @@
 # Stage 1: Build Dependencies (all deps for TypeScript compilation)
 FROM node:20-alpine AS build-deps
 WORKDIR /app
-COPY package.json package-lock.json ./
+COPY package.json ./
 COPY backend/package.json ./backend/
-# Install all dependencies to ensure proper hoisting
-RUN npm ci
+# npm ci requires full workspace structure matching lockfile; use npm install instead
+RUN npm install
 
-# Stage 2: Frontend Dependencies (needs special handling for rollup platform deps)
+# Stage 2: Frontend Dependencies
 FROM node:20-alpine AS frontend-deps
 WORKDIR /app
-COPY package.json package-lock.json ./
+COPY package.json ./
 COPY frontend/package.json ./frontend/
-# npm ci has issues with platform-specific optional deps (rollup)
-# Delete lockfile to let npm install resolve correct binaries for this platform
-RUN rm package-lock.json && npm install
+RUN npm install
 
 # Stage 3: Production Dependencies (runtime only)
 FROM node:20-alpine AS prod-deps
 WORKDIR /app
-COPY package.json package-lock.json ./
+COPY package.json ./
 COPY backend/package.json ./backend/
-RUN npm ci --omit=dev
+RUN npm install --omit=dev
 
 # Stage 4: Frontend Builder
 FROM node:20-alpine AS frontend-builder
