@@ -1,17 +1,17 @@
 # Stage 1: Build Dependencies (all workspace deps for TypeScript compilation)
 FROM node:20-alpine AS build-deps
 WORKDIR /app
-COPY package.json package-lock.json ./
+COPY package.json ./
 COPY services/worker/package.json ./services/worker/
-# Install all dependencies (not just workspace) to ensure proper hoisting
-RUN npm ci
+# npm ci requires full workspace structure matching lockfile; use npm install instead
+RUN npm install
 
 # Stage 2: Production Dependencies (runtime only)
 FROM node:20-alpine AS prod-deps
 WORKDIR /app
-COPY package.json package-lock.json ./
+COPY package.json ./
 COPY services/worker/package.json ./services/worker/
-RUN npm ci --omit=dev
+RUN npm install --omit=dev
 
 # Stage 3: Builder
 FROM node:20-alpine AS builder
