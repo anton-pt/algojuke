@@ -175,3 +175,93 @@ export interface TidalAlbumBatchResponse {
     self: string;
   };
 }
+
+// ---------------------------------------------------------------------------
+// User Library Types (Feature 032 - Tidal Library Sync)
+// ---------------------------------------------------------------------------
+
+/**
+ * User profile response from /users/me endpoint
+ */
+export interface TidalUserMeResponse {
+  data: {
+    id: string;
+    type: "users";
+    attributes?: {
+      username?: string;
+      firstName?: string;
+      lastName?: string;
+      email?: string;
+      country?: string;
+    };
+  };
+  links?: {
+    self: string;
+  };
+}
+
+/**
+ * Resource identifier with addedAt metadata for user collections
+ */
+export interface TidalUserCollectionItem {
+  id: string;
+  type: "albums" | "tracks";
+  meta: {
+    addedAt: string; // ISO-8601 timestamp
+  };
+}
+
+/**
+ * Response from userCollections albums/tracks relationship endpoints
+ */
+export interface TidalUserCollectionResponse {
+  data: TidalUserCollectionItem[];
+  included?: Array<
+    | JsonApiResource<TidalAlbumAttributes>
+    | JsonApiResource<TidalTrackAttributes>
+    | JsonApiResource<TidalArtistAttributes>
+    | JsonApiResource<TidalArtworkAttributes>
+  >;
+  links?: {
+    self: string;
+    next?: string;
+    meta?: {
+      nextCursor?: string;
+    };
+  };
+}
+
+/**
+ * Album item from user's Tidal library
+ */
+export interface TidalUserAlbum {
+  id: string;
+  title: string;
+  artistName: string;
+  coverArtUrl: string | null;
+  trackCount: number;
+  releaseDate: string | null;
+  addedToTidal: string; // ISO-8601 timestamp
+}
+
+/**
+ * Track item from user's Tidal library
+ */
+export interface TidalUserTrack {
+  id: string;
+  title: string;
+  artistName: string;
+  albumName: string | null;
+  coverArtUrl: string | null;
+  duration: number; // seconds
+  addedToTidal: string; // ISO-8601 timestamp
+}
+
+/**
+ * Paginated response for user library items
+ */
+export interface TidalUserLibraryPage<T> {
+  items: T[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
