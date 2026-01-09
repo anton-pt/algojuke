@@ -5,7 +5,7 @@
  * Redirects users to appropriate pages based on their access level.
  */
 
-import { ReactNode, useEffect, useState, useCallback, useRef } from "react";
+import { ReactNode, useEffect, useState, useRef } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useUser, useAuth } from "@clerk/clerk-react";
 import { useTidalAuth } from "../../hooks/useTidalAuth";
@@ -47,38 +47,54 @@ export function ProtectedRoute({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshFailed, setRefreshFailed] = useState(false);
 
+  // Track if we've already checked auth status to prevent loops
+  const hasCheckedAuth = useRef(false);
   // Track if we've already attempted a refresh to prevent loops
   const hasAttemptedRefresh = useRef(false);
 
-  const checkAuthStatus = useCallback(async () => {
-    if (!isLoaded || !isSignedIn) {
+  // Effect for initial auth check - runs once when user is loaded and signed in
+  useEffect(() => {
+    // Skip if already checked
+    if (hasCheckedAuth.current) {
+      return;
+    }
+
+    // Wait for Clerk to load
+    if (!isLoaded) {
+      return;
+    }
+
+    // Not signed in - just stop loading
+    if (!isSignedIn) {
       setIsLoading(false);
       return;
     }
 
-    try {
-      const token = await getToken();
-      const response = await fetch("/api/auth/status", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+    // Mark as checked to prevent re-runs
+    hasCheckedAuth.current = true;
 
-      if (response.ok) {
-        const status: AuthStatus = await response.json();
-        setAuthStatus(status);
+    const fetchAuthStatus = async () => {
+      try {
+        const token = await getToken();
+        const response = await fetch("/api/auth/status", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const status: AuthStatus = await response.json();
+          setAuthStatus(status);
+        }
+      } catch {
+        // Ignore errors
+      } finally {
+        setIsLoading(false);
       }
-    } catch {
-      // Ignore errors
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isLoaded, isSignedIn, getToken]);
+    };
 
-  // Separate effect for initial auth check
-  useEffect(() => {
-    checkAuthStatus();
-  }, [checkAuthStatus]);
+    fetchAuthStatus();
+  }, [isLoaded, isSignedIn, getToken]);
 
   // Separate effect for token refresh - only runs when we have auth status
   // and token is expired, and we haven't already tried refreshing
@@ -160,7 +176,8 @@ export function ProtectedRoute({
   }
 
   // Token refresh failed - need to reconnect
-  if (refreshFailed) {
+  // Don't redirect if we're already on /connect-tidal to avoid infinite loop
+  if (refreshFailed && location.pathname !== "/connect-tidal") {
     return (
       <Navigate
         to="/connect-tidal"
@@ -172,7 +189,12 @@ export function ProtectedRoute({
 
   // Signed in but no Tidal connection (when required) → Connect page
   // Pass through the original destination URL
-  if (requireTidal && !authStatus.hasTidalConnection) {
+  // Don't redirect if we're already on /connect-tidal to avoid infinite loop
+  if (
+    requireTidal &&
+    !authStatus.hasTidalConnection &&
+    location.pathname !== "/connect-tidal"
+  ) {
     return (
       <Navigate
         to="/connect-tidal"
