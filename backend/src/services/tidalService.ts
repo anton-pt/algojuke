@@ -2032,7 +2032,7 @@ export class TidalService {
 
         // Get album name and cover art from track relationships
         let albumName: string | null = null;
-        let coverArtUrl: string | null = null;
+        const coverArtUrl: string | null = null;
         const albumRelationship = trackResource.relationships?.albums?.data;
         if (Array.isArray(albumRelationship) && albumRelationship.length > 0) {
           const albumData = albumMap.get(albumRelationship[0].id);

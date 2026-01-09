@@ -398,30 +398,26 @@ export class TidalLibrarySyncService {
   /**
    * Map Tidal user album to sync display format
    */
-  private mapToSyncAlbum(album: TidalUserAlbum): TidalSyncAlbum {
-    return {
-      tidalId: album.id,
-      title: album.title,
-      artistName: album.artistName,
-      coverArtUrl: album.coverArtUrl,
-      trackCount: album.trackCount,
-      releaseDate: album.releaseDate,
-      addedToTidal: album.addedToTidal,
-    };
-  }
+  private mapToSyncAlbum = (album: TidalUserAlbum): TidalSyncAlbum => ({
+    tidalId: album.id,
+    title: album.title,
+    artistName: album.artistName,
+    coverArtUrl: album.coverArtUrl,
+    trackCount: album.trackCount,
+    releaseDate: album.releaseDate,
+    addedToTidal: album.addedToTidal,
+  });
 
   /**
    * Map Tidal user track to sync display format
    */
-  private mapToSyncTrack(track: TidalUserTrack): TidalSyncTrack {
-    return {
-      tidalId: track.id,
-      title: track.title,
-      artistName: track.artistName,
-      albumName: track.albumName,
-      coverArtUrl: track.coverArtUrl,
-      duration: track.duration,
-      addedToTidal: track.addedToTidal,
-    };
-  }
+  private mapToSyncTrack = (track: TidalUserTrack): TidalSyncTrack => ({
+    tidalId: track.id,
+    title: track.title,
+    artistName: track.artistName,
+    albumName: track.albumName,
+    coverArtUrl: track.coverArtUrl,
+    duration: track.duration,
+    addedToTidal: track.addedToTidal,
+  });
 }
