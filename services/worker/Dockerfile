@@ -1,21 +1,23 @@
-# Stage 1: Build Dependencies (includes devDependencies for TypeScript compilation)
+# Stage 1: Build Dependencies (all workspace deps for TypeScript compilation)
 FROM node:20-alpine AS build-deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY services/worker/package.json ./services/worker/
-RUN npm ci --workspace=@algojuke/worker --include=dev
+# Install all dependencies (not just workspace) to ensure proper hoisting
+RUN npm ci
 
 # Stage 2: Production Dependencies (runtime only)
 FROM node:20-alpine AS prod-deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY services/worker/package.json ./services/worker/
-RUN npm ci --workspace=@algojuke/worker --omit=dev
+RUN npm ci --omit=dev
 
 # Stage 3: Builder
 FROM node:20-alpine AS builder
-WORKDIR /app
-COPY --from=build-deps /app/node_modules ./node_modules
+WORKDIR /app/services/worker
+# Copy node_modules maintaining workspace structure
+COPY --from=build-deps /app/node_modules /app/node_modules
 COPY services/worker/ ./
 RUN npm run build
 
@@ -28,10 +30,10 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nodeuser
 
-# Copy production dependencies only
+# Copy production dependencies (hoisted to root)
 COPY --from=prod-deps /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/package.json ./
+COPY --from=builder /app/services/worker/dist ./dist
+COPY --from=builder /app/services/worker/package.json ./
 
 USER nodeuser
 EXPOSE 3001
