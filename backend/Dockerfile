@@ -1,14 +1,18 @@
 # Stage 1: Backend Dependencies
 FROM node:20-alpine AS deps
 WORKDIR /app
-COPY backend/package*.json ./
-RUN npm ci
+COPY package.json package-lock.json ./
+COPY backend/package.json ./backend/
+RUN npm ci --workspace=@algojuke/backend
 
 # Stage 2: Frontend Dependencies
 FROM node:20-alpine AS frontend-deps
 WORKDIR /app
-COPY frontend/package*.json ./
-RUN npm ci
+COPY package.json package-lock.json ./
+COPY frontend/package.json ./frontend/
+# npm ci with workspaces has issues with platform-specific optional deps
+# Delete the lockfile to let npm install resolve correct binaries for this platform
+RUN rm package-lock.json && npm install --workspace=@algojuke/frontend
 
 # Stage 3: Frontend Builder
 FROM node:20-alpine AS frontend-builder

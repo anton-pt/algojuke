@@ -1,5 +1,5 @@
 {
-  "name": "algojuke-backend",
+  "name": "@algojuke/backend",
   "version": "1.0.0",
   "description": "GraphQL backend for Tidal music search",
   "type": "module",
