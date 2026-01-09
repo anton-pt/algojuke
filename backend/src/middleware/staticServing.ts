@@ -95,7 +95,8 @@ export function applyStaticServing(
   );
 
   // SPA fallback - all unmatched GET requests serve index.html
-  app.get("*", createSpaFallbackHandler(config.publicPath));
+  // Using regex for compatibility with both path-to-regexp v0.x and v8.x
+  app.get(/^\/.*/, createSpaFallbackHandler(config.publicPath));
 
   console.log(`Static serving enabled from: ${config.publicPath}`);
   return true;
