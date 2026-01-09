@@ -36,9 +36,8 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY backend/ ./
-RUN npm run build
 # Copy GraphQL schemas to dist (not compiled by tsc)
-RUN cp -r src/schema dist/schema
+RUN npm run build && cp -r src/schema dist/schema
 
 # Stage 5: Runner
 FROM node:20-alpine AS runner
