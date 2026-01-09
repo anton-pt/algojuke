@@ -1,22 +1,30 @@
-# Stage 1: Backend Dependencies
-FROM node:20-alpine AS deps
+# Stage 1: Build Dependencies (all deps for TypeScript compilation)
+FROM node:20-alpine AS build-deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY backend/package.json ./backend/
-RUN npm ci --workspace=@algojuke/backend
+# Install all dependencies to ensure proper hoisting
+RUN npm ci
 
-# Stage 2: Frontend Dependencies
+# Stage 2: Frontend Dependencies (needs special handling for rollup platform deps)
 FROM node:20-alpine AS frontend-deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY frontend/package.json ./frontend/
-# npm ci with workspaces has issues with platform-specific optional deps
-# Delete the lockfile to let npm install resolve correct binaries for this platform
-RUN rm package-lock.json && npm install --workspace=@algojuke/frontend
+# npm ci has issues with platform-specific optional deps (rollup)
+# Delete lockfile to let npm install resolve correct binaries for this platform
+RUN rm package-lock.json && npm install
 
-# Stage 3: Frontend Builder
-FROM node:20-alpine AS frontend-builder
+# Stage 3: Production Dependencies (runtime only)
+FROM node:20-alpine AS prod-deps
 WORKDIR /app
+COPY package.json package-lock.json ./
+COPY backend/package.json ./backend/
+RUN npm ci --omit=dev
+
+# Stage 4: Frontend Builder
+FROM node:20-alpine AS frontend-builder
+WORKDIR /app/frontend
 
 # Build-time environment variables for Vite (embedded at build time)
 ARG VITE_CLERK_PUBLISHABLE_KEY
@@ -27,19 +35,21 @@ ENV VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY
 ENV VITE_TIDAL_CLIENT_ID=$VITE_TIDAL_CLIENT_ID
 ENV VITE_TIDAL_REDIRECT_URI=$VITE_TIDAL_REDIRECT_URI
 
-COPY --from=frontend-deps /app/node_modules ./node_modules
+# Copy node_modules maintaining workspace structure
+COPY --from=frontend-deps /app/node_modules /app/node_modules
 COPY frontend/ ./
 RUN npm run build
 
-# Stage 4: Backend Builder
+# Stage 5: Backend Builder
 FROM node:20-alpine AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+WORKDIR /app/backend
+# Copy node_modules maintaining workspace structure
+COPY --from=build-deps /app/node_modules /app/node_modules
 COPY backend/ ./
 # Copy GraphQL schemas to dist (not compiled by tsc)
 RUN npm run build && cp -r src/schema dist/schema
 
-# Stage 5: Runner
+# Stage 6: Runner
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
@@ -48,13 +58,13 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nodeuser
 
-# Copy backend
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/package.json ./
+# Copy backend (production deps hoisted to root)
+COPY --from=prod-deps /app/node_modules ./node_modules
+COPY --from=builder /app/backend/dist ./dist
+COPY --from=builder /app/backend/package.json ./
 
 # Copy frontend build
-COPY --from=frontend-builder /app/dist ./public
+COPY --from=frontend-builder /app/frontend/dist ./public
 
 USER nodeuser
 EXPOSE 4000
