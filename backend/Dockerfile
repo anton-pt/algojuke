@@ -3,7 +3,6 @@ FROM node:20-alpine AS build-deps
 WORKDIR /app
 COPY package.json ./
 COPY backend/package.json ./backend/
-# npm ci requires full workspace structure matching lockfile; use npm install instead
 RUN npm install
 
 # Stage 2: Frontend Dependencies
