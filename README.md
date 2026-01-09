@@ -98,18 +98,8 @@ cd ../..
 ### 3. Install Dependencies
 
 ```bash
-# Backend
-cd backend && npm install && cd ..
-
-# Frontend
-cd frontend && npm install && cd ..
-
-# Worker service
-cd services/worker && npm install && cd ..
-
-# Other services
-cd services/search-index && npm install && cd ..
-cd services/observability && npm install && cd ..
+# Install all workspace dependencies from root
+npm install
 ```
 
 ### 4. Run Development Servers
@@ -235,20 +225,13 @@ LANGFUSE_BASEURL=http://localhost:3000
 ## Testing
 
 ```bash
-# Backend tests
-cd backend && npm test
+# Run all tests from root
+npm run test
 
-# Frontend tests
-cd frontend && npm test
-
-# Worker service tests
-cd services/worker && npm test
-
-# Search index tests
-cd services/search-index && npm test
-
-# Observability tests
-cd services/observability && npm test
+# Run tests for a specific workspace
+npm run test -- --filter=@algojuke/backend
+npm run test -- --filter=@algojuke/frontend
+npm run test -- --filter=@algojuke/worker
 ```
 
 ## Architecture Overview

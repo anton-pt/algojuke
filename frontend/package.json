@@ -1,5 +1,5 @@
 {
-  "name": "algojuke-frontend",
+  "name": "@algojuke/frontend",
   "version": "1.0.0",
   "description": "React frontend for Tidal music search",
   "type": "module",
