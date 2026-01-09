@@ -288,6 +288,180 @@ export class TidalService {
   }
 
   /**
+   * Batch fetch track details by track IDs (for user library sync)
+   *
+   * @param trackIds - Array of track IDs
+   * @param countryCode - ISO 3166-1 country code
+   * @param token - Tidal API access token
+   * @returns Map of track ID to enriched data (artist name, album name, album ID)
+   */
+  private async batchFetchTracksById(
+    trackIds: string[],
+    countryCode: string = "US",
+    token: string,
+  ): Promise<
+    Map<
+      string,
+      { artistName: string; albumName: string | null; albumId: string | null }
+    >
+  > {
+    if (trackIds.length === 0) {
+      return new Map();
+    }
+
+    // Tidal API limit: max 20 items per request
+    const BATCH_SIZE = 20;
+    const chunks: string[][] = [];
+    for (let i = 0; i < trackIds.length; i += BATCH_SIZE) {
+      chunks.push(trackIds.slice(i, i + BATCH_SIZE));
+    }
+
+    const allResults = new Map<
+      string,
+      { artistName: string; albumName: string | null; albumId: string | null }
+    >();
+
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      const chunkResults = await this.fetchTrackBatchById(
+        chunk,
+        countryCode,
+        token,
+        i + 1,
+        chunks.length,
+      );
+
+      chunkResults.forEach((value, key) => {
+        allResults.set(key, value);
+      });
+    }
+
+    return allResults;
+  }
+
+  /**
+   * Fetch a single batch of tracks by ID (max 20)
+   */
+  private async fetchTrackBatchById(
+    trackIds: string[],
+    countryCode: string,
+    token: string,
+    batchNumber: number,
+    totalBatches: number,
+  ): Promise<
+    Map<
+      string,
+      { artistName: string; albumName: string | null; albumId: string | null }
+    >
+  > {
+    return this.rateLimiter.executeWithRetry(async () => {
+      const queryParams = new URLSearchParams({
+        countryCode,
+        include: "albums,artists",
+        "filter[id]": trackIds.join(","),
+      });
+      const url = `${this.apiBaseUrl}/v2/tracks?${queryParams.toString()}`;
+
+      logger.info("batch_tracks_by_id_request", {
+        batchNumber,
+        totalBatches,
+        trackIdsCount: trackIds.length,
+      });
+
+      try {
+        const response = await axios.get<TidalTrackBatchResponse>(url, {
+          headers: {
+            accept: "application/vnd.api+json",
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/vnd.api+json",
+          },
+          timeout: 10000,
+        });
+
+        // Build lookup maps from included resources
+        const artistMap = new Map<string, string>();
+        const albumMap = new Map<string, string>();
+
+        if (response.data.included) {
+          for (const resource of response.data.included) {
+            if (resource.type === "artists") {
+              const attrs = resource.attributes as
+                | TidalArtistAttributes
+                | undefined;
+              if (attrs?.name) {
+                artistMap.set(resource.id, attrs.name);
+              }
+            } else if (resource.type === "albums") {
+              const attrs = resource.attributes as
+                | TidalAlbumAttributes
+                | undefined;
+              if (attrs?.title) {
+                albumMap.set(resource.id, attrs.title);
+              }
+            }
+          }
+        }
+
+        // Build track data map
+        const trackDataMap = new Map<
+          string,
+          {
+            artistName: string;
+            albumName: string | null;
+            albumId: string | null;
+          }
+        >();
+
+        for (const track of response.data.data) {
+          // Get artist name
+          let artistName = "Unknown Artist";
+          const artistRel = track.relationships?.artists?.data;
+          if (Array.isArray(artistRel) && artistRel.length > 0) {
+            artistName = artistMap.get(artistRel[0].id) || "Unknown Artist";
+          }
+
+          // Get album name and ID
+          let albumName: string | null = null;
+          let albumId: string | null = null;
+          const albumRel = track.relationships?.albums?.data;
+          if (Array.isArray(albumRel) && albumRel.length > 0) {
+            albumId = albumRel[0].id;
+            albumName = albumMap.get(albumId) || null;
+          }
+
+          trackDataMap.set(track.id, { artistName, albumName, albumId });
+        }
+
+        logger.info("batch_tracks_by_id_success", {
+          batchNumber,
+          totalBatches,
+          enrichedTracks: trackDataMap.size,
+        });
+
+        return trackDataMap;
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          logger.warn("batch_tracks_by_id_failed", {
+            batchNumber,
+            totalBatches,
+            trackIdsCount: trackIds.length,
+            status: error.response?.status,
+            error: error.message,
+          });
+        } else {
+          logger.warn("batch_tracks_by_id_failed", {
+            batchNumber,
+            totalBatches,
+            trackIdsCount: trackIds.length,
+            error: String(error),
+          });
+        }
+        return new Map();
+      }
+    });
+  }
+
+  /**
    * Batch fetch album details with artists and cover art
    * Tidal API limits to 20 albums per request, so we chunk the requests
    *
@@ -1752,9 +1926,12 @@ export class TidalService {
   ): Promise<TidalUserLibraryPage<TidalUserAlbum>> {
     const tidalUserId = await this.getTidalUserId(accessToken);
     const url = `${this.apiBaseUrl}/v2/userCollections/${tidalUserId}/relationships/albums`;
+    const countryCode = options.countryCode || "US";
 
+    // Step 1: Fetch album IDs and basic metadata from userCollections
+    // Note: This endpoint only supports include=albums - no nested relationships
     const params: Record<string, string> = {
-      countryCode: options.countryCode || "US",
+      countryCode,
       include: "albums",
     };
     if (options.cursor) {
@@ -1775,15 +1952,12 @@ export class TidalService {
             Authorization: `Bearer ${accessToken}`,
           },
           params,
-          timeout: 15000, // Longer timeout for potentially large responses
+          timeout: 15000,
         });
       });
 
-      // Build lookup maps from included resources
+      // Build album map from included resources (basic album data only)
       const albumMap = new Map<string, JsonApiResource<TidalAlbumAttributes>>();
-      const artistMap = new Map<string, string>();
-      const artworkMap = new Map<string, string>();
-
       if (response.data.included) {
         for (const resource of response.data.included) {
           if (resource.type === "albums") {
@@ -1791,24 +1965,6 @@ export class TidalService {
               resource.id,
               resource as JsonApiResource<TidalAlbumAttributes>,
             );
-          } else if (resource.type === "artists") {
-            const artistAttrs = resource.attributes as
-              | TidalArtistAttributes
-              | undefined;
-            if (artistAttrs?.name) {
-              artistMap.set(resource.id, artistAttrs.name);
-            }
-          } else if (resource.type === "artworks") {
-            const artworkAttrs = resource.attributes as
-              | TidalArtworkAttributes
-              | undefined;
-            if (artworkAttrs?.files?.length) {
-              // Prefer 320x320 or largest available
-              const file =
-                artworkAttrs.files.find((f) => f.meta.width === 320) ||
-                artworkAttrs.files[0];
-              artworkMap.set(resource.id, file.href);
-            }
           }
         }
       }
@@ -1819,6 +1975,19 @@ export class TidalService {
         addedAtMap.set(item.id, item.meta.addedAt);
       }
 
+      // Get list of album IDs to fetch details for
+      const albumIds = response.data.data
+        .map((item) => item.id)
+        .filter((id) => albumMap.has(id));
+
+      // Step 2: Batch fetch artist and cover art data from /v2/albums endpoint
+      // This endpoint supports include=artists,coverArt
+      const enrichedData = await this.batchFetchAlbums(
+        albumIds,
+        countryCode,
+        accessToken,
+      );
+
       // Transform to TidalUserAlbum[]
       const items: TidalUserAlbum[] = [];
       for (const item of response.data.data) {
@@ -1828,27 +1997,10 @@ export class TidalService {
         const attrs = albumResource.attributes;
         if (!attrs) continue;
 
-        // Get artist name from album relationships
-        let artistName = "Unknown Artist";
-        const artistRelationship = albumResource.relationships?.artists?.data;
-        if (
-          Array.isArray(artistRelationship) &&
-          artistRelationship.length > 0
-        ) {
-          artistName =
-            artistMap.get(artistRelationship[0].id) || "Unknown Artist";
-        }
-
-        // Get cover art URL from album relationships
-        let coverArtUrl: string | null = null;
-        const coverArtRelationship =
-          albumResource.relationships?.coverArt?.data;
-        if (
-          Array.isArray(coverArtRelationship) &&
-          coverArtRelationship.length > 0
-        ) {
-          coverArtUrl = artworkMap.get(coverArtRelationship[0].id) || null;
-        }
+        // Get enriched data (artist name and cover art) from batch fetch
+        const enriched = enrichedData.get(item.id);
+        const artistName = enriched?.artistNames?.[0] || "Unknown Artist";
+        const coverArtUrl = enriched?.coverUrl || null;
 
         items.push({
           id: item.id,
@@ -1866,7 +2018,6 @@ export class TidalService {
       if (response.data.links?.meta?.nextCursor) {
         nextCursor = response.data.links.meta.nextCursor;
       } else if (response.data.links?.next) {
-        // Extract cursor from next URL
         try {
           const nextUrl = new URL(response.data.links.next, this.apiBaseUrl);
           nextCursor = nextUrl.searchParams.get("page[cursor]");
@@ -1878,6 +2029,7 @@ export class TidalService {
       logger.info("user_albums_fetch_success", {
         tidalUserId,
         itemCount: items.length,
+        enrichedCount: enrichedData.size,
         hasMore: !!nextCursor,
       });
 
@@ -1930,9 +2082,12 @@ export class TidalService {
   ): Promise<TidalUserLibraryPage<TidalUserTrack>> {
     const tidalUserId = await this.getTidalUserId(accessToken);
     const url = `${this.apiBaseUrl}/v2/userCollections/${tidalUserId}/relationships/tracks`;
+    const countryCode = options.countryCode || "US";
 
+    // Step 1: Fetch track IDs and basic metadata from userCollections
+    // Note: This endpoint only supports include=tracks - no nested relationships
     const params: Record<string, string> = {
-      countryCode: options.countryCode || "US",
+      countryCode,
       include: "tracks",
     };
     if (options.cursor) {
@@ -1957,15 +2112,8 @@ export class TidalService {
         });
       });
 
-      // Build lookup maps from included resources
+      // Build track map from included resources (basic track data only)
       const trackMap = new Map<string, JsonApiResource<TidalTrackAttributes>>();
-      const artistMap = new Map<string, string>();
-      const albumMap = new Map<
-        string,
-        { title: string; coverArtUrl: string | null }
-      >();
-      const artworkMap = new Map<string, string>();
-
       if (response.data.included) {
         for (const resource of response.data.included) {
           if (resource.type === "tracks") {
@@ -1973,33 +2121,6 @@ export class TidalService {
               resource.id,
               resource as JsonApiResource<TidalTrackAttributes>,
             );
-          } else if (resource.type === "artists") {
-            const artistAttrs = resource.attributes as
-              | TidalArtistAttributes
-              | undefined;
-            if (artistAttrs?.name) {
-              artistMap.set(resource.id, artistAttrs.name);
-            }
-          } else if (resource.type === "albums") {
-            const albumAttrs = resource.attributes as
-              | TidalAlbumAttributes
-              | undefined;
-            if (albumAttrs?.title) {
-              albumMap.set(resource.id, {
-                title: albumAttrs.title,
-                coverArtUrl: null, // Will be populated from artwork
-              });
-            }
-          } else if (resource.type === "artworks") {
-            const artworkAttrs = resource.attributes as
-              | TidalArtworkAttributes
-              | undefined;
-            if (artworkAttrs?.files?.length) {
-              const file =
-                artworkAttrs.files.find((f) => f.meta.width === 320) ||
-                artworkAttrs.files[0];
-              artworkMap.set(resource.id, file.href);
-            }
           }
         }
       }
@@ -2010,6 +2131,34 @@ export class TidalService {
         addedAtMap.set(item.id, item.meta.addedAt);
       }
 
+      // Get list of track IDs to fetch details for
+      const trackIds = response.data.data
+        .map((item) => item.id)
+        .filter((id) => trackMap.has(id));
+
+      // Step 2: Batch fetch artist and album data from /tracks endpoint
+      // This endpoint supports include=albums,artists
+      const enrichedTracks = await this.batchFetchTracksById(
+        trackIds,
+        countryCode,
+        accessToken,
+      );
+
+      // Step 3: Collect unique album IDs and fetch cover art
+      const albumIds = new Set<string>();
+      for (const trackData of enrichedTracks.values()) {
+        if (trackData.albumId) {
+          albumIds.add(trackData.albumId);
+        }
+      }
+
+      // Batch fetch album cover art
+      const albumCoverArt = await this.batchFetchAlbums(
+        Array.from(albumIds),
+        countryCode,
+        accessToken,
+      );
+
       // Transform to TidalUserTrack[]
       const items: TidalUserTrack[] = [];
       for (const item of response.data.data) {
@@ -2019,26 +2168,16 @@ export class TidalService {
         const attrs = trackResource.attributes;
         if (!attrs) continue;
 
-        // Get artist name from track relationships
-        let artistName = "Unknown Artist";
-        const artistRelationship = trackResource.relationships?.artists?.data;
-        if (
-          Array.isArray(artistRelationship) &&
-          artistRelationship.length > 0
-        ) {
-          artistName =
-            artistMap.get(artistRelationship[0].id) || "Unknown Artist";
-        }
+        // Get enriched data from batch fetch
+        const enriched = enrichedTracks.get(item.id);
+        const artistName = enriched?.artistName || "Unknown Artist";
+        const albumName = enriched?.albumName || null;
 
-        // Get album name and cover art from track relationships
-        let albumName: string | null = null;
-        const coverArtUrl: string | null = null;
-        const albumRelationship = trackResource.relationships?.albums?.data;
-        if (Array.isArray(albumRelationship) && albumRelationship.length > 0) {
-          const albumData = albumMap.get(albumRelationship[0].id);
-          if (albumData) {
-            albumName = albumData.title;
-          }
+        // Get cover art from album data
+        let coverArtUrl: string | null = null;
+        if (enriched?.albumId) {
+          const albumData = albumCoverArt.get(enriched.albumId);
+          coverArtUrl = albumData?.coverUrl || null;
         }
 
         // Parse duration from ISO 8601 format
@@ -2073,6 +2212,8 @@ export class TidalService {
       logger.info("user_tracks_fetch_success", {
         tidalUserId,
         itemCount: items.length,
+        enrichedCount: enrichedTracks.size,
+        albumsWithCoverArt: albumCoverArt.size,
         hasMore: !!nextCursor,
       });
 
