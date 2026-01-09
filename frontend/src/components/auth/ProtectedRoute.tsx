@@ -5,7 +5,7 @@
  * Redirects users to appropriate pages based on their access level.
  */
 
-import { ReactNode, useEffect, useState, useCallback } from "react";
+import { ReactNode, useEffect, useState, useCallback, useRef } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useUser, useAuth } from "@clerk/clerk-react";
 import { useTidalAuth } from "../../hooks/useTidalAuth";
@@ -47,6 +47,9 @@ export function ProtectedRoute({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshFailed, setRefreshFailed] = useState(false);
 
+  // Track if we've already attempted a refresh to prevent loops
+  const hasAttemptedRefresh = useRef(false);
+
   const checkAuthStatus = useCallback(async () => {
     if (!isLoaded || !isSignedIn) {
       setIsLoading(false);
@@ -64,20 +67,37 @@ export function ProtectedRoute({
       if (response.ok) {
         const status: AuthStatus = await response.json();
         setAuthStatus(status);
+      }
+    } catch {
+      // Ignore errors
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isLoaded, isSignedIn, getToken]);
 
-        // If token is expired and we have Tidal SDK ready, try to refresh
-        if (
-          status.tidalTokenExpired &&
-          tidalSdkReady &&
-          !isRefreshing &&
-          !refreshFailed
-        ) {
-          setIsRefreshing(true);
-          const refreshSuccess = await refreshAndSyncToken();
-          setIsRefreshing(false);
+  // Separate effect for initial auth check
+  useEffect(() => {
+    checkAuthStatus();
+  }, [checkAuthStatus]);
 
+  // Separate effect for token refresh - only runs when we have auth status
+  // and token is expired, and we haven't already tried refreshing
+  useEffect(() => {
+    if (
+      authStatus?.tidalTokenExpired &&
+      tidalSdkReady &&
+      !isRefreshing &&
+      !refreshFailed &&
+      !hasAttemptedRefresh.current
+    ) {
+      hasAttemptedRefresh.current = true;
+      setIsRefreshing(true);
+
+      refreshAndSyncToken()
+        .then(async (refreshSuccess) => {
           if (refreshSuccess) {
             // Re-check auth status after successful refresh
+            const token = await getToken();
             const refreshedResponse = await fetch("/api/auth/status", {
               headers: { Authorization: `Bearer ${token}` },
             });
@@ -87,26 +107,22 @@ export function ProtectedRoute({
           } else {
             setRefreshFailed(true);
           }
-        }
-      }
-    } catch {
-      // Ignore errors
-    } finally {
-      setIsLoading(false);
+        })
+        .catch(() => {
+          setRefreshFailed(true);
+        })
+        .finally(() => {
+          setIsRefreshing(false);
+        });
     }
   }, [
-    isLoaded,
-    isSignedIn,
-    getToken,
+    authStatus?.tidalTokenExpired,
     tidalSdkReady,
     isRefreshing,
     refreshFailed,
     refreshAndSyncToken,
+    getToken,
   ]);
-
-  useEffect(() => {
-    checkAuthStatus();
-  }, [checkAuthStatus]);
 
   // Show loading state while checking auth
   if (!isLoaded || isLoading) {
