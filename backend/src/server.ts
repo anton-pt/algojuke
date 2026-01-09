@@ -20,7 +20,9 @@ import { trackMetadataResolvers } from "./resolvers/trackMetadata.js";
 import { discoveryResolvers } from "./resolvers/discoveryResolver.js";
 import { chatResolvers } from "./resolvers/chatResolver.js";
 import { playlistResolvers } from "./resolvers/playlistResolver.js";
+import { tidalSyncResolvers } from "./resolvers/tidalSyncResolver.js";
 import { TrackMetadataService } from "./services/trackMetadataService.js";
+import { TidalLibrarySyncService } from "./services/tidalLibrarySyncService.js";
 import { DiscoveryService } from "./services/discoveryService.js";
 import { ChatService } from "./services/chatService.js";
 import { createIsrcDataLoader } from "./loaders/isrcDataLoader.js";
@@ -79,6 +81,11 @@ const playlistSchema = readFileSync(
   "utf-8",
 );
 
+const tidalSyncSchema = readFileSync(
+  join(__dirname, "schema", "tidalSync.graphql"),
+  "utf-8",
+);
+
 const typeDefs = [
   searchSchema,
   librarySchema,
@@ -86,6 +93,7 @@ const typeDefs = [
   discoverySchema,
   chatSchema,
   playlistSchema,
+  tidalSyncSchema,
 ];
 
 // Initialize services (these will be created fresh after DB initialization)
@@ -95,7 +103,7 @@ const cache = new CacheService(
 const tokenService = new TidalTokenService();
 const tidalService = new TidalService(tokenService);
 
-// Merge resolvers from search, library, track metadata, discovery, chat, and playlist
+// Merge resolvers from search, library, track metadata, discovery, chat, playlist, and tidal sync
 const mergedResolvers = {
   Query: {
     ...searchResolver.Query,
@@ -103,11 +111,13 @@ const mergedResolvers = {
     ...trackMetadataResolvers.Query,
     ...discoveryResolvers.Query,
     ...chatResolvers.Query,
+    ...tidalSyncResolvers.Query,
   },
   Mutation: {
     ...libraryResolvers.Mutation,
     ...chatResolvers.Mutation,
     ...playlistResolvers.Mutation,
+    ...tidalSyncResolvers.Mutation,
   },
   AddAlbumToLibraryResult: libraryResolvers.AddAlbumToLibraryResult,
   AddTrackToLibraryResult: libraryResolvers.AddTrackToLibraryResult,
@@ -124,6 +134,10 @@ const mergedResolvers = {
   DeleteConversationResult: chatResolvers.DeleteConversationResult,
   // Playlist union type
   ExportPlaylistToTidalResult: playlistResolvers.ExportPlaylistToTidalResult,
+  // Tidal sync union types
+  TidalAlbumDiffUnion: tidalSyncResolvers.TidalAlbumDiffUnion,
+  TidalTrackDiffUnion: tidalSyncResolvers.TidalTrackDiffUnion,
+  TidalImportResult: tidalSyncResolvers.TidalImportResult,
 };
 
 // Start server
@@ -166,6 +180,15 @@ async function startServer() {
       tidalService,
       ingestionScheduler,
     );
+
+    // Initialize Tidal library sync service for ALG-32
+    const tidalLibrarySyncService = new TidalLibrarySyncService(
+      albumRepository,
+      trackRepository,
+      tidalService,
+      libraryService,
+    );
+    logger.info("tidal_library_sync_service_initialized");
 
     // Create Express app and HTTP server
     const app = express();
@@ -227,6 +250,7 @@ async function startServer() {
             trackMetadataService,
             discoveryService,
             chatService,
+            tidalLibrarySyncService,
             userId,
             // Create a new DataLoader per request for proper batching and caching
             isrcDataLoader: createIsrcDataLoader(trackMetadataService),

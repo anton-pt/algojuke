@@ -1,0 +1,274 @@
+# GraphQL Schema: Tidal Library Sync
+# Feature: ALG-32 - Tidal Library Synchronisation Flow
+# Date: 2026-01-09
+
+"""
+Album item from user's Tidal library for sync diff display
+"""
+type TidalSyncAlbum {
+  """
+  Tidal album identifier
+  """
+  tidalId: String!
+
+  """
+  Album title
+  """
+  title: String!
+
+  """
+  Primary artist name
+  """
+  artistName: String!
+
+  """
+  URL to album cover art
+  """
+  coverArtUrl: String
+
+  """
+  Number of tracks on the album
+  """
+  trackCount: Int!
+
+  """
+  Album release date (ISO 8601 format)
+  """
+  releaseDate: String
+
+  """
+  When the album was added to Tidal library (ISO 8601 timestamp)
+  """
+  addedToTidal: String!
+}
+
+"""
+Track item from user's Tidal library for sync diff display
+"""
+type TidalSyncTrack {
+  """
+  Tidal track identifier
+  """
+  tidalId: String!
+
+  """
+  Track title
+  """
+  title: String!
+
+  """
+  Primary artist name
+  """
+  artistName: String!
+
+  """
+  Album name (if track belongs to an album)
+  """
+  albumName: String
+
+  """
+  URL to track/album cover art
+  """
+  coverArtUrl: String
+
+  """
+  Track duration in seconds
+  """
+  duration: Int!
+
+  """
+  When the track was added to Tidal library (ISO 8601 timestamp)
+  """
+  addedToTidal: String!
+}
+
+"""
+Successful result for album diff query
+"""
+type TidalAlbumDiffResult {
+  """
+  Albums in Tidal but not in AlgoJuke
+  """
+  items: [TidalSyncAlbum!]!
+
+  """
+  Cursor for fetching next page (null if no more pages)
+  """
+  nextCursor: String
+
+  """
+  Whether there are more items to fetch
+  """
+  hasMore: Boolean!
+}
+
+"""
+Successful result for track diff query
+"""
+type TidalTrackDiffResult {
+  """
+  Tracks in Tidal but not in AlgoJuke
+  """
+  items: [TidalSyncTrack!]!
+
+  """
+  Cursor for fetching next page (null if no more pages)
+  """
+  nextCursor: String
+
+  """
+  Whether there are more items to fetch
+  """
+  hasMore: Boolean!
+}
+
+"""
+Error when user has no Tidal connection or token refresh fails
+"""
+type TidalSyncConnectionError {
+  """
+  Error message
+  """
+  message: String!
+
+  """
+  Whether user needs to reconnect their Tidal account
+  """
+  requiresReconnect: Boolean!
+}
+
+"""
+Error when Tidal API call fails
+"""
+type TidalSyncApiError {
+  """
+  Error message
+  """
+  message: String!
+
+  """
+  Whether the operation can be retried
+  """
+  retryable: Boolean!
+}
+
+"""
+Result of album diff query
+"""
+union TidalAlbumDiffUnion =
+  | TidalAlbumDiffResult
+  | TidalSyncConnectionError
+  | TidalSyncApiError
+
+"""
+Result of track diff query
+"""
+union TidalTrackDiffUnion =
+  | TidalTrackDiffResult
+  | TidalSyncConnectionError
+  | TidalSyncApiError
+
+"""
+Input for a single item to import
+"""
+input TidalImportItemInput {
+  """
+  Type of item to import
+  """
+  type: TidalImportItemType!
+
+  """
+  Tidal identifier for the item
+  """
+  tidalId: String!
+}
+
+"""
+Type of item being imported
+"""
+enum TidalImportItemType {
+  ALBUM
+  TRACK
+}
+
+"""
+Result of importing a single item
+"""
+type TidalImportItemResult {
+  """
+  Tidal identifier
+  """
+  tidalId: String!
+
+  """
+  Type of item
+  """
+  type: TidalImportItemType!
+
+  """
+  Whether the import succeeded
+  """
+  success: Boolean!
+
+  """
+  Error message if import failed
+  """
+  error: String
+}
+
+"""
+Successful result for import mutation
+"""
+type TidalImportSuccess {
+  """
+  Number of items successfully imported
+  """
+  imported: Int!
+
+  """
+  Number of items skipped (already existed)
+  """
+  skipped: Int!
+
+  """
+  Number of items that failed to import
+  """
+  failed: Int!
+
+  """
+  Individual results for each item
+  """
+  results: [TidalImportItemResult!]!
+}
+
+"""
+Result of import mutation
+"""
+union TidalImportResult =
+  | TidalImportSuccess
+  | TidalSyncConnectionError
+  | TidalSyncApiError
+
+type Query {
+  """
+  Get albums in Tidal library that are not in AlgoJuke.
+  Returns paginated results with 50 items per page.
+  Use cursor from previous response to fetch next page.
+  """
+  getTidalAlbumDiff(cursor: String, limit: Int): TidalAlbumDiffUnion!
+
+  """
+  Get tracks in Tidal library that are not in AlgoJuke.
+  Returns paginated results with 50 items per page.
+  Use cursor from previous response to fetch next page.
+  """
+  getTidalTrackDiff(cursor: String, limit: Int): TidalTrackDiffUnion!
+}
+
+type Mutation {
+  """
+  Import selected items from Tidal to AlgoJuke library.
+  Returns count of imported, skipped, and failed items.
+  """
+  importFromTidal(items: [TidalImportItemInput!]!): TidalImportResult!
+}
