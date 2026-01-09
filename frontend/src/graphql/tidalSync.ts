@@ -197,18 +197,3 @@ export interface GetTidalTrackDiffData {
 export interface ImportFromTidalData {
   importFromTidal: TidalImportResult;
 }
-
-// Query variables types
-export interface GetTidalAlbumDiffVariables {
-  cursor?: string | null;
-  limit?: number;
-}
-
-export interface GetTidalTrackDiffVariables {
-  cursor?: string | null;
-  limit?: number;
-}
-
-export interface ImportFromTidalVariables {
-  items: TidalImportItemInput[];
-}
