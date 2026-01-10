@@ -354,7 +354,12 @@ export class TidalService {
       { artistName: string; albumName: string | null; albumId: string | null }
     >
   > {
-    return this.rateLimiter.executeWithRetry(async () => {
+    return this.rateLimiter.executeWithRetry<
+      Map<
+        string,
+        { artistName: string; albumName: string | null; albumId: string | null }
+      >
+    >(async () => {
       const queryParams = new URLSearchParams({
         countryCode,
         include: "albums,artists",
