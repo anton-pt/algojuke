@@ -102,7 +102,8 @@ npm install
 npm run lint              # Lint all packages
 npm run lint:fix          # Fix lint issues in all packages
 npm run type-check        # Type check all packages
-npm run test              # Test all packages
+npm run test              # Run unit/contract tests (no Docker required)
+npm run test:integration  # Run integration tests (requires Docker)
 
 # Target specific package
 npm run lint -- --filter=backend
@@ -128,13 +129,14 @@ npm install
 npm run dev              # Start worker with hot reload (port 3001)
 
 # Testing
-npm test                 # Run all Vitest tests
+npm test                 # Run unit/contract tests (no Docker)
+npm run test:integration # Run integration tests (requires Inngest, Qdrant)
 npm run test:watch       # Run tests in watch mode
 npm run type-check       # TypeScript type checking
 
-# Infrastructure
+# Infrastructure (required for integration tests)
 docker compose up inngest -d    # Start Inngest Dev Server (port 8288)
-docker compose up db -d         # Start PostgreSQL (port 5432)
+docker compose up qdrant -d     # Start Qdrant (port 6333)
 
 # Validation
 cd services/worker
@@ -154,11 +156,12 @@ cd services/search-index
 npm install
 
 # Development
-npm test                        # Run all tests
+npm test                        # Run unit/contract tests (no Docker)
+npm run test:integration        # Run integration tests (requires Qdrant)
 npm run test:watch              # Run tests in watch mode
 npm run type-check              # TypeScript type checking
 
-# Infrastructure
+# Infrastructure (required for integration tests)
 docker compose up qdrant -d     # Start Qdrant (port 6333/6334)
 
 # Index Management
@@ -178,7 +181,8 @@ cd services/observability
 npm install
 
 # Testing
-npm test                 # Run all tests (91 tests)
+npm test                 # Run unit/contract tests (no Docker)
+npm run test:integration # Run integration tests (requires Langfuse)
 npm run test:watch       # Run tests in watch mode
 npm run type-check       # TypeScript type checking
 
@@ -373,12 +377,13 @@ Tool invocations are streamed via SSE and displayed inline in chat messages usin
 
 Runs on every push and PR to provide fast feedback for agentic coding:
 
-1. **Quality Checks** - type-check, lint, test (via Turborepo)
-2. **Build Verification** - Docker builds for backend and worker (no push)
+1. **Quality Checks** - type-check, lint, unit/contract tests (via Turborepo)
+2. **Integration Tests** - backend and search-index tests with PostgreSQL and Qdrant
+3. **Build Verification** - Docker builds for backend and worker (no push)
 
 ```bash
 # Triggers automatically on push to any branch
-# Uses placeholder values for Vite build args (verification only)
+# Integration tests run with GitHub Actions service containers (PostgreSQL, Qdrant)
 ```
 
 ### Release Workflow (`release.yml`)

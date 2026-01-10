@@ -6,21 +6,9 @@ export default defineConfig({
     globals: true,
     environment: "node",
     setupFiles: [],
-    include: ["tests/**/*.test.ts"],
-    exclude: ["tests/integration/**/*.test.ts"],
-    coverage: {
-      provider: "v8",
-      reporter: ["text", "json", "html"],
-      exclude: [
-        "node_modules/",
-        "tests/",
-        "**/*.d.ts",
-        "**/*.config.*",
-        "**/dist/",
-      ],
-    },
-    testTimeout: 10000,
-    hookTimeout: 10000,
+    include: ["tests/integration/**/*.test.ts"],
+    testTimeout: 30000,
+    hookTimeout: 30000,
   },
   resolve: {
     alias: {

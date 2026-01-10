@@ -20,9 +20,15 @@ Runs on every push to any branch and all pull requests, providing fast feedback 
 1. **Quality Checks**
    - Type checking (`npm run type-check`)
    - Linting (`npm run lint`)
-   - Tests (`npm run test`)
+   - Unit/contract tests (`npm run test`)
 
-2. **Build Verification** (runs after checks pass)
+2. **Integration Tests** (runs after checks pass)
+   - Starts PostgreSQL and Qdrant as GitHub Actions service containers
+   - Runs backend integration tests (database operations)
+   - Runs search-index integration tests (vector search operations)
+   - Note: Worker and observability integration tests require external APIs and are skipped in CI
+
+3. **Build Verification** (runs after checks pass)
    - Builds Docker images for backend and worker
    - Uses placeholder values for Vite build args
    - **Does NOT push images** - verification only
@@ -100,10 +106,10 @@ Push to branch          Push to main            GitHub Release
 │            ci.yml               │           │ release.yml │
 ├─────────────────────────────────┤           ├─────────────┤
 │ 1. Quality Checks               │           │ 1. Checks   │
-│    - type-check                 │           │ 2. Build    │
-│    - lint                       │           │    & Push   │
-│    - test                       │           │ 3. Deploy   │
-│ 2. Build Verification           │           │    to GCP   │
+│    - type-check, lint, test     │           │ 2. Build    │
+│ 2. Integration Tests            │           │    & Push   │
+│    - postgres + qdrant services │           │ 3. Deploy   │
+│ 3. Build Verification           │           │    to GCP   │
 │    - docker build (no push)     │           └─────────────┘
 └─────────────────────────────────┘
 ```
