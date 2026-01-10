@@ -22,23 +22,23 @@
     "ai": "^6.0.5",
     "axios": "^1.7.9",
     "dotenv": "^16.4.7",
-    "express": "^4.21.1",
+    "express": "^5.1.0",
     "inngest": "^3.22.12",
-    "langfuse": "^3.0.0",
+    "langfuse": "^3.38.6",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@inngest/test": "^0.1.9",
     "@types/express": "^5.0.0",
-    "@types/node": "^20.17.9",
+    "@types/node": "^24.0.0",
     "@typescript-eslint/eslint-plugin": "^6.19.0",
     "@typescript-eslint/parser": "^6.19.0",
     "eslint": "^8.56.0",
-    "tsx": "^4.19.2",
+    "tsx": "^4.21.0",
     "typescript": "^5.3.3",
-    "vitest": "^1.6.0"
+    "vitest": "^1.6.1"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=24.0.0"
   }
 }

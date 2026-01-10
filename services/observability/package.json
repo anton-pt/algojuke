@@ -18,20 +18,20 @@
     "demo:correlated": "npx tsx scripts/demo-correlated-trace.ts"
   },
   "dependencies": {
-    "langfuse": "^3.0.0",
-    "zod": "^3.24.1",
-    "dotenv": "^16.4.5"
+    "langfuse": "^3.38.6",
+    "zod": "^3.23.8",
+    "dotenv": "^16.4.7"
   },
   "devDependencies": {
-    "@types/node": "^20.17.10",
+    "@types/node": "^24.0.0",
     "@typescript-eslint/eslint-plugin": "^6.19.0",
     "@typescript-eslint/parser": "^6.19.0",
     "eslint": "^8.56.0",
-    "tsx": "^4.19.2",
-    "typescript": "~5.3.3",
-    "vitest": "^1.6.0"
+    "tsx": "^4.21.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.6.1"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=24.0.0"
   }
 }

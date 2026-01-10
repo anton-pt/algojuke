@@ -207,6 +207,50 @@ Access at http://localhost:3000 when Langfuse is running.
 - ES2022 target
 - Follow standard conventions
 
+## Dependency Management
+
+### Package Version Consistency
+
+Keep package versions consistent across all workspaces in the monorepo where possible. When adding or updating a shared dependency, ensure all packages use the same version.
+
+**Consistent Versions Required:**
+
+- `express` - Use same version across backend and worker
+- `axios` - Use same version across all packages
+- `dotenv` - Use same version across all packages
+- `langfuse` - Use same version across all packages
+- `@qdrant/js-client-rest` - Use same version across all packages
+- `@types/node` - Use same version across all packages
+- `@typescript-eslint/*` - Use same version across all packages
+- `typescript` - Use same version across all packages
+- `vitest` - Use same version across all packages
+- `tsx` - Use same version across all packages
+
+**Exception: zod**
+
+- The `zod` package requires different major versions across packages:
+  - `backend`: Uses zod v4.x (latest features)
+  - `worker`, `search-index`, `observability`: Use zod v3.x (required for Inngest compatibility - v4 is incompatible with Inngest)
+
+### Checking for Inconsistencies
+
+To check for package version inconsistencies, compare versions in `package.json` files across:
+
+- `/package.json` (root)
+- `/backend/package.json`
+- `/frontend/package.json`
+- `/services/worker/package.json`
+- `/services/search-index/package.json`
+- `/services/observability/package.json`
+
+### Updating Dependencies
+
+When updating a shared dependency:
+
+1. Update the version in all workspace `package.json` files
+2. Run `npm install` from the root to update the lockfile
+3. Run `npm run type-check && npm run lint && npm run test` to verify compatibility
+
 ## Environment Variables
 
 ### Backend Service

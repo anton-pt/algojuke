@@ -1,26 +1,26 @@
 # Stage 1: Build Dependencies (all deps for TypeScript compilation)
-FROM node:20-alpine AS build-deps
+FROM node:24-alpine AS build-deps
 WORKDIR /app
 COPY package.json ./
 COPY backend/package.json ./backend/
 RUN npm install
 
 # Stage 2: Frontend Dependencies
-FROM node:20-alpine AS frontend-deps
+FROM node:24-alpine AS frontend-deps
 WORKDIR /app
 COPY package.json ./
 COPY frontend/package.json ./frontend/
 RUN npm install
 
 # Stage 3: Production Dependencies (runtime only)
-FROM node:20-alpine AS prod-deps
+FROM node:24-alpine AS prod-deps
 WORKDIR /app
 COPY package.json ./
 COPY backend/package.json ./backend/
 RUN npm install --omit=dev
 
 # Stage 4: Frontend Builder
-FROM node:20-alpine AS frontend-builder
+FROM node:24-alpine AS frontend-builder
 WORKDIR /app/frontend
 
 # Build-time environment variables for Vite (embedded at build time)
@@ -38,7 +38,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # Stage 5: Backend Builder
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /app/backend
 # Copy node_modules maintaining workspace structure
 COPY --from=build-deps /app/node_modules /app/node_modules
@@ -47,7 +47,7 @@ COPY backend/ ./
 RUN npm run build && cp -r src/schema dist/schema
 
 # Stage 6: Runner
-FROM node:20-alpine AS runner
+FROM node:24-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
