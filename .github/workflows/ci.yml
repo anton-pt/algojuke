@@ -1,0 +1,131 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Quality Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm run test
+
+  integration-tests:
+    name: Integration Tests
+    needs: checks
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: algojuke_test
+          POSTGRES_USER: algojuke_user
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U algojuke_user -d algojuke_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      qdrant:
+        image: qdrant/qdrant:latest
+        ports:
+          - 6333:6333
+          - 6334:6334
+
+    env:
+      DATABASE_URL: postgresql://algojuke_user:test_password@localhost:5433/algojuke_test
+      QDRANT_URL: http://localhost:6333
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Wait for Qdrant
+        run: |
+          timeout 30 bash -c 'until curl -s http://localhost:6333/readyz > /dev/null; do sleep 1; done'
+          echo "Qdrant is ready"
+
+      - name: Initialize Qdrant collection
+        run: npm run init-index tracks-test
+        working-directory: services/search-index
+
+      - name: Run integration tests (backend)
+        run: npm run test:integration
+        working-directory: backend
+
+      - name: Run integration tests (search-index)
+        run: npm run test:integration
+        working-directory: services/search-index
+
+  build-verification:
+    name: Build Verification (${{ matrix.service.name }})
+    needs: checks
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - name: backend
+            file: backend/Dockerfile
+          - name: worker
+            file: services/worker/Dockerfile
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build ${{ matrix.service.name }}
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ matrix.service.file }}
+          push: false
+          tags: algojuke-${{ matrix.service.name }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.service.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service.name }}
+          build-args: |
+            VITE_CLERK_PUBLISHABLE_KEY=pk_test_placeholder
+            VITE_TIDAL_CLIENT_ID=placeholder
+            VITE_TIDAL_REDIRECT_URI=http://localhost:5173/auth/callback

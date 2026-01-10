@@ -102,7 +102,8 @@ npm install
 npm run lint              # Lint all packages
 npm run lint:fix          # Fix lint issues in all packages
 npm run type-check        # Type check all packages
-npm run test              # Test all packages
+npm run test              # Run unit/contract tests (no Docker required)
+npm run test:integration  # Run integration tests (requires Docker)
 
 # Target specific package
 npm run lint -- --filter=backend
@@ -128,13 +129,14 @@ npm install
 npm run dev              # Start worker with hot reload (port 3001)
 
 # Testing
-npm test                 # Run all Vitest tests
+npm test                 # Run unit/contract tests (no Docker)
+npm run test:integration # Run integration tests (requires Inngest, Qdrant)
 npm run test:watch       # Run tests in watch mode
 npm run type-check       # TypeScript type checking
 
-# Infrastructure
+# Infrastructure (required for integration tests)
 docker compose up inngest -d    # Start Inngest Dev Server (port 8288)
-docker compose up db -d         # Start PostgreSQL (port 5432)
+docker compose up qdrant -d     # Start Qdrant (port 6333)
 
 # Validation
 cd services/worker
@@ -154,11 +156,12 @@ cd services/search-index
 npm install
 
 # Development
-npm test                        # Run all tests
+npm test                        # Run unit/contract tests (no Docker)
+npm run test:integration        # Run integration tests (requires Qdrant)
 npm run test:watch              # Run tests in watch mode
 npm run type-check              # TypeScript type checking
 
-# Infrastructure
+# Infrastructure (required for integration tests)
 docker compose up qdrant -d     # Start Qdrant (port 6333/6334)
 
 # Index Management
@@ -178,7 +181,8 @@ cd services/observability
 npm install
 
 # Testing
-npm test                 # Run all tests (91 tests)
+npm test                 # Run unit/contract tests (no Docker)
+npm run test:integration # Run integration tests (requires Langfuse)
 npm run test:watch       # Run tests in watch mode
 npm run type-check       # TypeScript type checking
 
@@ -359,6 +363,52 @@ npm test -- tests/contract/agentTools/suggestPlaylistTool.test.ts
 Tool invocations are streamed via SSE and displayed inline in chat messages using the `ToolInvocation` component with expand/collapse functionality. The `suggestPlaylist` tool renders a visual `PlaylistCard` component with album artwork, track info, and expandable reasoning.
 
 <!-- MANUAL ADDITIONS END -->
+
+## CI/CD Pipeline
+
+### Workflows
+
+| Workflow      | Trigger                  | Purpose                                     |
+| ------------- | ------------------------ | ------------------------------------------- |
+| `ci.yml`      | Push to any branch, PRs  | Run quality checks and verify Docker builds |
+| `release.yml` | GitHub release published | Build, push images, and deploy to GCP       |
+
+### CI Workflow (`ci.yml`)
+
+Runs on every push and PR to provide fast feedback for agentic coding:
+
+1. **Quality Checks** - type-check, lint, unit/contract tests (via Turborepo)
+2. **Integration Tests** - backend and search-index tests with PostgreSQL and Qdrant
+3. **Build Verification** - Docker builds for backend and worker (no push)
+
+```bash
+# Triggers automatically on push to any branch
+# Integration tests run with GitHub Actions service containers (PostgreSQL, Qdrant)
+```
+
+### Release Workflow (`release.yml`)
+
+Deploys to production on GitHub releases:
+
+1. **Quality Checks** - Re-runs all checks (defense in depth)
+2. **Build & Push** - Builds and pushes to Artifact Registry with tags:
+   - `:sha` - Immutable reference
+   - `:version` - Release tag (e.g., `v1.2.3`)
+   - `:latest` - Convenience tag
+3. **Deploy** - Updates Cloud Run services
+
+```bash
+# Create a release via GitHub UI or CLI:
+gh release create v1.2.3 --title "Release v1.2.3" --notes "Release notes"
+```
+
+### Manual Deployment
+
+Use `workflow_dispatch` for emergency deployments:
+
+```bash
+gh workflow run release.yml -f tag=v1.2.3
+```
 
 ## Development Workflow
 

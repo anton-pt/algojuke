@@ -146,7 +146,7 @@ describe("Static Serving Contract Tests", () => {
 
     it("creates a handler that serves index.html", async () => {
       const app = express();
-      app.get("*", createSpaFallbackHandler(tempDir));
+      app.get("{*path}", createSpaFallbackHandler(tempDir));
 
       const response = await request(app).get("/any/path");
 
@@ -157,7 +157,7 @@ describe("Static Serving Contract Tests", () => {
 
     it("sets Cache-Control header to no-cache", async () => {
       const app = express();
-      app.get("*", createSpaFallbackHandler(tempDir));
+      app.get("{*path}", createSpaFallbackHandler(tempDir));
 
       const response = await request(app).get("/any/path");
 

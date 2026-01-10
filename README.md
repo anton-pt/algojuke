@@ -234,6 +234,15 @@ npm run test -- --filter=@algojuke/frontend
 npm run test -- --filter=@algojuke/worker
 ```
 
+## CI/CD
+
+See [README.cicd.md](README.cicd.md) for the complete CI/CD pipeline documentation.
+
+**Quick reference:**
+
+- **CI** runs on every push/PR: type-check, lint, test, Docker build verification
+- **Release** deploys to GCP Cloud Run when a GitHub release is published
+
 ## Architecture Overview
 
 ```
