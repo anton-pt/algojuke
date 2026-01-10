@@ -1,72 +1,51 @@
-name: Build and Deploy
+name: Release
 
 on:
-  push:
-    branches: [main]
+  release:
+    types: [published]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to deploy (e.g., v1.0.0)"
+        required: true
+        type: string
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  build:
+  checks:
+    name: Quality Checks
     runs-on: ubuntu-latest
-    environment: default
-    permissions:
-      contents: read
-      id-token: write # Required for OIDC
-
-    env:
-      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-      GCP_REGION: ${{ secrets.GCP_REGION }}
-      GAR_LOCATION: ${{ secrets.GCP_REGION }}-docker.pkg.dev
-
-    strategy:
-      matrix:
-        service:
-          - name: backend
-            path: .
-            file: backend/Dockerfile
-            image: algojuke-backend
-          - name: worker
-            path: .
-            file: services/worker/Dockerfile
-            image: algojuke-worker
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - id: auth
-        uses: google-github-actions/auth@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
-          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+          node-version: "24"
+          cache: "npm"
 
-      - uses: google-github-actions/setup-gcloud@v2
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Configure Docker
-        run: gcloud auth configure-docker ${{ env.GAR_LOCATION }}
+      - name: Type check
+        run: npm run type-check
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Lint
+        run: npm run lint
 
-      - name: Build and Push
-        uses: docker/build-push-action@v5
-        with:
-          context: ${{ matrix.service.path }}
-          file: ${{ matrix.service.file }}
-          push: true
-          tags: |
-            ${{ env.GAR_LOCATION }}/${{ env.GCP_PROJECT_ID }}/${{ matrix.service.image }}/${{ matrix.service.name }}:${{ github.sha }}
-            ${{ env.GAR_LOCATION }}/${{ env.GCP_PROJECT_ID }}/${{ matrix.service.image }}/${{ matrix.service.name }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          build-args: |
-            VITE_CLERK_PUBLISHABLE_KEY=${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
-            VITE_TIDAL_CLIENT_ID=${{ secrets.VITE_TIDAL_CLIENT_ID }}
-            VITE_TIDAL_REDIRECT_URI=${{ secrets.VITE_TIDAL_REDIRECT_URI }}
+      - name: Test
+        run: npm run test
 
-  deploy:
-    needs: build
+  build-and-push:
+    name: Build & Push (${{ matrix.service.name }})
+    needs: checks
     runs-on: ubuntu-latest
-    environment: default
+    environment: production
     permissions:
       contents: read
       id-token: write
@@ -77,13 +56,97 @@ jobs:
       GAR_LOCATION: ${{ secrets.GCP_REGION }}-docker.pkg.dev
 
     strategy:
+      fail-fast: true
+      matrix:
+        service:
+          - name: backend
+            file: backend/Dockerfile
+            image: algojuke-backend
+          - name: worker
+            file: services/worker/Dockerfile
+            image: algojuke-worker
+
+    outputs:
+      backend-image: ${{ steps.image-ref.outputs.backend }}
+      worker-image: ${{ steps.image-ref.outputs.worker }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker ${{ env.GAR_LOCATION }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Determine version tag
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "tag=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ inputs.tag }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build and Push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ matrix.service.file }}
+          push: true
+          tags: |
+            ${{ env.GAR_LOCATION }}/${{ env.GCP_PROJECT_ID }}/${{ matrix.service.image }}/${{ matrix.service.name }}:${{ github.sha }}
+            ${{ env.GAR_LOCATION }}/${{ env.GCP_PROJECT_ID }}/${{ matrix.service.image }}/${{ matrix.service.name }}:${{ steps.version.outputs.tag }}
+            ${{ env.GAR_LOCATION }}/${{ env.GCP_PROJECT_ID }}/${{ matrix.service.image }}/${{ matrix.service.name }}:latest
+          cache-from: type=gha,scope=${{ matrix.service.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service.name }}
+          build-args: |
+            VITE_CLERK_PUBLISHABLE_KEY=${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
+            VITE_TIDAL_CLIENT_ID=${{ secrets.VITE_TIDAL_CLIENT_ID }}
+            VITE_TIDAL_REDIRECT_URI=${{ secrets.VITE_TIDAL_REDIRECT_URI }}
+
+      - name: Output image reference
+        id: image-ref
+        run: |
+          IMAGE="${{ env.GAR_LOCATION }}/${{ env.GCP_PROJECT_ID }}/${{ matrix.service.image }}/${{ matrix.service.name }}:${{ github.sha }}"
+          echo "${{ matrix.service.name }}=${IMAGE}" >> $GITHUB_OUTPUT
+
+  deploy:
+    name: Deploy (${{ matrix.service }})
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+
+    env:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ secrets.GCP_REGION }}
+      GAR_LOCATION: ${{ secrets.GCP_REGION }}-docker.pkg.dev
+
+    strategy:
+      fail-fast: false
       matrix:
         service: [backend, worker]
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - id: auth
+      - name: Authenticate to GCP
+        id: auth
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}

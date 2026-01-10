@@ -360,6 +360,51 @@ Tool invocations are streamed via SSE and displayed inline in chat messages usin
 
 <!-- MANUAL ADDITIONS END -->
 
+## CI/CD Pipeline
+
+### Workflows
+
+| Workflow      | Trigger                  | Purpose                                     |
+| ------------- | ------------------------ | ------------------------------------------- |
+| `ci.yml`      | Push to any branch, PRs  | Run quality checks and verify Docker builds |
+| `release.yml` | GitHub release published | Build, push images, and deploy to GCP       |
+
+### CI Workflow (`ci.yml`)
+
+Runs on every push and PR to provide fast feedback for agentic coding:
+
+1. **Quality Checks** - type-check, lint, test (via Turborepo)
+2. **Build Verification** - Docker builds for backend and worker (no push)
+
+```bash
+# Triggers automatically on push to any branch
+# Uses placeholder values for Vite build args (verification only)
+```
+
+### Release Workflow (`release.yml`)
+
+Deploys to production on GitHub releases:
+
+1. **Quality Checks** - Re-runs all checks (defense in depth)
+2. **Build & Push** - Builds and pushes to Artifact Registry with tags:
+   - `:sha` - Immutable reference
+   - `:version` - Release tag (e.g., `v1.2.3`)
+   - `:latest` - Convenience tag
+3. **Deploy** - Updates Cloud Run services
+
+```bash
+# Create a release via GitHub UI or CLI:
+gh release create v1.2.3 --title "Release v1.2.3" --notes "Release notes"
+```
+
+### Manual Deployment
+
+Use `workflow_dispatch` for emergency deployments:
+
+```bash
+gh workflow run release.yml -f tag=v1.2.3
+```
+
 ## Development Workflow
 
 ### Slash Commands
