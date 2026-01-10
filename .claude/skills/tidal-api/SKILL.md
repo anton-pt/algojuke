@@ -1,3 +1,8 @@
+---
+name: tidal-api
+description: Navigate the Tidal API specification (23,000+ lines OpenAPI spec). Use when implementing Tidal API integrations, adding new endpoints, or understanding API structure.
+---
+
 # Tidal API Navigation Skill
 
 Use this skill to navigate the Tidal API specification located at `tidal/tidal-api-oas.json` (23,000+ lines).
