@@ -37,8 +37,8 @@ Examples: `ALG-27`, `27`, `alg-27`
    - Example: `[ALG-13](https://linear.app/...)` → extract `ALG-13`
 
 5. For each linked issue (from relations AND description mentions):
-   - Check if `specs/alg-{related-num}-*/` exists
-   - If exists, read the summary section from spec.md
+   - Use Glob to find `specs/alg-{related-num}-*/spec.md` (Glob matches files, not directories)
+   - If spec.md exists, read the summary section
    - Collect related specs for context
 
 6. Derive kebab-slug from title:

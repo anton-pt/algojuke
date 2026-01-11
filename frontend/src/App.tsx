@@ -8,6 +8,7 @@ import { LibraryPage } from "./pages/LibraryPage";
 import { DiscoverPage } from "./pages/DiscoverPage";
 import { LandingPage } from "./pages/LandingPage";
 import { TidalConnectPage } from "./pages/TidalConnectPage";
+import { SettingsPage } from "./pages/SettingsPage";
 import { CallbackPage } from "./pages/CallbackPage";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -25,12 +26,21 @@ export function App() {
               <Route path="/" element={<LandingPage />} />
               <Route path="/auth/tidal/callback" element={<CallbackPage />} />
 
-              {/* Authenticated user route (requires auth but not Tidal) */}
+              {/* Authenticated user routes (require auth but not Tidal) */}
               <Route
                 path="/connect-tidal"
                 element={
                   <ProtectedRoute requireTidal={false}>
                     <TidalConnectPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute requireTidal={false}>
+                    <AppHeader />
+                    <SettingsPage />
                   </ProtectedRoute>
                 }
               />

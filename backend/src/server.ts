@@ -21,6 +21,7 @@ import { discoveryResolvers } from "./resolvers/discoveryResolver.js";
 import { chatResolvers } from "./resolvers/chatResolver.js";
 import { playlistResolvers } from "./resolvers/playlistResolver.js";
 import { tidalSyncResolvers } from "./resolvers/tidalSyncResolver.js";
+import { settingsResolvers } from "./resolvers/settingsResolver.js";
 import { TrackMetadataService } from "./services/trackMetadataService.js";
 import { TidalLibrarySyncService } from "./services/tidalLibrarySyncService.js";
 import { DiscoveryService } from "./services/discoveryService.js";
@@ -86,6 +87,11 @@ const tidalSyncSchema = readFileSync(
   "utf-8",
 );
 
+const settingsSchema = readFileSync(
+  join(__dirname, "schema", "settings.graphql"),
+  "utf-8",
+);
+
 const typeDefs = [
   searchSchema,
   librarySchema,
@@ -94,6 +100,7 @@ const typeDefs = [
   chatSchema,
   playlistSchema,
   tidalSyncSchema,
+  settingsSchema,
 ];
 
 // Initialize services (these will be created fresh after DB initialization)
@@ -103,7 +110,7 @@ const cache = new CacheService(
 const tokenService = new TidalTokenService();
 const tidalService = new TidalService(tokenService);
 
-// Merge resolvers from search, library, track metadata, discovery, chat, playlist, and tidal sync
+// Merge resolvers from search, library, track metadata, discovery, chat, playlist, tidal sync, and settings
 const mergedResolvers = {
   Query: {
     ...searchResolver.Query,
@@ -112,12 +119,14 @@ const mergedResolvers = {
     ...discoveryResolvers.Query,
     ...chatResolvers.Query,
     ...tidalSyncResolvers.Query,
+    ...settingsResolvers.Query,
   },
   Mutation: {
     ...libraryResolvers.Mutation,
     ...chatResolvers.Mutation,
     ...playlistResolvers.Mutation,
     ...tidalSyncResolvers.Mutation,
+    ...settingsResolvers.Mutation,
   },
   AddAlbumToLibraryResult: libraryResolvers.AddAlbumToLibraryResult,
   AddTrackToLibraryResult: libraryResolvers.AddTrackToLibraryResult,
@@ -138,6 +147,9 @@ const mergedResolvers = {
   TidalAlbumDiffUnion: tidalSyncResolvers.TidalAlbumDiffUnion,
   TidalTrackDiffUnion: tidalSyncResolvers.TidalTrackDiffUnion,
   TidalImportResult: tidalSyncResolvers.TidalImportResult,
+  // Settings union types
+  ConnectReadwiseResult: settingsResolvers.ConnectReadwiseResult,
+  DisconnectReadwiseResult: settingsResolvers.DisconnectReadwiseResult,
 };
 
 // Start server
