@@ -1,0 +1,136 @@
+# GraphQL Schema: Settings
+# Feature: ALG-33 - Readwise Reader API Token Integration
+# Date: 2026-01-11
+
+"""
+Connection status for Tidal
+"""
+type TidalConnectionStatus {
+  """
+  Whether the user has a Tidal connection
+  """
+  isConnected: Boolean!
+
+  """
+  ISO timestamp when Tidal was connected (null if not connected)
+  """
+  connectedAt: String
+}
+
+"""
+Connection status for Readwise
+"""
+type ReadwiseConnectionStatus {
+  """
+  Whether the user has a Readwise connection
+  """
+  isConnected: Boolean!
+
+  """
+  ISO timestamp when Readwise was connected (null if not connected)
+  """
+  connectedAt: String
+}
+
+"""
+Successful result for connecting Readwise
+"""
+type ReadwiseConnectionSuccess {
+  """
+  ISO timestamp when Readwise was connected
+  """
+  connectedAt: String!
+}
+
+"""
+Error when Readwise validation fails
+"""
+type ReadwiseValidationError {
+  """
+  User-friendly error message
+  """
+  message: String!
+
+  """
+  Error code for frontend handling
+  """
+  code: ReadwiseErrorCode!
+}
+
+"""
+Error codes for Readwise operations
+"""
+enum ReadwiseErrorCode {
+  """
+  Token format is invalid
+  """
+  INVALID_TOKEN
+
+  """
+  Token has been revoked or is expired
+  """
+  TOKEN_REVOKED
+
+  """
+  Network error while validating token
+  """
+  NETWORK_ERROR
+
+  """
+  Request timed out
+  """
+  TIMEOUT
+
+  """
+  Unknown error occurred
+  """
+  UNKNOWN
+}
+
+"""
+Successful result for disconnecting Readwise
+"""
+type ReadwiseDisconnectSuccess {
+  """
+  Whether the disconnect was successful
+  """
+  success: Boolean!
+}
+
+"""
+Result of connecting Readwise
+"""
+union ConnectReadwiseResult =
+  | ReadwiseConnectionSuccess
+  | ReadwiseValidationError
+
+"""
+Result of disconnecting Readwise
+"""
+union DisconnectReadwiseResult =
+  | ReadwiseDisconnectSuccess
+  | ReadwiseValidationError
+
+type Query {
+  """
+  Get the user's Tidal connection status
+  """
+  tidalConnectionStatus: TidalConnectionStatus!
+
+  """
+  Get the user's Readwise connection status
+  """
+  readwiseConnectionStatus: ReadwiseConnectionStatus!
+}
+
+type Mutation {
+  """
+  Connect Readwise by validating and storing the access token
+  """
+  connectReadwise(accessToken: String!): ConnectReadwiseResult!
+
+  """
+  Disconnect Readwise by removing the stored token
+  """
+  disconnectReadwise: DisconnectReadwiseResult!
+}

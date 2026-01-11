@@ -120,3 +120,31 @@ export type TidalScope = (typeof REQUIRED_TIDAL_SCOPES)[number];
 export function hasRequiredScopes(scopes: string[]): boolean {
   return REQUIRED_TIDAL_SCOPES.every((required) => scopes.includes(required));
 }
+
+// ============================================================================
+// Readwise Token Schemas
+// ============================================================================
+
+/**
+ * Schema for Readwise tokens stored in Clerk private metadata
+ * Simpler than Tidal - no refresh token, no expiration, no scopes
+ */
+export const ReadwiseTokensSchema = z.object({
+  accessToken: z.string().min(1),
+  connectedAt: z.number().positive(),
+});
+
+export type ReadwiseTokens = z.infer<typeof ReadwiseTokensSchema>;
+
+/**
+ * Readwise error codes for typed error handling
+ */
+export const ReadwiseErrorCodeSchema = z.enum([
+  "INVALID_TOKEN",
+  "TOKEN_REVOKED",
+  "NETWORK_ERROR",
+  "TIMEOUT",
+  "UNKNOWN",
+]);
+
+export type ReadwiseErrorCode = z.infer<typeof ReadwiseErrorCodeSchema>;
