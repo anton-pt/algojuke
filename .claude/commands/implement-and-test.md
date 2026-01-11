@@ -1,68 +1,128 @@
 # Implement Feature with Interleaved Testing
 
-## Steps
+This command uses Ralph Loop to iteratively implement features with interleaved testing.
 
-1. **Get current feature from branch**:
+**User arguments:** $ARGUMENTS
 
+## Step 1: Parse Iterations
+
+Extract the iteration count from user arguments (default: 5).
+
+Look for patterns like "with 10 iterations", "10 iterations", or just "10" in the arguments.
+
+```
+Examples:
+- "/implement-and-test with 10 iterations" → 10 iterations
+- "/implement-and-test 15 iterations" → 15 iterations
+- "/implement-and-test" → 5 iterations (default)
+```
+
+## Step 2: Start Ralph Loop
+
+Start `/ralph-loop:ralph-loop` with the following prompt and options:
+
+**Prompt:**
+
+````
+Implement the current feature with interleaved testing.
+
+## Context
+
+1. Get current feature from branch:
    ```bash
    BRANCH=$(git rev-parse --abbrev-ref HEAD)
    NUM=$(echo "$BRANCH" | grep -oE 'alg-([0-9]+)' | grep -oE '[0-9]+')
-   ```
+````
 
-2. **Read context**:
+2. Read context:
    - `specs/alg-${NUM}-*/spec.md` - User stories, requirements, acceptance criteria
    - `specs/alg-${NUM}-*/research.md` - Implementation patterns, files to modify
 
-3. **Implement user stories in priority order** (P1 first, then P2, P3):
+## Implementation Process
 
-   For each user story:
+Implement user stories in priority order (P1 first, then P2, P3).
 
-   a. **Implement the functionality**:
-   - Follow patterns from research.md
-   - Use existing codebase conventions
-   - Keep changes focused on the story
+For each user story:
 
-   b. **Commit implementation** using [Conventional Commits](https://www.conventionalcommits.org/):
+a. **Implement the functionality**:
 
-   ```bash
-   git commit -m "feat(scope): description (ALG-${NUM})" -- path/to/file1.ts path/to/file2.ts
-   ```
+- Follow patterns from research.md
+- Use existing codebase conventions
+- Keep changes focused on the story
 
-   **Types**: `feat` (new feature), `fix` (bug fix), `refactor`, `perf`, `docs`, `chore`
-   **Scope**: optional, e.g. `feat(search):`, `fix(api):`
+b. **Commit implementation** using Conventional Commits:
 
-   Using explicit paths prevents accidentally including test files.
+```bash
+git commit -m "feat(scope): description (ALG-${NUM})" -- path/to/file1.ts path/to/file2.ts
+```
 
-   c. **Write unit tests** for the implementation:
-   - Test the public interface
-   - Cover edge cases from spec
-   - Follow existing test patterns in the codebase
+Types: feat, fix, refactor, perf, docs, chore
+Scope: optional, e.g. feat(search):, fix(api):
 
-   d. **Write integration tests** if the story involves:
-   - Multiple components working together
-   - Database operations
-   - External API calls
-   - End-to-end flows
+c. **Write unit tests** for the implementation:
 
-   e. **Run tests to verify**:
+- Test the public interface
+- Cover edge cases from spec
+- Follow existing test patterns
 
-   ```bash
-   npm test --workspaces --if-present
-   ```
+d. **Write integration tests** if the story involves:
 
-   f. **Commit tests** using Conventional Commits:
+- Multiple components working together
+- Database operations
+- External API calls
+- End-to-end flows
 
-   ```bash
-   git commit -m "test(scope): description (ALG-${NUM})" -- tests/path/to/test.ts
-   ```
+e. **Run tests to verify**:
 
-4. **Final verification**:
-   ```bash
-   npm run type-check --workspaces --if-present
-   npm test --workspaces --if-present
-   ```
+```bash
+npm test --workspaces --if-present
+```
 
-## Commit Convention
+f. **Commit tests** using Conventional Commits:
+
+```bash
+git commit -m "test(scope): description (ALG-${NUM})" -- tests/path/to/test.ts
+```
+
+## Completion Criteria
+
+When ALL user stories are implemented with passing tests, run final verification:
+
+```bash
+npm run type-check --workspaces --if-present
+npm test --workspaces --if-present
+```
+
+If everything passes, output: <promise>IMPLEMENTATION COMPLETE</promise>
+
+If there are failures, continue fixing them in the next iteration.
+
+## Guidelines
+
+- Do NOT batch all implementation then all tests - interleave them
+- Each story should have passing tests before moving to the next
+- If tests fail, fix the implementation before continuing
+- Follow acceptance scenarios from spec.md for test cases
+
+````
+
+**Options:**
+- `--max-iterations <parsed-count>` (default: 5)
+- `--completion-promise "IMPLEMENTATION COMPLETE"`
+
+## Testing Guidelines Reference
+
+**Unit Tests:**
+- Test individual functions/methods
+- Mock external dependencies
+- Focus on behavior, not implementation
+
+**Integration Tests (when needed):**
+- Test component interactions
+- Use test database if DB operations involved
+- Test API endpoints end-to-end
+
+## Commit Convention Reference
 
 Follow [Conventional Commits](https://www.conventionalcommits.org/):
 
@@ -78,27 +138,6 @@ git commit -m "test(search): add semantic search tests (ALG-27)" -- backend/test
 
 # Refactor commits
 git commit -m "refactor(chat): extract message parsing logic (ALG-27)" -- backend/src/services/chat.ts
-```
+````
 
-**Types**: `feat`, `fix`, `test`, `refactor`, `perf`, `docs`, `chore`, `ci`, `build`
-
-## Testing Guidelines
-
-**Unit Tests**:
-
-- Test individual functions/methods
-- Mock external dependencies
-- Focus on behavior, not implementation
-
-**Integration Tests** (when needed):
-
-- Test component interactions
-- Use test database if DB operations involved
-- Test API endpoints end-to-end
-
-## Notes
-
-- Do NOT batch all implementation then all tests - interleave them
-- Each story should have passing tests before moving to the next
-- If tests fail, fix the implementation before continuing
-- Follow acceptance scenarios from spec.md for test cases
+**Types:** `feat`, `fix`, `test`, `refactor`, `perf`, `docs`, `chore`, `ci`, `build`
