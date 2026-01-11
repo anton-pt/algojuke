@@ -7,31 +7,7 @@
 import { gql } from "@apollo/client";
 
 /**
- * Query to get Tidal connection status
- */
-export const GET_TIDAL_CONNECTION_STATUS = gql`
-  query GetTidalConnectionStatus {
-    tidalConnectionStatus {
-      isConnected
-      connectedAt
-    }
-  }
-`;
-
-/**
- * Query to get Readwise connection status
- */
-export const GET_READWISE_CONNECTION_STATUS = gql`
-  query GetReadwiseConnectionStatus {
-    readwiseConnectionStatus {
-      isConnected
-      connectedAt
-    }
-  }
-`;
-
-/**
- * Combined query for settings page
+ * Query for settings page - gets both connection statuses in one request
  */
 export const GET_CONNECTION_STATUSES = gql`
   query GetConnectionStatuses {
@@ -126,14 +102,6 @@ export type DisconnectReadwiseResult =
   | ReadwiseValidationError;
 
 // Query response types
-export interface GetTidalConnectionStatusData {
-  tidalConnectionStatus: TidalConnectionStatus;
-}
-
-export interface GetReadwiseConnectionStatusData {
-  readwiseConnectionStatus: ReadwiseConnectionStatus;
-}
-
 export interface GetConnectionStatusesData {
   tidalConnectionStatus: TidalConnectionStatus;
   readwiseConnectionStatus: ReadwiseConnectionStatus;

@@ -65,22 +65,16 @@ export async function storeReadwiseTokens(
   userId: string,
   accessToken: string,
 ): Promise<number> {
-  const startTime = Date.now();
   const connectedAt = Date.now();
 
   try {
-    const readwiseTokens: ReadwiseTokens = {
-      accessToken,
-      connectedAt,
-    };
-
     await clerkClient.users.updateUserMetadata(userId, {
       privateMetadata: {
-        readwise: readwiseTokens,
+        readwise: { accessToken, connectedAt },
       },
     });
 
-    const duration = Date.now() - startTime;
+    const duration = Date.now() - connectedAt;
     logger.info("readwise_tokens_stored", {
       userId,
       connectedAt,
@@ -89,7 +83,7 @@ export async function storeReadwiseTokens(
 
     return connectedAt;
   } catch (error) {
-    const duration = Date.now() - startTime;
+    const duration = Date.now() - connectedAt;
     logger.error("store_readwise_tokens_failed", {
       userId,
       duration,
@@ -97,17 +91,6 @@ export async function storeReadwiseTokens(
     });
     throw error;
   }
-}
-
-/**
- * Check if a user has a Readwise connection
- *
- * @param userId - Clerk user ID
- * @returns true if user has valid Readwise tokens
- */
-export async function hasReadwiseConnection(userId: string): Promise<boolean> {
-  const tokens = await getReadwiseTokens(userId);
-  return tokens !== null;
 }
 
 /**
