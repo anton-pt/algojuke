@@ -3,7 +3,6 @@ import { Toaster } from "sonner";
 import { ApolloProviderWithAuth } from "./graphql/ApolloProviderWithAuth";
 import { UndoDeleteProvider } from "./contexts/UndoDeleteContext";
 import { AppHeader } from "./components/AppHeader";
-import { SearchPage } from "./pages/SearchPage";
 import { LibraryPage } from "./pages/LibraryPage";
 import { DiscoverPage } from "./pages/DiscoverPage";
 import { LandingPage } from "./pages/LandingPage";
@@ -46,15 +45,6 @@ export function App() {
               />
 
               {/* Protected routes (require auth + Tidal) */}
-              <Route
-                path="/search"
-                element={
-                  <ProtectedRoute requireTidal>
-                    <AppHeader />
-                    <SearchPage />
-                  </ProtectedRoute>
-                }
-              />
               <Route
                 path="/discover/*"
                 element={
