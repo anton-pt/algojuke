@@ -1,0 +1,405 @@
+/**
+ * TidalSearchModal Styles
+ *
+ * Feature: ALG-76 - Move Tidal Search under Library Management
+ */
+
+.tidal-search-modal__overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.tidal-search-modal {
+  background: var(--color-surface, #1a1a1a);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 85vh;
+  margin: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  animation: tidalSearchModalFadeIn 0.2s ease-out;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes tidalSearchModalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.tidal-search-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--color-border, #333);
+}
+
+.tidal-search-modal__title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text, #ffffff);
+  margin: 0;
+}
+
+.tidal-search-modal__close {
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary, #888);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition:
+    color 0.2s,
+    background 0.2s;
+}
+
+.tidal-search-modal__close:hover {
+  color: var(--color-text, #ffffff);
+  background: var(--color-surface-hover, #252525);
+}
+
+.tidal-search-modal__close svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Search input */
+.tidal-search-modal__search {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--color-border, #333);
+}
+
+.tidal-search-modal__search-input-group {
+  display: flex;
+  gap: 12px;
+}
+
+.tidal-search-modal__search-input {
+  flex: 1;
+  background: var(--color-background, #0a0a0a);
+  border: 1px solid var(--color-border, #333);
+  color: var(--color-text, #ffffff);
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+
+.tidal-search-modal__search-input:focus {
+  outline: none;
+  border-color: var(--color-primary, #00bfff);
+  background: var(--color-surface, #1a1a1a);
+}
+
+.tidal-search-modal__search-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tidal-search-modal__search-button {
+  background: var(--color-primary, #00bfff);
+  border: none;
+  color: #000;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    opacity 0.2s;
+  white-space: nowrap;
+}
+
+.tidal-search-modal__search-button:hover:not(:disabled) {
+  background: var(--color-primary-hover, #00d4ff);
+}
+
+.tidal-search-modal__search-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Tabs */
+.tidal-search-modal__tabs {
+  display: flex;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--color-border, #333);
+}
+
+.tidal-search-modal__tab {
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary, #888);
+  padding: 12px 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tidal-search-modal__tab:hover {
+  color: var(--color-text, #ffffff);
+}
+
+.tidal-search-modal__tab--active {
+  color: var(--color-primary, #00bfff);
+}
+
+.tidal-search-modal__tab--active::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-primary, #00bfff);
+}
+
+.tidal-search-modal__tab-count {
+  background: var(--color-surface-hover, #252525);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.tidal-search-modal__tab--active .tidal-search-modal__tab-count {
+  background: rgba(0, 191, 255, 0.2);
+  color: var(--color-primary, #00bfff);
+}
+
+/* Content */
+.tidal-search-modal__content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 24px;
+  min-height: 200px;
+}
+
+.tidal-search-modal__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px;
+  color: var(--color-text-secondary, #888);
+  font-size: 0.875rem;
+}
+
+.tidal-search-modal__empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--color-text-secondary, #888);
+}
+
+.tidal-search-modal__empty p {
+  margin: 8px 0 0;
+}
+
+.tidal-search-modal__empty-hint {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #666);
+}
+
+.tidal-search-modal__error {
+  background: rgba(255, 68, 68, 0.1);
+  border: 1px solid rgba(255, 68, 68, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+  font-size: 0.875rem;
+  color: var(--color-error, #ff4444);
+}
+
+/* Results list */
+.tidal-search-modal__results {
+  animation: resultsSlideIn 0.3s ease-out;
+}
+
+@keyframes resultsSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tidal-search-modal__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tidal-search-modal__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.tidal-search-modal__item:hover {
+  background: var(--color-surface-hover, #252525);
+}
+
+.tidal-search-modal__item-cover {
+  width: 48px;
+  height: 48px;
+  border-radius: 4px;
+  object-fit: cover;
+  background: var(--color-background, #0a0a0a);
+  flex-shrink: 0;
+}
+
+.tidal-search-modal__item-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tidal-search-modal__item-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text, #ffffff);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tidal-search-modal__explicit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-text-secondary, #888);
+  color: #000;
+  font-size: 0.625rem;
+  font-weight: 700;
+  padding: 2px 4px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.tidal-search-modal__item-artist {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #888);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tidal-search-modal__item-meta {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #666);
+}
+
+.tidal-search-modal__add-button {
+  background: var(--color-primary, #00bfff);
+  border: none;
+  color: #000;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background 0.2s,
+    opacity 0.2s;
+  min-width: 80px;
+}
+
+.tidal-search-modal__add-button:hover:not(:disabled) {
+  background: var(--color-primary-hover, #00d4ff);
+}
+
+.tidal-search-modal__add-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tidal-search-modal__add-button.in-library {
+  background: var(--color-surface-hover, #252525);
+  color: var(--color-text-secondary, #888);
+}
+
+.tidal-search-modal__add-button.success {
+  background: var(--color-success, #4caf50);
+  color: #fff;
+}
+
+/* Spinner */
+.tidal-search-modal__spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: tidalSearchSpin 0.8s linear infinite;
+  display: inline-block;
+}
+
+@keyframes tidalSearchSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .tidal-search-modal {
+    margin: 0;
+    border-radius: 12px 12px 0 0;
+    max-height: 90vh;
+    position: fixed;
+    bottom: 0;
+  }
+
+  .tidal-search-modal__item-cover {
+    width: 40px;
+    height: 40px;
+  }
+
+  .tidal-search-modal__search-input-group {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .tidal-search-modal__search-button {
+    width: 100%;
+  }
+}
