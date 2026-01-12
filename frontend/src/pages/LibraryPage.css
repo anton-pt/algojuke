@@ -26,6 +26,13 @@
   margin: 0;
 }
 
+.library-header__actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.library-header__search-button,
 .library-header__sync-button {
   display: flex;
   align-items: center;
@@ -42,10 +49,12 @@
   white-space: nowrap;
 }
 
+.library-header__search-button:hover,
 .library-header__sync-button:hover {
   background: #2563eb;
 }
 
+.library-header__search-button svg,
 .library-header__sync-button svg {
   width: 1.125rem;
   height: 1.125rem;
@@ -76,7 +85,14 @@
     font-size: 0.875rem;
   }
 
+  .library-header__actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .library-header__search-button,
   .library-header__sync-button {
     justify-content: center;
+    width: 100%;
   }
 }

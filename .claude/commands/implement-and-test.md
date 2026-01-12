@@ -1,143 +1,80 @@
 # Implement Feature with Interleaved Testing
 
-This command uses Ralph Loop to iteratively implement features with interleaved testing.
+This command delegates to Ralph Loop for iterative implementation with testing.
 
 **User arguments:** $ARGUMENTS
 
-## Step 1: Parse Iterations
+## Instructions for Claude
 
-Extract the iteration count from user arguments (default: 5).
+You MUST follow these steps:
 
-Look for patterns like "with 10 iterations", "10 iterations", or just "10" in the arguments.
+1. **Parse iteration count** from `$ARGUMENTS` (default: 5)
+   - Patterns: "with 10 iterations" → 10, "10 iterations" → 10, "" → 5
 
-```
-Examples:
-- "/implement-and-test with 10 iterations" → 10 iterations
-- "/implement-and-test 15 iterations" → 15 iterations
-- "/implement-and-test" → 5 iterations (default)
-```
+2. **Get current feature number** from branch:
 
-## Step 2: Start Ralph Loop
-
-Start `/ralph-loop:ralph-loop` with the following prompt and options:
-
-**Prompt:**
-
-````
-Implement the current feature with interleaved testing.
-
-## Context
-
-1. Get current feature from branch:
    ```bash
    BRANCH=$(git rev-parse --abbrev-ref HEAD)
    NUM=$(echo "$BRANCH" | grep -oE 'alg-([0-9]+)' | grep -oE '[0-9]+')
-````
+   ```
 
-2. Read context:
-   - `specs/alg-${NUM}-*/spec.md` - User stories, requirements, acceptance criteria
-   - `specs/alg-${NUM}-*/research.md` - Implementation patterns, files to modify
+3. **Check which spec files exist**:
+   - Verify `specs/alg-${NUM}-*/spec.md` exists (REQUIRED)
+   - Check if `specs/alg-${NUM}-*/research.md` exists (OPTIONAL)
 
-## Implementation Process
+4. **Invoke Ralph Loop with appropriate prompt**:
 
-Implement user stories in priority order (P1 first, then P2, P3).
+   **If research.md EXISTS**, use the Skill tool with:
 
-For each user story:
+   ```
+   skill: "ralph-loop:ralph-loop"
+   args: "Implement the current feature with interleaved testing. Read specs/alg-${NUM}-*/spec.md for user stories and requirements. Read specs/alg-${NUM}-*/research.md for implementation patterns and guidance. For each user story in priority order: first implement the functionality following the patterns from research.md, then commit with message like feat/scope: description ALG-${NUM}, then write unit tests, then write integration tests if needed, then run npm test --workspaces --if-present, then commit tests with message like test/scope: description ALG-${NUM}. When all stories are implemented and tests pass, run npm run type-check --workspaces --if-present and npm test --workspaces --if-present then output the completion promise tag with text IMPLEMENTATION COMPLETE inside. Do NOT batch implementation and tests - interleave them. --max-iterations ${COUNT} --completion-promise IMPLEMENTATION COMPLETE"
+   ```
 
-a. **Implement the functionality**:
+   **If research.md DOES NOT EXIST**, use the Skill tool with:
 
-- Follow patterns from research.md
-- Use existing codebase conventions
-- Keep changes focused on the story
+   ```
+   skill: "ralph-loop:ralph-loop"
+   args: "Implement the current feature with interleaved testing. Read specs/alg-${NUM}-*/spec.md for user stories and requirements. For each user story in priority order: first implement the functionality following existing patterns in the codebase, then commit with message like feat/scope: description ALG-${NUM}, then write unit tests, then write integration tests if needed, then run npm test --workspaces --if-present, then commit tests with message like test/scope: description ALG-${NUM}. When all stories are implemented and tests pass, run npm run type-check --workspaces --if-present and npm test --workspaces --if-present then output the completion promise tag with text IMPLEMENTATION COMPLETE inside. Do NOT batch implementation and tests - interleave them. --max-iterations ${COUNT} --completion-promise IMPLEMENTATION COMPLETE"
+   ```
 
-b. **Commit implementation** using Conventional Commits:
+   Replace `${COUNT}` with the parsed iteration count and `${NUM}` with the feature number.
 
-```bash
-git commit -m "feat(scope): description (ALG-${NUM})" -- path/to/file1.ts path/to/file2.ts
-```
+**CRITICAL:** Do NOT execute the prompt instructions directly. You MUST invoke the Ralph Loop skill using the Skill tool. Ralph Loop will handle the iterative implementation process.
 
-Types: feat, fix, refactor, perf, docs, chore
-Scope: optional, e.g. feat(search):, fix(api):
+---
 
-c. **Write unit tests** for the implementation:
+## Reference: Implementation Process
 
-- Test the public interface
-- Cover edge cases from spec
-- Follow existing test patterns
+Ralph Loop will follow this process:
 
-d. **Write integration tests** if the story involves:
+1. **Read context files**:
+   - `specs/alg-${NUM}-*/spec.md` - User stories, requirements, acceptance criteria (ALWAYS)
+   - `specs/alg-${NUM}-*/research.md` - Implementation patterns, files to modify (IF PRESENT)
 
-- Multiple components working together
-- Database operations
-- External API calls
-- End-to-end flows
+2. **For each user story** (P1 first, then P2, P3):
+   - Implement functionality (following research.md if present, otherwise existing codebase patterns)
+   - Commit: `git commit -m "feat/scope: description ALG-${NUM}"`
+   - Write unit tests
+   - Write integration tests (if multi-component, database, API, or e2e)
+   - Run: `npm test --workspaces --if-present`
+   - Commit: `git commit -m "test/scope: description ALG-${NUM}"`
 
-e. **Run tests to verify**:
+3. **Completion verification**:
+   - Run: `npm run type-check --workspaces --if-present`
+   - Run: `npm test --workspaces --if-present`
+   - Output completion promise tag with: `IMPLEMENTATION COMPLETE`
 
-```bash
-npm test --workspaces --if-present
-```
-
-f. **Commit tests** using Conventional Commits:
-
-```bash
-git commit -m "test(scope): description (ALG-${NUM})" -- tests/path/to/test.ts
-```
-
-## Completion Criteria
-
-When ALL user stories are implemented with passing tests, run final verification:
-
-```bash
-npm run type-check --workspaces --if-present
-npm test --workspaces --if-present
-```
-
-If everything passes, output: <promise>IMPLEMENTATION COMPLETE</promise>
-
-If there are failures, continue fixing them in the next iteration.
-
-## Guidelines
-
-- Do NOT batch all implementation then all tests - interleave them
-- Each story should have passing tests before moving to the next
-- If tests fail, fix the implementation before continuing
-- Follow acceptance scenarios from spec.md for test cases
-
-````
-
-**Options:**
-- `--max-iterations <parsed-count>` (default: 5)
-- `--completion-promise "IMPLEMENTATION COMPLETE"`
-
-## Testing Guidelines Reference
-
-**Unit Tests:**
-- Test individual functions/methods
-- Mock external dependencies
-- Focus on behavior, not implementation
-
-**Integration Tests (when needed):**
-- Test component interactions
-- Use test database if DB operations involved
-- Test API endpoints end-to-end
-
-## Commit Convention Reference
+## Reference: Commit Conventions
 
 Follow [Conventional Commits](https://www.conventionalcommits.org/):
 
-```bash
-# Feature commits
-git commit -m "feat(search): add semantic search service (ALG-27)" -- backend/src/services/search.ts
-
-# Bug fix commits
-git commit -m "fix(api): handle null response from Tidal (ALG-27)" -- backend/src/services/tidal.ts
-
-# Test commits
-git commit -m "test(search): add semantic search tests (ALG-27)" -- backend/tests/services/search.test.ts
-
-# Refactor commits
-git commit -m "refactor(chat): extract message parsing logic (ALG-27)" -- backend/src/services/chat.ts
-````
-
 **Types:** `feat`, `fix`, `test`, `refactor`, `perf`, `docs`, `chore`, `ci`, `build`
+
+**Examples:**
+
+```bash
+git commit -m "feat(search): add semantic search service (ALG-27)"
+git commit -m "test(search): add semantic search tests (ALG-27)"
+git commit -m "fix(api): handle null response from Tidal (ALG-27)"
+```
