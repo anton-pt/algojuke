@@ -29,37 +29,25 @@ interface SearchResults {
     id: string;
     title: string;
     artist: string;
-    artists: string[];
-    artworkUrl: string;
     artworkThumbUrl: string;
     explicit: boolean;
     trackCount: number;
-    duration: number;
     releaseDate: string;
-    externalUrl: string;
-    source: string;
   }>;
   tracks: Array<{
     id: string;
     title: string;
     artist: string;
-    artists: string[];
     albumTitle: string;
-    albumId: string;
-    artworkUrl: string;
     artworkThumbUrl: string;
     explicit: boolean;
     duration: number;
-    externalUrl: string;
-    source: string;
   }>;
   total: {
     albums: number;
     tracks: number;
   };
   query: string;
-  cached: boolean;
-  timestamp: number;
 }
 
 const formatDuration = (seconds: number): string => {
