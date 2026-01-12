@@ -1,3 +1,10 @@
+---
+name: fetch-issue
+description: Fetch Linear issue and create branch
+argument-hint: <ALG-XX>
+user-invocable: true
+---
+
 # Fetch Linear Issue and Create Branch
 
 ## Input
@@ -34,7 +41,7 @@ Examples: `ALG-27`, `27`, `alg-27`
    - Search for patterns: `ALG-\d+` (case-insensitive)
    - Extract unique issue identifiers mentioned in description
    - These are treated as "linked" issues alongside formal relations
-   - Example: `[ALG-13](https://linear.app/...)` → extract `ALG-13`
+   - Example: `[ALG-13](https://linear.app/...)` -> extract `ALG-13`
 
 5. For each linked issue (from relations AND description mentions):
    - Use Glob to find `specs/alg-{related-num}-*/spec.md` (Glob matches files, not directories)

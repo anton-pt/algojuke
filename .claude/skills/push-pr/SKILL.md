@@ -1,3 +1,9 @@
+---
+name: push-pr
+description: Push branch and create GitHub PR
+user-invocable: true
+---
+
 # Push Branch and Create Pull Request
 
 ## Steps

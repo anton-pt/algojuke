@@ -1,3 +1,9 @@
+---
+name: implement-and-test
+description: Implement feature with interleaved testing
+user-invocable: true
+---
+
 # Implement Feature with Interleaved Testing
 
 This command delegates to Ralph Loop for iterative implementation with testing.
@@ -9,7 +15,7 @@ This command delegates to Ralph Loop for iterative implementation with testing.
 You MUST follow these steps:
 
 1. **Parse iteration count** from `$ARGUMENTS` (default: 5)
-   - Patterns: "with 10 iterations" → 10, "10 iterations" → 10, "" → 5
+   - Patterns: "with 10 iterations" -> 10, "10 iterations" -> 10, "" -> 5
 
 2. **Get current feature number** from branch:
 
