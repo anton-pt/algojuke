@@ -1,3 +1,10 @@
+---
+name: plan-research
+description: Plan technical research (enters plan mode)
+argument-hint: "[guidelines]"
+user-invocable: true
+---
+
 # Plan Research (Plan Mode)
 
 ## Input

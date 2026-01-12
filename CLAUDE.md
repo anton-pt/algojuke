@@ -412,16 +412,19 @@ gh workflow run release.yml -f tag=v1.2.3
 
 ## Development Workflow
 
-### Slash Commands
+### Skills
 
-| Command                       | Description                                |
-| ----------------------------- | ------------------------------------------ |
-| `/fetch-issue <ALG-XX>`       | Fetch Linear issue and create branch       |
-| `/plan-spec`                  | Plan specification (enters plan mode)      |
-| `/plan-research [guidelines]` | Plan technical research (enters plan mode) |
-| `/implement-and-test`         | Implement feature with interleaved testing |
-| `/review-and-simplify`        | Review and simplify implementation         |
-| `/push-pr`                    | Push branch and create GitHub PR           |
+Development workflow skills are defined in `.claude/skills/`. They can be invoked via `/skill-name` or automatically by Claude when relevant.
+
+| Skill                         | Description                                                                                                                             |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `/fetch-issue <ALG-XX>`       | Fetch Linear issue and create branch                                                                                                    |
+| `/plan-spec`                  | Plan specification (enters plan mode)                                                                                                   |
+| `/plan-research [guidelines]` | Plan technical research (enters plan mode)                                                                                              |
+| `/implement-and-test`         | Implement feature with interleaved testing                                                                                              |
+| `/review-and-simplify`        | Review and simplify implementation                                                                                                      |
+| `/push-pr`                    | Push branch and create GitHub PR                                                                                                        |
+| `/tidal-api`                  | Navigate the Tidal API specification (23,000+ lines OpenAPI spec). Use when implementing Tidal API integrations or adding new endpoints |
 
 ### Feature Workflow
 

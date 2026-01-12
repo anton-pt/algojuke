@@ -1,3 +1,9 @@
+---
+name: plan-spec
+description: Plan specification (enters plan mode)
+user-invocable: true
+---
+
 # Plan Specification (Plan Mode)
 
 ## Prerequisites

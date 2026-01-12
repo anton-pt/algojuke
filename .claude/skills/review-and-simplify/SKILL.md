@@ -1,3 +1,9 @@
+---
+name: review-and-simplify
+description: Review and simplify implementation
+user-invocable: true
+---
+
 # Review and Simplify Implementation
 
 ## Steps
