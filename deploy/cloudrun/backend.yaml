@@ -98,3 +98,9 @@ spec:
                 secretKeyRef:
                   name: inngest-event-key
                   key: latest
+            # Service-to-service auth (ALG-77)
+            - name: SERVICE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: algojuke-service-api-key
+                  key: latest

@@ -1,0 +1,577 @@
+# GraphQL Schema: Agent Tools API
+# Feature: ALG-77 - Cross-service agent tool invocation
+# Date: 2026-01-13
+#
+# Exposes agent tools via GraphQL for both:
+# - Frontend: Clerk user authentication (userId from context)
+# - Backend services: API key + explicit userId parameter
+
+# =============================================================================
+# Enums
+# =============================================================================
+
+"""
+Search type for Tidal catalogue search
+"""
+enum TidalSearchType {
+  tracks
+  albums
+  both
+}
+
+"""
+Error codes for agent tool operations
+"""
+enum AgentToolErrorCode {
+  """
+  Input validation failed
+  """
+  VALIDATION_ERROR
+  """
+  Resource not found
+  """
+  NOT_FOUND
+  """
+  API rate limit exceeded
+  """
+  RATE_LIMIT
+  """
+  Operation timed out
+  """
+  TIMEOUT
+  """
+  Internal server error
+  """
+  INTERNAL_ERROR
+  """
+  Authentication required
+  """
+  UNAUTHENTICATED
+}
+
+# =============================================================================
+# Input Types
+# =============================================================================
+
+"""
+Input for semantic search tool.
+Searches indexed tracks by mood, theme, or lyrical content.
+"""
+input AgentSemanticSearchInput {
+  """
+  Natural language query describing desired mood/theme (1-2000 chars)
+  """
+  query: String!
+  """
+  Maximum number of results (1-50, default 50)
+  """
+  limit: Int = 50
+  """
+  User ID (required for service auth via X-API-Key, ignored for Clerk auth)
+  """
+  userId: String
+}
+
+"""
+Input for Tidal catalogue search tool.
+Searches by artist, album, or track name.
+"""
+input AgentTidalSearchInput {
+  """
+  Search query (1-500 chars)
+  """
+  query: String!
+  """
+  Content type to search
+  """
+  searchType: TidalSearchType!
+  """
+  Maximum results per type (1-100, default 20)
+  """
+  limit: Int = 20
+  """
+  User ID (required for service auth via X-API-Key, ignored for Clerk auth)
+  """
+  userId: String
+}
+
+"""
+Input for album tracks tool.
+Retrieves all tracks from a specific album.
+"""
+input AgentAlbumTracksInput {
+  """
+  Tidal album ID
+  """
+  albumId: String!
+  """
+  User ID (required for service auth via X-API-Key, ignored for Clerk auth)
+  """
+  userId: String
+}
+
+"""
+Input for batch metadata tool.
+Retrieves full metadata for tracks by ISRC.
+"""
+input AgentBatchMetadataInput {
+  """
+  ISRCs to look up (0-100, ISO 3901 format: 12 alphanumeric chars)
+  """
+  isrcs: [String!]!
+  """
+  User ID (required for service auth via X-API-Key, ignored for Clerk auth)
+  """
+  userId: String
+}
+
+# =============================================================================
+# Output Types - Track Results
+# =============================================================================
+
+"""
+Audio features from audio analysis
+"""
+type AgentAudioFeatures {
+  """
+  Acoustic confidence (0.0-1.0)
+  """
+  acousticness: Float
+  """
+  Danceability score (0.0-1.0)
+  """
+  danceability: Float
+  """
+  Energy level (0.0-1.0)
+  """
+  energy: Float
+  """
+  Instrumental likelihood (0.0-1.0)
+  """
+  instrumentalness: Float
+  """
+  Musical key (-1 to 11, -1 = unknown)
+  """
+  key: Int
+  """
+  Live recording likelihood (0.0-1.0)
+  """
+  liveness: Float
+  """
+  Loudness in dB (-60 to 0)
+  """
+  loudness: Float
+  """
+  Musical mode (0 = minor, 1 = major)
+  """
+  mode: Int
+  """
+  Speech presence (0.0-1.0)
+  """
+  speechiness: Float
+  """
+  Tempo in BPM
+  """
+  tempo: Float
+  """
+  Musical positivity (0.0-1.0)
+  """
+  valence: Float
+}
+
+"""
+Optimized track result from semantic search.
+Contains shortDescription instead of full lyrics for token efficiency.
+"""
+type AgentOptimizedTrackResult {
+  """
+  ISRC (International Standard Recording Code)
+  """
+  isrc: String!
+  """
+  Track title
+  """
+  title: String!
+  """
+  Artist name
+  """
+  artist: String!
+  """
+  Album name
+  """
+  album: String!
+  """
+  Album artwork URL
+  """
+  artworkUrl: String
+  """
+  Duration in seconds
+  """
+  duration: Int
+  """
+  Whether track is in user's library
+  """
+  inLibrary: Boolean!
+  """
+  Whether track is in vector index (always true for semantic search)
+  """
+  isIndexed: Boolean!
+  """
+  Relevance score (0-1, higher is better)
+  """
+  score: Float!
+  """
+  Short description of track mood/themes (max ~50 words)
+  """
+  shortDescription: String
+  """
+  Audio features
+  """
+  audioFeatures: AgentAudioFeatures
+}
+
+"""
+Track result from Tidal search or album tracks.
+"""
+type AgentTrackResult {
+  """
+  Tidal track ID
+  """
+  tidalId: String
+  """
+  ISRC (may be empty if not yet fetched)
+  """
+  isrc: String!
+  """
+  Track title
+  """
+  title: String!
+  """
+  Artist name
+  """
+  artist: String!
+  """
+  Album name
+  """
+  album: String!
+  """
+  Album artwork URL
+  """
+  artworkUrl: String
+  """
+  Duration in seconds
+  """
+  duration: Int
+  """
+  Whether track contains explicit content
+  """
+  explicit: Boolean
+  """
+  Whether track is in user's library
+  """
+  inLibrary: Boolean!
+  """
+  Whether track is in vector index
+  """
+  isIndexed: Boolean!
+}
+
+"""
+Full track result with complete metadata from batch metadata lookup.
+"""
+type AgentIndexedTrackResult {
+  """
+  ISRC
+  """
+  isrc: String!
+  """
+  Track title
+  """
+  title: String!
+  """
+  Artist name
+  """
+  artist: String!
+  """
+  Album name
+  """
+  album: String!
+  """
+  Album artwork URL
+  """
+  artworkUrl: String
+  """
+  Duration in seconds
+  """
+  duration: Int
+  """
+  Whether track is in user's library
+  """
+  inLibrary: Boolean!
+  """
+  Whether track is in vector index (always true)
+  """
+  isIndexed: Boolean!
+  """
+  Relevance score
+  """
+  score: Float!
+  """
+  Full lyrics text
+  """
+  lyrics: String
+  """
+  AI-generated thematic interpretation
+  """
+  interpretation: String
+  """
+  Short description (max ~50 words)
+  """
+  shortDescription: String
+  """
+  Audio features
+  """
+  audioFeatures: AgentAudioFeatures
+}
+
+"""
+Album result from Tidal search.
+"""
+type AgentAlbumResult {
+  """
+  Tidal album ID
+  """
+  tidalId: String!
+  """
+  Album title
+  """
+  title: String!
+  """
+  Artist name
+  """
+  artist: String!
+  """
+  Album artwork URL
+  """
+  artworkUrl: String
+  """
+  Release date (ISO 8601)
+  """
+  releaseDate: String
+  """
+  Number of tracks
+  """
+  trackCount: Int!
+  """
+  Whether album is in user's library
+  """
+  inLibrary: Boolean!
+}
+
+# =============================================================================
+# Output Types - Tool Responses
+# =============================================================================
+
+"""
+Semantic search response with optimized track results.
+"""
+type AgentSemanticSearchResponse {
+  """
+  Matching tracks with shortDescription
+  """
+  tracks: [AgentOptimizedTrackResult!]!
+  """
+  Original search query
+  """
+  query: String!
+  """
+  Total number of tracks found
+  """
+  totalFound: Int!
+  """
+  Human-readable summary
+  """
+  summary: String!
+  """
+  Execution time in milliseconds
+  """
+  durationMs: Int!
+}
+
+"""
+Tidal search response totals.
+"""
+type AgentTidalSearchTotals {
+  """
+  Number of tracks found
+  """
+  tracks: Int!
+  """
+  Number of albums found
+  """
+  albums: Int!
+}
+
+"""
+Tidal search response with tracks and/or albums.
+"""
+type AgentTidalSearchResponse {
+  """
+  Matching tracks (if searchType includes tracks)
+  """
+  tracks: [AgentTrackResult!]
+  """
+  Matching albums (if searchType includes albums)
+  """
+  albums: [AgentAlbumResult!]
+  """
+  Original search query
+  """
+  query: String!
+  """
+  Total results by type
+  """
+  totalFound: AgentTidalSearchTotals!
+  """
+  Human-readable summary
+  """
+  summary: String!
+  """
+  Execution time in milliseconds
+  """
+  durationMs: Int!
+}
+
+"""
+Album tracks response.
+"""
+type AgentAlbumTracksResponse {
+  """
+  Tidal album ID
+  """
+  albumId: String!
+  """
+  Album title
+  """
+  albumTitle: String!
+  """
+  Artist name
+  """
+  artist: String!
+  """
+  All tracks on the album
+  """
+  tracks: [AgentTrackResult!]!
+  """
+  Human-readable summary
+  """
+  summary: String!
+  """
+  Execution time in milliseconds
+  """
+  durationMs: Int!
+}
+
+"""
+Batch metadata response with full track details.
+"""
+type AgentBatchMetadataResponse {
+  """
+  Tracks with full metadata
+  """
+  tracks: [AgentIndexedTrackResult!]!
+  """
+  ISRCs that were found
+  """
+  found: [String!]!
+  """
+  ISRCs that were not found in index
+  """
+  notFound: [String!]!
+  """
+  Human-readable summary
+  """
+  summary: String!
+  """
+  Execution time in milliseconds
+  """
+  durationMs: Int!
+}
+
+# =============================================================================
+# Error Type
+# =============================================================================
+
+"""
+Error response for agent tool operations.
+"""
+type AgentToolError {
+  """
+  Human-readable error message
+  """
+  message: String!
+  """
+  Error code for programmatic handling
+  """
+  code: AgentToolErrorCode!
+  """
+  Whether the operation can be retried
+  """
+  retryable: Boolean!
+}
+
+# =============================================================================
+# Union Types
+# =============================================================================
+
+"""
+Result of semantic search operation
+"""
+union AgentSemanticSearchResult = AgentSemanticSearchResponse | AgentToolError
+
+"""
+Result of Tidal search operation
+"""
+union AgentTidalSearchResult = AgentTidalSearchResponse | AgentToolError
+
+"""
+Result of album tracks operation
+"""
+union AgentAlbumTracksResult = AgentAlbumTracksResponse | AgentToolError
+
+"""
+Result of batch metadata operation
+"""
+union AgentBatchMetadataResult = AgentBatchMetadataResponse | AgentToolError
+
+# =============================================================================
+# Queries
+# =============================================================================
+
+extend type Query {
+  """
+  Search indexed tracks by mood, theme, or lyrical content.
+  Returns optimized results with shortDescription for token efficiency.
+  Use agentBatchMetadata for full lyrics/interpretation.
+  """
+  agentSemanticSearch(
+    input: AgentSemanticSearchInput!
+  ): AgentSemanticSearchResult!
+
+  """
+  Search Tidal catalogue by artist, album, or track name.
+  Returns results with library and index status flags.
+  """
+  agentTidalSearch(input: AgentTidalSearchInput!): AgentTidalSearchResult!
+
+  """
+  Get all tracks from a specific Tidal album.
+  """
+  agentAlbumTracks(input: AgentAlbumTracksInput!): AgentAlbumTracksResult!
+
+  """
+  Get full metadata for tracks by ISRC.
+  Returns lyrics, interpretation, and audio features.
+  """
+  agentBatchMetadata(input: AgentBatchMetadataInput!): AgentBatchMetadataResult!
+}

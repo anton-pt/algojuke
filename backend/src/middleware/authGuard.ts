@@ -19,9 +19,14 @@ export interface AuthenticatedContext {
 
 /**
  * GraphQL context with optional userId (before authentication check)
+ *
+ * Supports two authentication modes:
+ * - User auth: userId from Clerk JWT token
+ * - Service auth: serviceApiKey from X-API-Key header (ALG-77)
  */
 export interface GraphQLContext {
   userId?: string;
+  serviceApiKey?: string;
   [key: string]: unknown;
 }
 
