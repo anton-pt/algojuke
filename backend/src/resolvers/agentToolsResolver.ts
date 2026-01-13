@@ -136,21 +136,16 @@ type AgentBatchMetadataResult =
 /**
  * Map error codes to GraphQL enum values
  */
+const KNOWN_ERROR_CODES = new Set([
+  "VALIDATION_ERROR",
+  "NOT_FOUND",
+  "RATE_LIMIT",
+  "TIMEOUT",
+  "UNAUTHENTICATED",
+]);
+
 function mapErrorCode(code: string | undefined): string {
-  switch (code) {
-    case "VALIDATION_ERROR":
-      return "VALIDATION_ERROR";
-    case "NOT_FOUND":
-      return "NOT_FOUND";
-    case "RATE_LIMIT":
-      return "RATE_LIMIT";
-    case "TIMEOUT":
-      return "TIMEOUT";
-    case "UNAUTHENTICATED":
-      return "UNAUTHENTICATED";
-    default:
-      return "INTERNAL_ERROR";
-  }
+  return code && KNOWN_ERROR_CODES.has(code) ? code : "INTERNAL_ERROR";
 }
 
 /**
