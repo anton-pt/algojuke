@@ -22,6 +22,7 @@ import { chatResolvers } from "./resolvers/chatResolver.js";
 import { playlistResolvers } from "./resolvers/playlistResolver.js";
 import { tidalSyncResolvers } from "./resolvers/tidalSyncResolver.js";
 import { settingsResolvers } from "./resolvers/settingsResolver.js";
+import { agentToolsResolvers } from "./resolvers/agentToolsResolver.js";
 import { TrackMetadataService } from "./services/trackMetadataService.js";
 import { TidalLibrarySyncService } from "./services/tidalLibrarySyncService.js";
 import { DiscoveryService } from "./services/discoveryService.js";
@@ -92,6 +93,11 @@ const settingsSchema = readFileSync(
   "utf-8",
 );
 
+const agentToolsSchema = readFileSync(
+  join(__dirname, "schema", "agentTools.graphql"),
+  "utf-8",
+);
+
 const typeDefs = [
   searchSchema,
   librarySchema,
@@ -101,6 +107,7 @@ const typeDefs = [
   playlistSchema,
   tidalSyncSchema,
   settingsSchema,
+  agentToolsSchema,
 ];
 
 // Initialize services (these will be created fresh after DB initialization)
@@ -110,7 +117,7 @@ const cache = new CacheService(
 const tokenService = new TidalTokenService();
 const tidalService = new TidalService(tokenService);
 
-// Merge resolvers from search, library, track metadata, discovery, chat, playlist, tidal sync, and settings
+// Merge resolvers from search, library, track metadata, discovery, chat, playlist, tidal sync, settings, and agent tools
 const mergedResolvers = {
   Query: {
     ...searchResolver.Query,
@@ -120,6 +127,7 @@ const mergedResolvers = {
     ...chatResolvers.Query,
     ...tidalSyncResolvers.Query,
     ...settingsResolvers.Query,
+    ...agentToolsResolvers.Query,
   },
   Mutation: {
     ...libraryResolvers.Mutation,
@@ -150,6 +158,11 @@ const mergedResolvers = {
   // Settings union types
   ConnectReadwiseResult: settingsResolvers.ConnectReadwiseResult,
   DisconnectReadwiseResult: settingsResolvers.DisconnectReadwiseResult,
+  // Agent tools union types (ALG-77)
+  AgentSemanticSearchResult: agentToolsResolvers.AgentSemanticSearchResult,
+  AgentTidalSearchResult: agentToolsResolvers.AgentTidalSearchResult,
+  AgentAlbumTracksResult: agentToolsResolvers.AgentAlbumTracksResult,
+  AgentBatchMetadataResult: agentToolsResolvers.AgentBatchMetadataResult,
 };
 
 // Start server
@@ -255,6 +268,9 @@ async function startServer() {
           // Convert null to undefined to match GraphQLContext.userId?: string
           const userId = auth?.userId ?? undefined;
 
+          // Extract service API key for service-to-service auth (ALG-77)
+          const serviceApiKey = req.headers["x-api-key"] as string | undefined;
+
           return Promise.resolve({
             tidalService,
             cache,
@@ -264,6 +280,9 @@ async function startServer() {
             chatService,
             tidalLibrarySyncService,
             userId,
+            serviceApiKey,
+            // Qdrant client for agent tools (ALG-77)
+            qdrantClient,
             // Create a new DataLoader per request for proper batching and caching
             isrcDataLoader: createIsrcDataLoader(trackMetadataService),
             dataSources: {
