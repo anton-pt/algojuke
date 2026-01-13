@@ -419,8 +419,10 @@ Development workflow skills are defined in `.claude/skills/`. They can be invoke
 | Skill                         | Description                                                                                                                             |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | `/fetch-issue <ALG-XX>`       | Fetch Linear issue and create branch                                                                                                    |
+| `/fetch-rfc <notion-url>`     | Fetch an RFC from Notion given a URL or page ID                                                                                         |
 | `/plan-spec`                  | Plan specification (enters plan mode)                                                                                                   |
 | `/plan-research [guidelines]` | Plan technical research (enters plan mode)                                                                                              |
+| `/plan-rfc`                   | Plan and draft RFCs for major features or architectural changes (enters plan mode)                                                      |
 | `/implement-and-test`         | Implement feature with interleaved testing                                                                                              |
 | `/review-and-simplify`        | Review and simplify implementation                                                                                                      |
 | `/push-pr`                    | Push branch and create GitHub PR                                                                                                        |
