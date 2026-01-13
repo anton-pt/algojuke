@@ -81,3 +81,14 @@ spec:
                   key: latest
             - name: GOOGLE_CLOUD_REGION
               value: europe-west4
+            # Backend API access for agent tools (ALG-77)
+            - name: BACKEND_API_URL
+              valueFrom:
+                secretKeyRef:
+                  name: backend-api-url
+                  key: latest
+            - name: SERVICE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: algojuke-service-api-key
+                  key: latest
