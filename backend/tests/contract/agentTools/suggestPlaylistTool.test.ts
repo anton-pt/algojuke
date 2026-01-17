@@ -477,6 +477,6 @@ describe("ToolName enum includes suggestPlaylist", () => {
 
   it("has correct total count of tool names", () => {
     const names = ToolName.options;
-    expect(names).toHaveLength(5); // semanticSearch, tidalSearch, batchMetadata, albumTracks, suggestPlaylist
+    expect(names).toHaveLength(7); // semanticSearch, tidalSearch, batchMetadata, albumTracks, suggestPlaylist, readwiseList, readwiseFetch
   });
 });
