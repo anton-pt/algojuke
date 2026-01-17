@@ -1,0 +1,344 @@
+# GraphQL Schema: Mix API (Radio Station)
+#
+# This schema defines the GraphQL types and operations for radio mix management.
+# Mix generation is triggered via agent tools (generateMix).
+
+# =============================================================================
+# Enums
+# =============================================================================
+
+"""
+Status of a radio mix generation.
+"""
+enum MixStatus {
+  """
+  Mix is currently being generated
+  """
+  GENERATING
+
+  """
+  Mix is ready for playback
+  """
+  READY
+
+  """
+  Mix generation failed
+  """
+  FAILED
+}
+
+"""
+Error codes for mix operations.
+"""
+enum MixErrorCode {
+  """
+  Mix not found
+  """
+  NOT_FOUND
+
+  """
+  User not authenticated
+  """
+  UNAUTHORIZED
+
+  """
+  Database operation failed
+  """
+  DATABASE_ERROR
+
+  """
+  Unexpected internal error
+  """
+  INTERNAL_ERROR
+}
+
+# =============================================================================
+# Segment Types (Union Members)
+# =============================================================================
+
+"""
+A music segment within a mix, representing a track from Tidal.
+"""
+type MusicSegment {
+  """
+  Unique identifier for this segment
+  """
+  id: ID!
+
+  """
+  Segment type (always "music" for MusicSegment)
+  """
+  type: String!
+
+  """
+  Start time in milliseconds from mix beginning
+  """
+  startMs: Int!
+
+  """
+  End time in milliseconds from mix beginning
+  """
+  endMs: Int!
+
+  """
+  Duration of segment in milliseconds
+  """
+  durationMs: Int!
+
+  """
+  Tidal track ID for playback
+  """
+  tidalTrackId: String
+
+  """
+  International Standard Recording Code
+  """
+  isrc: String
+
+  """
+  Track title
+  """
+  trackTitle: String
+
+  """
+  Primary artist name
+  """
+  artistName: String
+
+  """
+  URL to album artwork
+  """
+  albumArtUrl: String
+}
+
+"""
+A voice segment within a mix, representing narrated content.
+"""
+type VoiceSegment {
+  """
+  Unique identifier for this segment
+  """
+  id: ID!
+
+  """
+  Segment type (always "voice" for VoiceSegment)
+  """
+  type: String!
+
+  """
+  Start time in milliseconds from mix beginning
+  """
+  startMs: Int!
+
+  """
+  End time in milliseconds from mix beginning
+  """
+  endMs: Int!
+
+  """
+  Duration of segment in milliseconds
+  """
+  durationMs: Int!
+
+  """
+  GCS signed URL for audio playback
+  """
+  audioUrl: String
+
+  """
+  Source type: article, highlight, or newsletter
+  """
+  sourceType: String
+
+  """
+  Readwise document ID
+  """
+  sourceId: String
+
+  """
+  Title of the source content
+  """
+  sourceTitle: String
+
+  """
+  Original URL of the source content
+  """
+  sourceUrl: String
+
+  """
+  Content mode: summary, excerpt, or full
+  """
+  contentMode: String
+}
+
+"""
+A segment within a radio mix - either music or voice.
+"""
+union MixSegment = MusicSegment | VoiceSegment
+
+# =============================================================================
+# Mix Type
+# =============================================================================
+
+"""
+A radio mix combining music and voice segments.
+"""
+type Mix {
+  """
+  Unique identifier (UUID)
+  """
+  id: ID!
+
+  """
+  Mix title provided by user or generated
+  """
+  title: String!
+
+  """
+  Optional description of the mix
+  """
+  description: String
+
+  """
+  Current generation status
+  """
+  status: MixStatus!
+
+  """
+  Error message if status is FAILED
+  """
+  failureReason: String
+
+  """
+  Ordered list of music and voice segments
+  """
+  segments: [MixSegment!]!
+
+  """
+  Total duration of mix in milliseconds
+  """
+  totalDurationMs: Int!
+
+  """
+  Total character count for voice segments (for cost tracking)
+  """
+  characterCount: Int!
+
+  """
+  Associated conversation ID (if created from chat)
+  """
+  conversationId: String
+
+  """
+  When the mix was created
+  """
+  createdAt: String!
+
+  """
+  When the mix was last updated
+  """
+  updatedAt: String!
+}
+
+# =============================================================================
+# Query Results (Union Types for Error Handling)
+# =============================================================================
+
+"""
+List of mixes for a user.
+"""
+type MixList {
+  """
+  List of mixes, sorted by most recent first
+  """
+  mixes: [Mix!]!
+
+  """
+  Total count of mixes
+  """
+  totalCount: Int!
+}
+
+"""
+Error response for mix operations.
+"""
+type MixError {
+  """
+  Error message for display
+  """
+  message: String!
+
+  """
+  Error code for programmatic handling
+  """
+  code: MixErrorCode!
+
+  """
+  Whether the operation can be retried
+  """
+  retryable: Boolean!
+}
+
+"""
+Result of listing mixes.
+"""
+union MixesResult = MixList | MixError
+
+"""
+Result of getting a single mix.
+"""
+union MixResult = Mix | MixError
+
+# =============================================================================
+# Mutation Results
+# =============================================================================
+
+"""
+Success response for deleting a mix.
+"""
+type DeleteMixSuccess {
+  """
+  ID of the deleted mix
+  """
+  deletedId: ID!
+
+  """
+  Confirmation message
+  """
+  message: String!
+}
+
+"""
+Result of deleting a mix.
+"""
+union DeleteMixResult = DeleteMixSuccess | MixError
+
+# =============================================================================
+# Queries
+# =============================================================================
+
+extend type Query {
+  """
+  List all mixes for the current user.
+  Sorted by most recent update (updatedAt DESC).
+  """
+  mixes: MixesResult!
+
+  """
+  Get a single mix by ID.
+  Returns error if not found or not owned by current user.
+  """
+  mix(id: ID!): MixResult!
+}
+
+# =============================================================================
+# Mutations
+# =============================================================================
+
+extend type Mutation {
+  """
+  Delete a mix by ID.
+  Returns error if not found or not owned by current user.
+  """
+  deleteMix(id: ID!): DeleteMixResult!
+}

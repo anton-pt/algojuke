@@ -23,10 +23,12 @@ import { playlistResolvers } from "./resolvers/playlistResolver.js";
 import { tidalSyncResolvers } from "./resolvers/tidalSyncResolver.js";
 import { settingsResolvers } from "./resolvers/settingsResolver.js";
 import { agentToolsResolvers } from "./resolvers/agentToolsResolver.js";
+import { mixResolvers } from "./resolvers/mixResolver.js";
 import { TrackMetadataService } from "./services/trackMetadataService.js";
 import { TidalLibrarySyncService } from "./services/tidalLibrarySyncService.js";
 import { DiscoveryService } from "./services/discoveryService.js";
 import { ChatService } from "./services/chatService.js";
+import { MixService } from "./services/mixService.js";
 import { createIsrcDataLoader } from "./loaders/isrcDataLoader.js";
 import { createChatRoutes } from "./routes/chatRoutes.js";
 import { createAuthRoutes } from "./routes/auth.js";
@@ -98,6 +100,11 @@ const agentToolsSchema = readFileSync(
   "utf-8",
 );
 
+const mixSchema = readFileSync(
+  join(__dirname, "schema", "mix.graphql"),
+  "utf-8",
+);
+
 const typeDefs = [
   searchSchema,
   librarySchema,
@@ -108,6 +115,7 @@ const typeDefs = [
   tidalSyncSchema,
   settingsSchema,
   agentToolsSchema,
+  mixSchema,
 ];
 
 // Initialize services (these will be created fresh after DB initialization)
@@ -117,7 +125,7 @@ const cache = new CacheService(
 const tokenService = new TidalTokenService();
 const tidalService = new TidalService(tokenService);
 
-// Merge resolvers from search, library, track metadata, discovery, chat, playlist, tidal sync, settings, and agent tools
+// Merge resolvers from search, library, track metadata, discovery, chat, playlist, tidal sync, settings, agent tools, and mix
 const mergedResolvers = {
   Query: {
     ...searchResolver.Query,
@@ -128,6 +136,7 @@ const mergedResolvers = {
     ...tidalSyncResolvers.Query,
     ...settingsResolvers.Query,
     ...agentToolsResolvers.Query,
+    ...mixResolvers.Query,
   },
   Mutation: {
     ...libraryResolvers.Mutation,
@@ -135,6 +144,7 @@ const mergedResolvers = {
     ...playlistResolvers.Mutation,
     ...tidalSyncResolvers.Mutation,
     ...settingsResolvers.Mutation,
+    ...mixResolvers.Mutation,
   },
   AddAlbumToLibraryResult: libraryResolvers.AddAlbumToLibraryResult,
   AddTrackToLibraryResult: libraryResolvers.AddTrackToLibraryResult,
@@ -163,6 +173,11 @@ const mergedResolvers = {
   AgentTidalSearchResult: agentToolsResolvers.AgentTidalSearchResult,
   AgentAlbumTracksResult: agentToolsResolvers.AgentAlbumTracksResult,
   AgentBatchMetadataResult: agentToolsResolvers.AgentBatchMetadataResult,
+  // Mix union types (ALG-81)
+  MixesResult: mixResolvers.MixesResult,
+  MixResult: mixResolvers.MixResult,
+  DeleteMixResult: mixResolvers.DeleteMixResult,
+  MixSegment: mixResolvers.MixSegment,
 };
 
 // Start server
@@ -198,6 +213,10 @@ async function startServer() {
     // Initialize chat service
     const chatService = new ChatService(AppDataSource);
     logger.info("chat_service_initialized");
+
+    // Initialize mix service for radio station feature (ALG-81)
+    const mixService = new MixService(AppDataSource);
+    logger.info("mix_service_initialized");
 
     const libraryService = new LibraryService(
       albumRepository,
@@ -278,6 +297,7 @@ async function startServer() {
             trackMetadataService,
             discoveryService,
             chatService,
+            mixService,
             tidalLibrarySyncService,
             userId,
             serviceApiKey,
