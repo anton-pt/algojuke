@@ -13,6 +13,8 @@ import type {
   AlbumTracksInput,
   SuggestPlaylistInput,
   PlaylistInputTrack,
+  ReadwiseListInput,
+  ReadwiseFetchInput,
   ToolNameType,
 } from "../schemas/agentTools.js";
 
@@ -230,6 +232,90 @@ export interface SuggestPlaylistOutput extends BaseToolOutput {
   };
 }
 
+// -----------------------------------------------------------------------------
+// Readwise Types (Feature ALG-82)
+// -----------------------------------------------------------------------------
+
+/**
+ * Readwise document from the Reader API.
+ */
+export interface ReadwiseDocument {
+  /** Readwise document ID. */
+  id: string;
+
+  /** Original URL of the document. */
+  url: string;
+
+  /** Document title. */
+  title: string;
+
+  /** Author name, if available. */
+  author: string | null;
+
+  /** Source domain (e.g., "nytimes.com"). */
+  source: string;
+
+  /** Document category. */
+  category: string;
+
+  /** Queue location. */
+  location: string;
+
+  /** Word count, if available. */
+  wordCount: number | null;
+
+  /** Estimated reading time in minutes, if available. */
+  readingTimeMinutes: number | null;
+
+  /** Original publish date (ISO 8601), if available. */
+  publishedAt: string | null;
+
+  /** When the document was saved (ISO 8601). */
+  savedAt: string;
+
+  /** Tags applied to the document. */
+  tags: string[];
+}
+
+/**
+ * Readwise List Tool Output.
+ *
+ * Feature: ALG-82
+ */
+export interface ReadwiseListOutput extends BaseToolOutput {
+  /** List of documents matching the filters. */
+  documents: ReadwiseDocument[];
+
+  /** Applied filters for reference. */
+  filters: {
+    location?: string;
+    category?: string;
+    tags?: string[];
+  };
+
+  /** Total number of documents found (may exceed limit). */
+  totalFound: number;
+
+  /** Whether there are more documents beyond the limit. */
+  hasMore: boolean;
+}
+
+/**
+ * Readwise Fetch Tool Output.
+ *
+ * Feature: ALG-82
+ */
+export interface ReadwiseFetchOutput extends BaseToolOutput {
+  /** Document metadata. */
+  document: ReadwiseDocument;
+
+  /** Extracted/summarized content. */
+  content: string;
+
+  /** Content processing mode used. */
+  contentMode: "summary" | "full";
+}
+
 /**
  * Union of all tool outputs
  */
@@ -239,7 +325,9 @@ export type ToolOutput =
   | TidalSearchOutput
   | BatchMetadataOutput
   | AlbumTracksOutput
-  | SuggestPlaylistOutput;
+  | SuggestPlaylistOutput
+  | ReadwiseListOutput
+  | ReadwiseFetchOutput;
 
 // -----------------------------------------------------------------------------
 // SSE Event Types
@@ -257,7 +345,9 @@ export interface ToolCallStartEvent {
     | TidalSearchInput
     | BatchMetadataInput
     | AlbumTracksInput
-    | SuggestPlaylistInput;
+    | SuggestPlaylistInput
+    | ReadwiseListInput
+    | ReadwiseFetchInput;
 }
 
 /**
@@ -339,5 +429,7 @@ export type {
   AlbumTracksInput,
   SuggestPlaylistInput,
   PlaylistInputTrack,
+  ReadwiseListInput,
+  ReadwiseFetchInput,
   ToolNameType,
 };

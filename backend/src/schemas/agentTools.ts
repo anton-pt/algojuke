@@ -190,6 +190,99 @@ export const SuggestPlaylistInputSchema = z.object({
 export type SuggestPlaylistInput = z.infer<typeof SuggestPlaylistInputSchema>;
 
 /**
+ * Readwise List Tool Input Schema
+ *
+ * Feature: ALG-82
+ *
+ * For listing documents from user's Readwise Reader queue.
+ */
+export const ReadwiseListInputSchema = z.object({
+  /**
+   * Filter by queue location.
+   * - new: Unread documents (inbox)
+   * - later: Saved for later
+   * - shortlist: Priority reading list
+   * - archive: Archived/completed
+   * - feed: RSS feed items
+   */
+  location: z
+    .enum(["new", "later", "shortlist", "archive", "feed"])
+    .optional()
+    .describe("Queue location to filter by"),
+
+  /**
+   * Filter by document category.
+   */
+  category: z
+    .enum(["article", "email", "pdf", "epub", "tweet", "video"])
+    .optional()
+    .describe("Document type to filter by"),
+
+  /**
+   * Filter by tags (up to 5).
+   */
+  tags: z
+    .array(z.string().min(1).max(100))
+    .max(5, "Maximum 5 tags allowed")
+    .optional()
+    .describe("Tags to filter by (up to 5)"),
+
+  /**
+   * Maximum number of documents to return.
+   */
+  limit: z
+    .number()
+    .int()
+    .min(1)
+    .max(100)
+    .optional()
+    .default(20)
+    .describe("Maximum number of documents (1-100, default 20)"),
+});
+
+export type ReadwiseListInput = z.infer<typeof ReadwiseListInputSchema>;
+
+/**
+ * Readwise Fetch Tool Input Schema
+ *
+ * Feature: ALG-82
+ *
+ * For fetching document content from Readwise Reader.
+ */
+export const ReadwiseFetchInputSchema = z.object({
+  /**
+   * Readwise document ID.
+   */
+  documentId: z
+    .string()
+    .min(1, "Document ID cannot be empty")
+    .describe("Readwise document ID to fetch"),
+
+  /**
+   * How to process the content.
+   * - summary: Claude-generated summary optimized for audio
+   * - full: Raw extracted content with emphasis markers
+   */
+  contentMode: z
+    .enum(["summary", "full"])
+    .describe("Content processing mode: summary or full"),
+
+  /**
+   * Summary length (only used when contentMode is "summary").
+   * - short: ~100 words
+   * - medium: ~250 words
+   * - long: ~500 words
+   */
+  summaryLength: z
+    .enum(["short", "medium", "long"])
+    .optional()
+    .default("medium")
+    .describe("Summary length (short ~100 words, medium ~250, long ~500)"),
+});
+
+export type ReadwiseFetchInput = z.infer<typeof ReadwiseFetchInputSchema>;
+
+/**
  * Union type for all tool inputs
  */
 export type ToolInput =
@@ -197,7 +290,9 @@ export type ToolInput =
   | TidalSearchInput
   | BatchMetadataInput
   | AlbumTracksInput
-  | SuggestPlaylistInput;
+  | SuggestPlaylistInput
+  | ReadwiseListInput
+  | ReadwiseFetchInput;
 
 /**
  * Tool name enum for type safety
@@ -208,6 +303,8 @@ export const ToolName = z.enum([
   "batchMetadata",
   "albumTracks",
   "suggestPlaylist",
+  "readwiseList",
+  "readwiseFetch",
 ]);
 
 export type ToolNameType = z.infer<typeof ToolName>;
