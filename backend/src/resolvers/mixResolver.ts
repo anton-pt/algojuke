@@ -212,7 +212,7 @@ export const mixResolvers = {
       }
 
       try {
-        const mixes = await context.mixService.getMixesByUser(context.userId!);
+        const mixes = await context.mixService.getMixesByUser(context.userId);
 
         return {
           __typename: "MixList",
@@ -247,7 +247,7 @@ export const mixResolvers = {
       }
 
       try {
-        const mix = await context.mixService.getMix(id, context.userId!);
+        const mix = await context.mixService.getMix(id, context.userId);
 
         if (!mix) {
           return createError("Mix not found", "NOT_FOUND", false);
@@ -285,7 +285,7 @@ export const mixResolvers = {
       }
 
       try {
-        const deleted = await context.mixService.deleteMix(id, context.userId!);
+        const deleted = await context.mixService.deleteMix(id, context.userId);
 
         if (!deleted) {
           return createError("Mix not found", "NOT_FOUND", false);
