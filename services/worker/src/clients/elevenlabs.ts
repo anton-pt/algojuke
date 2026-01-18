@@ -169,10 +169,11 @@ async function streamToBuffer(
   const chunks: Uint8Array[] = [];
 
   try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      if (value) chunks.push(value);
+    let done = false;
+    while (!done) {
+      const result = await reader.read();
+      done = result.done;
+      if (result.value) chunks.push(result.value);
     }
   } finally {
     reader.releaseLock();
