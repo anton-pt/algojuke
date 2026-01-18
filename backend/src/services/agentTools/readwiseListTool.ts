@@ -53,7 +53,7 @@ interface ReadwiseApiDocument {
   reading_progress: number;
   published_date: string | null;
   created_at: string;
-  tags: Array<{ name: string }>;
+  tags: Record<string, string> | null;
 }
 
 interface ReadwiseApiListResponse {
@@ -91,7 +91,7 @@ function transformDocument(doc: ReadwiseApiDocument): ReadwiseDocument {
     readingTimeMinutes: calculateReadingTime(doc.word_count),
     publishedAt: doc.published_date,
     savedAt: doc.created_at,
-    tags: doc.tags.map((t) => t.name),
+    tags: doc.tags ? Object.keys(doc.tags) : [],
   };
 }
 
