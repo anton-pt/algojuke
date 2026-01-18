@@ -17,16 +17,16 @@ Wire readwiseList, readwiseFetch, and generateMix tools into the existing Discov
 
 The chat agent now has 8 tools available:
 
-| Tool            | Purpose                              | Source  |
-| --------------- | ------------------------------------ | ------- |
-| semanticSearch  | Search indexed library by mood/theme | ALG-15  |
-| tidalSearch     | Search Tidal catalogue               | ALG-15  |
-| albumTracks     | Get tracks from a Tidal album        | ALG-15  |
-| batchMetadata   | Get full metadata for ISRCs          | ALG-15  |
-| suggestPlaylist | Present curated playlist visually    | ALG-19  |
-| readwiseList    | List user's Readwise documents       | ALG-82  |
-| readwiseFetch   | Fetch document content               | ALG-82  |
-| generateMix     | Trigger background mix generation    | ALG-83  |
+| Tool            | Purpose                              | Source |
+| --------------- | ------------------------------------ | ------ |
+| semanticSearch  | Search indexed library by mood/theme | ALG-15 |
+| tidalSearch     | Search Tidal catalogue               | ALG-15 |
+| albumTracks     | Get tracks from a Tidal album        | ALG-15 |
+| batchMetadata   | Get full metadata for ISRCs          | ALG-15 |
+| suggestPlaylist | Present curated playlist visually    | ALG-19 |
+| readwiseList    | List user's Readwise documents       | ALG-82 |
+| readwiseFetch   | Fetch document content               | ALG-82 |
+| generateMix     | Trigger background mix generation    | ALG-83 |
 
 ### Tool Context Flow
 
@@ -101,13 +101,13 @@ ChatStreamService
 
 ### Modified Files
 
-| File                                    | Change                                              |
-| --------------------------------------- | --------------------------------------------------- |
-| `services/agentTools/index.ts`          | Export readwiseList, readwiseFetch                  |
-| `routes/chatRoutes.ts`                  | Add mixService to route options                     |
-| `services/chatStreamService.ts`         | Register 3 new tools, extend ToolContext            |
-| `prompts/chatSystemPrompt.ts`           | Add tool docs and radio mix workflow                |
-| `server.ts`                             | Pass mixService to createChatRoutes                 |
+| File                            | Change                                   |
+| ------------------------------- | ---------------------------------------- |
+| `services/agentTools/index.ts`  | Export readwiseList, readwiseFetch       |
+| `routes/chatRoutes.ts`          | Add mixService to route options          |
+| `services/chatStreamService.ts` | Register 3 new tools, extend ToolContext |
+| `prompts/chatSystemPrompt.ts`   | Add tool docs and radio mix workflow     |
+| `server.ts`                     | Pass mixService to createChatRoutes      |
 
 ### ToolContext Interface
 
@@ -116,12 +116,12 @@ interface ToolContext {
   discoveryService: DiscoveryService;
   trackMetadataService: TrackMetadataService;
   tidalService: TidalService;
-  mixService: MixService;              // NEW
+  mixService: MixService; // NEW
   qdrantClient: BackendQdrantClient;
   libraryTrackRepository: Repository<LibraryTrack>;
   libraryAlbumRepository: Repository<LibraryAlbum>;
   userId: string;
-  conversationId?: string;             // NEW
+  conversationId?: string; // NEW
   onEvent: (event: SSEEvent) => void;
   trace: DiscoveryTrace | null;
   toolCallsMap: Map<string, { name: string; input: unknown }>;
@@ -135,17 +135,23 @@ interface ToolContext {
 
 ```markdown
 ### readwiseList
+
 List documents from user's Readwise Reader queue.
+
 - Filters: location, category, tags, limit
 - Returns: id, title, author, source, wordCount, readingTimeMinutes
 
 ### readwiseFetch
+
 Fetch and process document content.
+
 - Parameters: documentId, contentMode (summary/full), summaryLength
 - Returns: document metadata, processed content
 
 ### generateMix
+
 Trigger background mix generation.
+
 - Parameters: title, articles[], description?, musicInstructions?
 - Returns: mixId, status ("generating")
 ```
@@ -154,6 +160,7 @@ Trigger background mix generation.
 
 ```markdown
 ### Creating Radio Mixes
+
 1. Explore queue with readwiseList
 2. Discuss article selection
 3. Determine content preferences (mode, title, music)
@@ -197,12 +204,12 @@ const tool = tool({
 
 File: `tests/contract/agentTools/chatAgentRadioMix.test.ts`
 
-| Test                          | Validates                                |
-| ----------------------------- | ---------------------------------------- |
-| ToolName enum includes tools  | readwiseList, readwiseFetch, generateMix |
-| Total tool count              | 8 tools registered                       |
-| System prompt tool docs       | All 3 new tools documented               |
-| System prompt workflow        | Radio mix workflow section present       |
+| Test                         | Validates                                |
+| ---------------------------- | ---------------------------------------- |
+| ToolName enum includes tools | readwiseList, readwiseFetch, generateMix |
+| Total tool count             | 8 tools registered                       |
+| System prompt tool docs      | All 3 new tools documented               |
+| System prompt workflow       | Radio mix workflow section present       |
 
 ### Existing Tool Tests
 

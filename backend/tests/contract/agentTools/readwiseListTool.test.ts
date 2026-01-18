@@ -65,7 +65,7 @@ describe("executeReadwiseList", () => {
     reading_progress: 0.3,
     published_date: "2024-01-15T10:00:00Z",
     created_at: "2024-01-16T08:00:00Z",
-    tags: [{ name: "tech" }, { name: "ai" }],
+    tags: { tech: "tech", ai: "ai" },
   };
 
   beforeEach(() => {
