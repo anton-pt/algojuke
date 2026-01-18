@@ -271,6 +271,7 @@ async function startServer() {
         discoveryService,
         trackMetadataService,
         tidalService,
+        mixService,
         qdrantClient,
         libraryTrackRepository: trackRepository,
         libraryAlbumRepository: albumRepository,
