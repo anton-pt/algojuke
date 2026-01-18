@@ -97,3 +97,14 @@ spec:
                 secretKeyRef:
                   name: algojuke-service-api-key
                   key: latest
+            # GCS Audio Storage (ALG-80)
+            - name: GCS_PROJECT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: gcp-project-id
+                  key: latest
+            - name: GCS_BUCKET_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: gcs-bucket-name
+                  key: latest
