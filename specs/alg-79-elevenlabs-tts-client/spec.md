@@ -66,24 +66,26 @@ A client service for the ElevenLabs text-to-speech API that generates MP3 audio 
 
 ## Functional Requirements
 
-| ID | Requirement |
-|----|-------------|
+| ID     | Requirement                                                                        |
+| ------ | ---------------------------------------------------------------------------------- |
 | FR-001 | `createElevenLabsClient(apiKey?)` factory function that validates API key presence |
-| FR-002 | `generateSpeech(text, voiceId, options?)` method returning `Promise<Buffer>` |
-| FR-003 | Throw error if `ELEVENLABS_API_KEY` env var missing and no key provided |
-| FR-004 | Use `APIError` from existing `errors.ts` for all error responses |
-| FR-005 | Map SDK errors to APIError with correct retryable flag |
-| FR-006 | Zod schemas for input validation (before calling SDK) |
-| FR-007 | Default output format: `mp3_44100_128` |
-| FR-008 | Default model: `eleven_multilingual_v2` |
-| FR-009 | SDK timeout: 60 seconds (default) |
+| FR-002 | `generateSpeech(text, voiceId, options?)` method returning `Promise<Buffer>`       |
+| FR-003 | Throw error if `ELEVENLABS_API_KEY` env var missing and no key provided            |
+| FR-004 | Use `APIError` from existing `errors.ts` for all error responses                   |
+| FR-005 | Map SDK errors to APIError with correct retryable flag                             |
+| FR-006 | Zod schemas for input validation (before calling SDK)                              |
+| FR-007 | Default output format: `mp3_44100_128`                                             |
+| FR-008 | Default model: `eleven_multilingual_v2`                                            |
+| FR-009 | SDK timeout: 60 seconds (default)                                                  |
 
 ## Dependencies
 
 **New dependency:**
+
 - `@elevenlabs/elevenlabs-js` v2.31.0 (official SDK)
 
 **Existing:**
+
 - Pattern reference: `services/worker/src/clients/musixmatch.ts`
 - Error handling: `services/worker/src/clients/errors.ts` (`createAPIError`, `APIError`)
 - Validation: `zod` v3.x (already in worker package.json)
@@ -108,23 +110,23 @@ A client service for the ElevenLabs text-to-speech API that generates MP3 audio 
 
 ```typescript
 export interface ElevenLabsVoiceSettings {
-  stability?: number;        // 0-1, default 0.5
-  similarityBoost?: number;  // 0-1, default 0.75
-  style?: number;            // 0-1, default 0
+  stability?: number; // 0-1, default 0.5
+  similarityBoost?: number; // 0-1, default 0.75
+  style?: number; // 0-1, default 0
   useSpeakerBoost?: boolean; // default true
 }
 
 export interface GenerateSpeechOptions {
   voiceSettings?: ElevenLabsVoiceSettings;
-  modelId?: string;          // default: "eleven_multilingual_v2"
-  outputFormat?: string;     // default: "mp3_44100_128"
+  modelId?: string; // default: "eleven_multilingual_v2"
+  outputFormat?: string; // default: "mp3_44100_128"
 }
 
 export interface ElevenLabsClient {
   generateSpeech(
     text: string,
     voiceId: string,
-    options?: GenerateSpeechOptions
+    options?: GenerateSpeechOptions,
   ): Promise<Buffer>;
 }
 
@@ -137,12 +139,14 @@ export function createElevenLabsClient(apiKey?: string): ElevenLabsClient;
 export const GenerateSpeechInputSchema = z.object({
   text: z.string().min(1, "Text cannot be empty").max(5000, "Text too long"),
   voiceId: z.string().min(1, "Voice ID required"),
-  voiceSettings: z.object({
-    stability: z.number().min(0).max(1).optional(),
-    similarityBoost: z.number().min(0).max(1).optional(),
-    style: z.number().min(0).max(1).optional(),
-    useSpeakerBoost: z.boolean().optional(),
-  }).optional(),
+  voiceSettings: z
+    .object({
+      stability: z.number().min(0).max(1).optional(),
+      similarityBoost: z.number().min(0).max(1).optional(),
+      style: z.number().min(0).max(1).optional(),
+      useSpeakerBoost: z.boolean().optional(),
+    })
+    .optional(),
   modelId: z.string().optional(),
   outputFormat: z.string().optional(),
 });
@@ -152,15 +156,15 @@ export const GenerateSpeechInputSchema = z.object({
 
 SDK error types to APIError mapping:
 
-| SDK Error | Status | Retryable | Notes |
-|-----------|--------|-----------|-------|
-| `UnprocessableEntityError` | 422 | No | Invalid params, missing fields |
-| `ElevenLabsTimeoutError` | 408 | Yes | Request timeout |
-| `ElevenLabsError` (status 401) | 401 | No | Invalid API key |
-| `ElevenLabsError` (status 403) | 403 | No | Plan restriction |
-| `ElevenLabsError` (status 429) | 429 | Yes | Rate limit |
-| `ElevenLabsError` (status 5xx) | 5xx | Yes | Server error |
-| Other errors | 500 | Yes | Unknown errors |
+| SDK Error                      | Status | Retryable | Notes                          |
+| ------------------------------ | ------ | --------- | ------------------------------ |
+| `UnprocessableEntityError`     | 422    | No        | Invalid params, missing fields |
+| `ElevenLabsTimeoutError`       | 408    | Yes       | Request timeout                |
+| `ElevenLabsError` (status 401) | 401    | No        | Invalid API key                |
+| `ElevenLabsError` (status 403) | 403    | No        | Plan restriction               |
+| `ElevenLabsError` (status 429) | 429    | Yes       | Rate limit                     |
+| `ElevenLabsError` (status 5xx) | 5xx    | Yes       | Server error                   |
+| Other errors                   | 500    | Yes       | Unknown errors                 |
 
 ## Test Plan
 
@@ -185,9 +189,9 @@ Location: `services/worker/tests/contract/elevenlabs.test.ts`
 
 ## Environment Variables
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `ELEVENLABS_API_KEY` | Yes | - | ElevenLabs API key |
+| Variable             | Required | Default | Description        |
+| -------------------- | -------- | ------- | ------------------ |
+| `ELEVENLABS_API_KEY` | Yes      | -       | ElevenLabs API key |
 
 ## Verification
 
