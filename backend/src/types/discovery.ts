@@ -184,8 +184,8 @@ export const MAX_PAGE_SIZE = 50;
 /** Maximum total results across all pages */
 export const MAX_TOTAL_RESULTS = 100;
 
-/** Search timeout in milliseconds */
-export const SEARCH_TIMEOUT_MS = 30000;
+/** Search timeout in milliseconds (increased for mix generation) */
+export const SEARCH_TIMEOUT_MS = 120000;
 
 /**
  * @deprecated Use getEmbeddingDimensions() from clients/embedding.js instead
