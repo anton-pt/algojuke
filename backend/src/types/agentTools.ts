@@ -15,6 +15,8 @@ import type {
   PlaylistInputTrack,
   ReadwiseListInput,
   ReadwiseFetchInput,
+  GenerateMixInput,
+  GenerateMixArticle,
   ToolNameType,
 } from "../schemas/agentTools.js";
 
@@ -316,6 +318,31 @@ export interface ReadwiseFetchOutput extends BaseToolOutput {
   contentMode: "summary" | "full";
 }
 
+// -----------------------------------------------------------------------------
+// Generate Mix Types (Feature ALG-83)
+// -----------------------------------------------------------------------------
+
+/**
+ * Generate Mix Tool Output.
+ *
+ * Feature: ALG-83
+ *
+ * Returns the created mix ID and status for the chat UI to track progress.
+ */
+export interface GenerateMixOutput extends BaseToolOutput {
+  /** Created mix UUID. */
+  mixId: string;
+
+  /** Mix status (always "generating" when tool returns). */
+  status: "generating";
+
+  /** Mix title (echoed from input). */
+  title: string;
+
+  /** Number of articles included. */
+  articleCount: number;
+}
+
 /**
  * Union of all tool outputs
  */
@@ -327,7 +354,8 @@ export type ToolOutput =
   | AlbumTracksOutput
   | SuggestPlaylistOutput
   | ReadwiseListOutput
-  | ReadwiseFetchOutput;
+  | ReadwiseFetchOutput
+  | GenerateMixOutput;
 
 // -----------------------------------------------------------------------------
 // SSE Event Types
@@ -347,7 +375,8 @@ export interface ToolCallStartEvent {
     | AlbumTracksInput
     | SuggestPlaylistInput
     | ReadwiseListInput
-    | ReadwiseFetchInput;
+    | ReadwiseFetchInput
+    | GenerateMixInput;
 }
 
 /**
@@ -431,5 +460,7 @@ export type {
   PlaylistInputTrack,
   ReadwiseListInput,
   ReadwiseFetchInput,
+  GenerateMixInput,
+  GenerateMixArticle,
   ToolNameType,
 };

@@ -283,6 +283,88 @@ export const ReadwiseFetchInputSchema = z.object({
 export type ReadwiseFetchInput = z.infer<typeof ReadwiseFetchInputSchema>;
 
 /**
+ * Generate Mix Article Input Schema
+ *
+ * Feature: ALG-83
+ *
+ * Individual article in the mix generation input.
+ */
+export const GenerateMixArticleSchema = z.object({
+  /**
+   * Readwise document ID.
+   */
+  documentId: z
+    .string()
+    .min(1, "Document ID cannot be empty")
+    .describe("Readwise document ID"),
+
+  /**
+   * How to process the content.
+   * - summary: Claude-generated summary optimized for audio
+   * - excerpt: Key excerpts from the article
+   * - full: Full article content
+   */
+  contentMode: z
+    .enum(["summary", "excerpt", "full"])
+    .describe("Content processing mode"),
+});
+
+export type GenerateMixArticle = z.infer<typeof GenerateMixArticleSchema>;
+
+/**
+ * Generate Mix Tool Input Schema
+ *
+ * Feature: ALG-83
+ *
+ * For triggering background mix generation from chat.
+ * Creates a Mix entity and sends an Inngest event for the DJ agent.
+ */
+export const GenerateMixInputSchema = z.object({
+  /**
+   * Mix title.
+   * @example "Evening Wind-Down"
+   */
+  title: z
+    .string()
+    .min(1, "Title cannot be empty")
+    .max(255, "Title too long (max 255 characters)")
+    .describe("Mix title"),
+
+  /**
+   * Optional mix description.
+   */
+  description: z
+    .string()
+    .max(1000, "Description too long (max 1000 characters)")
+    .nullable()
+    .optional()
+    .describe("Optional mix description"),
+
+  /**
+   * Articles to include in the mix (1-10).
+   */
+  articles: z
+    .array(GenerateMixArticleSchema)
+    .min(1, "At least one article is required")
+    .max(10, "Maximum 10 articles per mix")
+    .describe("Articles to include in the mix"),
+
+  /**
+   * Natural language music instructions for the DJ agent.
+   * Can describe mood, genre, transitions, or narrative arc.
+   * @example "calm piano transitions building to ambient"
+   */
+  musicInstructions: z
+    .string()
+    .max(2000, "Music instructions too long (max 2000 characters)")
+    .nullable()
+    .optional()
+    .describe("Natural language music instructions for the DJ agent"),
+});
+
+export type GenerateMixInput = z.infer<typeof GenerateMixInputSchema>;
+
+/**
  * Union type for all tool inputs
  */
 export type ToolInput =
@@ -292,7 +374,8 @@ export type ToolInput =
   | AlbumTracksInput
   | SuggestPlaylistInput
   | ReadwiseListInput
-  | ReadwiseFetchInput;
+  | ReadwiseFetchInput
+  | GenerateMixInput;
 
 /**
  * Tool name enum for type safety
@@ -305,6 +388,7 @@ export const ToolName = z.enum([
   "suggestPlaylist",
   "readwiseList",
   "readwiseFetch",
+  "generateMix",
 ]);
 
 export type ToolNameType = z.infer<typeof ToolName>;

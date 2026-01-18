@@ -75,6 +75,73 @@ export type TrackIngestionRequestedEvent = z.infer<
   typeof TrackIngestionRequestedEventSchema
 >;
 
+/**
+ * Article input schema for mix generation
+ */
+const MixArticleSchema = z.object({
+  /**
+   * Readwise document ID
+   */
+  documentId: z.string().min(1),
+
+  /**
+   * How to process the content
+   */
+  contentMode: z.enum(["summary", "excerpt", "full"]),
+});
+
+/**
+ * Event: mix/generation.requested
+ *
+ * Triggers the DJ agent to generate a radio mix. Sent by the generateMix
+ * agent tool when a user requests a mix from chat.
+ */
+export const MixGenerationRequestedEventSchema = z.object({
+  /**
+   * Mix UUID created by generateMix tool
+   */
+  mixId: z.string().uuid(),
+
+  /**
+   * User ID (Clerk user ID)
+   */
+  userId: z.string().min(1),
+
+  /**
+   * Mix title provided by user
+   */
+  title: z.string().min(1).max(255),
+
+  /**
+   * Optional mix description
+   */
+  description: z.string().max(1000).nullable().optional(),
+
+  /**
+   * Articles to include in the mix (1-10)
+   */
+  articles: z.array(MixArticleSchema).min(1).max(10),
+
+  /**
+   * Natural language music instructions for the DJ agent.
+   */
+  musicInstructions: z.string().max(2000).nullable().optional(),
+
+  /**
+   * Conversation ID for linking back to chat context
+   */
+  conversationId: z.string().uuid().nullable().optional(),
+
+  /**
+   * Priority modifier (-600 to +600 seconds)
+   */
+  priority: PriorityModifier.optional(),
+});
+
+export type MixGenerationRequestedEvent = z.infer<
+  typeof MixGenerationRequestedEventSchema
+>;
+
 // ============================================================================
 // Event Schema Collection
 // ============================================================================
@@ -90,6 +157,10 @@ const backendEvents = new EventSchemas().fromZod({
   "track/ingestion.requested": {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
     data: TrackIngestionRequestedEventSchema as any,
+  },
+  "mix/generation.requested": {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+    data: MixGenerationRequestedEventSchema as any,
   },
 });
 
@@ -120,6 +191,23 @@ export async function sendTrackIngestionEvent(
 ): Promise<void> {
   await inngest.send({
     name: "track/ingestion.requested",
+    data,
+  });
+}
+
+/**
+ * Helper to send mix generation event
+ *
+ * Feature: ALG-83
+ *
+ * @param data - Mix generation request data
+ * @returns Promise<void>
+ */
+export async function sendMixGenerationEvent(
+  data: MixGenerationRequestedEvent,
+): Promise<void> {
+  await inngest.send({
+    name: "mix/generation.requested",
     data,
   });
 }

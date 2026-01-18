@@ -34,6 +34,10 @@ export {
 } from "./retry.js";
 export { getLibraryIsrcs, getLibraryAlbumIds } from "./libraryStatus.js";
 export {
+  executeGenerateMix,
+  type GenerateMixContext,
+} from "./generateMixTool.js";
+export {
   createToolSpan,
   executeToolWithTracing,
   type LangfuseTrace,
