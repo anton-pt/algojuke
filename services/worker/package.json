@@ -28,7 +28,8 @@
     "express": "^5.1.0",
     "inngest": "^3.22.12",
     "langfuse": "^3.38.6",
-    "zod": "^3.23.8"
+    "mp3-duration": "^1.1.0",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@inngest/test": "^0.1.9",
@@ -38,7 +39,7 @@
     "@typescript-eslint/parser": "^6.19.0",
     "eslint": "^8.56.0",
     "tsx": "^4.21.0",
-    "typescript": "^5.3.3",
+    "typescript": "^5.9.3",
     "vitest": "^1.6.1"
   },
   "engines": {

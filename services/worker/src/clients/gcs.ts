@@ -10,7 +10,7 @@
  */
 
 import { Storage } from "@google-cloud/storage";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { createAPIError, APIError } from "./errors.js";
 
 /**

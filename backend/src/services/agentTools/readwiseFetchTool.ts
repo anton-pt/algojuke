@@ -52,6 +52,7 @@ export interface ReadwiseFetchContext {
 
 /**
  * Readwise API response shape for list endpoint (single document)
+ * Note: tags is an object where keys are tag names, not an array
  */
 interface ReadwiseApiDocument {
   id: string;
@@ -65,7 +66,7 @@ interface ReadwiseApiDocument {
   reading_progress: number;
   published_date: string | null;
   created_at: string;
-  tags: Array<{ name: string }>;
+  tags: Record<string, unknown> | null;
   html_content?: string;
 }
 
@@ -91,6 +92,10 @@ function calculateReadingTime(wordCount: number | null): number | null {
  * Transform Readwise API document to our ReadwiseDocument type
  */
 function transformDocument(doc: ReadwiseApiDocument): ReadwiseDocument {
+  // Tags come as an object with tag names as keys, extract the keys
+  const tags =
+    doc.tags && typeof doc.tags === "object" ? Object.keys(doc.tags) : [];
+
   return {
     id: doc.id,
     url: doc.url,
@@ -103,7 +108,7 @@ function transformDocument(doc: ReadwiseApiDocument): ReadwiseDocument {
     readingTimeMinutes: calculateReadingTime(doc.word_count),
     publishedAt: doc.published_date,
     savedAt: doc.created_at,
-    tags: doc.tags.map((t) => t.name),
+    tags,
   };
 }
 
@@ -272,7 +277,7 @@ export async function executeReadwiseFetch(
 
   // Fetch document with HTML content
   const params = new URLSearchParams();
-  params.append("id__exact", documentId);
+  params.append("id", documentId);
   params.append("withHtmlContent", "true");
 
   try {

@@ -19,9 +19,9 @@
     "demo:correlated": "npx tsx scripts/demo-correlated-trace.ts"
   },
   "dependencies": {
+    "dotenv": "^16.4.7",
     "langfuse": "^3.38.6",
-    "zod": "^3.23.8",
-    "dotenv": "^16.4.7"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
@@ -29,7 +29,7 @@
     "@typescript-eslint/parser": "^6.19.0",
     "eslint": "^8.56.0",
     "tsx": "^4.21.0",
-    "typescript": "^5.3.3",
+    "typescript": "^5.9.3",
     "vitest": "^1.6.1"
   },
   "engines": {

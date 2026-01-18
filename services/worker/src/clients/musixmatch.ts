@@ -6,7 +6,7 @@
  */
 
 import axios from "axios";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { createAPIError, isNotFoundStatus } from "./errors.js";
 
 /**

@@ -125,6 +125,61 @@ input AgentBatchMetadataInput {
   userId: String
 }
 
+"""
+Content mode for Readwise document fetch.
+"""
+enum AgentReadwiseContentMode {
+  """
+  Generate a summary of the content
+  """
+  summary
+  """
+  Extract full content
+  """
+  full
+}
+
+"""
+Summary length for Readwise document summarization.
+"""
+enum AgentReadwiseSummaryLength {
+  """
+  Short summary (~100 words)
+  """
+  short
+  """
+  Medium summary (~250 words)
+  """
+  medium
+  """
+  Long summary (~500 words)
+  """
+  long
+}
+
+"""
+Input for Readwise fetch tool.
+Fetches and processes a document from Readwise Reader.
+"""
+input AgentReadwiseFetchInput {
+  """
+  Readwise document ID
+  """
+  documentId: String!
+  """
+  Content processing mode
+  """
+  contentMode: AgentReadwiseContentMode!
+  """
+  Summary length (only used when contentMode is "summary")
+  """
+  summaryLength: AgentReadwiseSummaryLength = medium
+  """
+  User ID (required for service auth via X-API-Key, ignored for Clerk auth)
+  """
+  userId: String
+}
+
 # =============================================================================
 # Output Types - Track Results
 # =============================================================================
@@ -498,6 +553,86 @@ type AgentBatchMetadataResponse {
   durationMs: Int!
 }
 
+"""
+Readwise document metadata.
+"""
+type AgentReadwiseDocument {
+  """
+  Readwise document ID
+  """
+  id: String!
+  """
+  Original URL of the document
+  """
+  url: String!
+  """
+  Document title
+  """
+  title: String!
+  """
+  Author name (null if not available)
+  """
+  author: String
+  """
+  Source domain (e.g., "nytimes.com")
+  """
+  source: String!
+  """
+  Document category
+  """
+  category: String!
+  """
+  Queue location
+  """
+  location: String!
+  """
+  Word count (null if not available)
+  """
+  wordCount: Int
+  """
+  Estimated reading time in minutes (null if not available)
+  """
+  readingTimeMinutes: Int
+  """
+  Original publish date (ISO 8601, null if not available)
+  """
+  publishedAt: String
+  """
+  When the document was saved (ISO 8601)
+  """
+  savedAt: String!
+  """
+  Tags applied to the document
+  """
+  tags: [String!]!
+}
+
+"""
+Readwise fetch response with document content.
+"""
+type AgentReadwiseFetchResponse {
+  """
+  Document metadata
+  """
+  document: AgentReadwiseDocument!
+  """
+  Extracted or summarized content
+  """
+  content: String!
+  """
+  Content processing mode used
+  """
+  contentMode: AgentReadwiseContentMode!
+  """
+  Human-readable summary
+  """
+  summary: String!
+  """
+  Execution time in milliseconds
+  """
+  durationMs: Int!
+}
+
 # =============================================================================
 # Error Type
 # =============================================================================
@@ -544,6 +679,11 @@ Result of batch metadata operation
 """
 union AgentBatchMetadataResult = AgentBatchMetadataResponse | AgentToolError
 
+"""
+Result of Readwise fetch operation
+"""
+union AgentReadwiseFetchResult = AgentReadwiseFetchResponse | AgentToolError
+
 # =============================================================================
 # Queries
 # =============================================================================
@@ -574,4 +714,10 @@ extend type Query {
   Returns lyrics, interpretation, and audio features.
   """
   agentBatchMetadata(input: AgentBatchMetadataInput!): AgentBatchMetadataResult!
+
+  """
+  Fetch and process a document from Readwise Reader.
+  Returns document metadata and extracted/summarized content.
+  """
+  agentReadwiseFetch(input: AgentReadwiseFetchInput!): AgentReadwiseFetchResult!
 }

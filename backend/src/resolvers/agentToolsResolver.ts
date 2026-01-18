@@ -28,6 +28,10 @@ import {
   executeBatchMetadata,
   type BatchMetadataContext,
 } from "../services/agentTools/batchMetadataTool.js";
+import {
+  executeReadwiseFetch,
+  type ReadwiseFetchContext,
+} from "../services/agentTools/readwiseFetchTool.js";
 import type { DiscoveryService } from "../services/discoveryService.js";
 import type { TrackMetadataService } from "../services/trackMetadataService.js";
 import type { TidalService } from "../services/tidalService.js";
@@ -40,6 +44,7 @@ import type {
   TidalSearchOutput,
   AlbumTracksOutput,
   BatchMetadataOutput,
+  ReadwiseFetchOutput,
 } from "../types/agentTools.js";
 import { logger } from "../utils/logger.js";
 
@@ -94,6 +99,13 @@ interface AgentBatchMetadataInput {
   userId?: string | null;
 }
 
+interface AgentReadwiseFetchInput {
+  documentId: string;
+  contentMode: "summary" | "full";
+  summaryLength?: "short" | "medium" | "long" | null;
+  userId?: string | null;
+}
+
 /**
  * GraphQL response types with __typename
  */
@@ -113,6 +125,10 @@ interface AgentBatchMetadataResponse extends BatchMetadataOutput {
   __typename: "AgentBatchMetadataResponse";
 }
 
+interface AgentReadwiseFetchResponse extends ReadwiseFetchOutput {
+  __typename: "AgentReadwiseFetchResponse";
+}
+
 interface AgentToolErrorResponse {
   __typename: "AgentToolError";
   message: string;
@@ -127,6 +143,9 @@ type AgentTidalSearchResult = AgentTidalSearchResponse | AgentToolErrorResponse;
 type AgentAlbumTracksResult = AgentAlbumTracksResponse | AgentToolErrorResponse;
 type AgentBatchMetadataResult =
   | AgentBatchMetadataResponse
+  | AgentToolErrorResponse;
+type AgentReadwiseFetchResult =
+  | AgentReadwiseFetchResponse
   | AgentToolErrorResponse;
 
 // =============================================================================
@@ -375,6 +394,43 @@ export const agentToolsResolvers = {
         return mapToolErrorToGraphQL(error, "agentBatchMetadata");
       }
     },
+
+    /**
+     * Fetch and process a document from Readwise Reader
+     */
+    agentReadwiseFetch: async (
+      _parent: unknown,
+      args: { input: AgentReadwiseFetchInput },
+      context: AgentToolsContext,
+    ): Promise<AgentReadwiseFetchResult> => {
+      try {
+        const userId = resolveAgentToolUserId(
+          context,
+          args.input.userId,
+          "agentReadwiseFetch",
+        );
+
+        const toolContext: ReadwiseFetchContext = {
+          userId,
+        };
+
+        const result = await executeReadwiseFetch(
+          {
+            documentId: args.input.documentId,
+            contentMode: args.input.contentMode,
+            summaryLength: args.input.summaryLength ?? "medium",
+          },
+          toolContext,
+        );
+
+        return {
+          __typename: "AgentReadwiseFetchResponse",
+          ...result,
+        };
+      } catch (error) {
+        return mapToolErrorToGraphQL(error, "agentReadwiseFetch");
+      }
+    },
   },
 
   // Union type resolvers
@@ -394,6 +450,11 @@ export const agentToolsResolvers = {
     },
   },
   AgentBatchMetadataResult: {
+    __resolveType(obj: { __typename: string }) {
+      return obj.__typename;
+    },
+  },
+  AgentReadwiseFetchResult: {
     __resolveType(obj: { __typename: string }) {
       return obj.__typename;
     },

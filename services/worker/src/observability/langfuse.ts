@@ -86,6 +86,31 @@ export function createBackfillTrace(runId: string) {
 }
 
 /**
+ * Create a trace for mix generation pipeline
+ */
+export function createMixGenerationTrace(
+  mixId: string,
+  runId: string,
+  userId: string,
+) {
+  const client = getLangfuseClient();
+  if (!client) {
+    return null;
+  }
+
+  return client.trace({
+    id: `mix-generation-${mixId}-${runId}`,
+    name: "mix-generation",
+    userId,
+    metadata: {
+      mixId,
+      runId,
+    },
+    tags: ["mix-generation", "dj-agent", "pipeline"],
+  });
+}
+
+/**
  * HTTP span options
  */
 export interface HTTPSpanOptions {

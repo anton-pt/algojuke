@@ -4,7 +4,7 @@
  * Tracks progress of short description backfill for resumability.
  */
 
-import { z } from "zod";
+import { z } from "zod/v3";
 
 /**
  * Backfill progress state

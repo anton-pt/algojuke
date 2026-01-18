@@ -12,6 +12,7 @@
 
 import { demoTask } from "./demoTask.js";
 import { trackIngestion } from "./trackIngestion.js";
+import { mixGeneration } from "./mixGeneration.js";
 
 /**
  * Array of all Inngest functions to be served by this worker
@@ -19,5 +20,6 @@ import { trackIngestion } from "./trackIngestion.js";
  * Currently registered functions:
  * - demoTask: Infrastructure validation demo task with 5-step workflow
  * - trackIngestion: Track ingestion pipeline (feature 006)
+ * - mixGeneration: Mix generation pipeline (feature ALG-85)
  */
-export const functions = [demoTask, trackIngestion];
+export const functions = [demoTask, trackIngestion, mixGeneration];
