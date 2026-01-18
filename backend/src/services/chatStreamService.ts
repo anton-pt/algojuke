@@ -1739,22 +1739,248 @@ export class ChatStreamService {
   }
 
   /**
+   * Split assistant content blocks into pre-tool and post-tool sections
+   *
+   * AI SDK expects:
+   * 1. Assistant message: text (before tools) + tool-calls
+   * 2. Tool message: tool-results
+   * 3. Assistant message: text (after tools, response to tool results)
+   *
+   * Our stored format interleaves: text → tool_use → tool_result → text
+   * We need to split this properly.
+   */
+  private splitAssistantContent(content: ContentBlock[]): {
+    preToolText: string[];
+    toolCalls: Array<{
+      type: "tool_use";
+      id: string;
+      name: string;
+      input: unknown;
+    }>;
+    toolResults: Array<{
+      type: "tool_result";
+      tool_use_id: string;
+      content: unknown;
+    }>;
+    postToolText: string[];
+  } {
+    const preToolText: string[] = [];
+    const toolCalls: Array<{
+      type: "tool_use";
+      id: string;
+      name: string;
+      input: unknown;
+    }> = [];
+    const toolResults: Array<{
+      type: "tool_result";
+      tool_use_id: string;
+      content: unknown;
+    }> = [];
+    const postToolText: string[] = [];
+
+    let seenToolResult = false;
+
+    for (const block of content) {
+      if (block.type === "text") {
+        const textBlock = block as { type: "text"; text: string };
+        if (textBlock.text) {
+          if (seenToolResult) {
+            postToolText.push(textBlock.text);
+          } else {
+            preToolText.push(textBlock.text);
+          }
+        }
+      } else if (block.type === "tool_use") {
+        const toolBlock = block as {
+          type: "tool_use";
+          id: string;
+          name: string;
+          input: unknown;
+        };
+        // Debug log to see what's stored
+        logger.debug("split_assistant_tool_use_block", {
+          blockType: block.type,
+          hasInput: "input" in toolBlock,
+          inputValue: toolBlock.input,
+          rawBlock: JSON.stringify(block),
+        });
+        // Ensure input is always present (defensive for older stored data)
+        toolCalls.push({
+          ...toolBlock,
+          input: toolBlock.input ?? {},
+        });
+      } else if (block.type === "tool_result") {
+        const resultBlock = block as {
+          type: "tool_result";
+          tool_use_id: string;
+          content: unknown;
+        };
+        toolResults.push(resultBlock);
+        seenToolResult = true;
+      }
+    }
+
+    return { preToolText, toolCalls, toolResults, postToolText };
+  }
+
+  /**
    * Build LLM message array from conversation history
+   *
+   * Includes tool calls and results so the agent can reference previous tool outputs.
+   * Properly splits assistant messages that contain tool calls into the format
+   * expected by AI SDK:
+   * 1. Assistant: text + tool-calls
+   * 2. Tool: tool-results
+   * 3. Assistant: text (response after seeing results)
    */
   private buildLLMMessages(
     existingMessages: Message[],
     newMessage: string,
-  ): Array<{ role: "user" | "assistant"; content: string }> {
-    const messages: Array<{ role: "user" | "assistant"; content: string }> = [];
+  ): Array<
+    | { role: "user" | "assistant"; content: string }
+    | {
+        role: "assistant";
+        content: Array<
+          | { type: "text"; text: string }
+          | {
+              type: "tool-call";
+              toolCallId: string;
+              toolName: string;
+              input: unknown;
+            }
+        >;
+      }
+    | {
+        role: "tool";
+        content: Array<{
+          type: "tool-result";
+          toolCallId: string;
+          toolName: string;
+          output: { type: "json"; value: unknown };
+        }>;
+      }
+  > {
+    const messages: Array<
+      | { role: "user" | "assistant"; content: string }
+      | {
+          role: "assistant";
+          content: Array<
+            | { type: "text"; text: string }
+            | {
+                type: "tool-call";
+                toolCallId: string;
+                toolName: string;
+                input: unknown;
+              }
+          >;
+        }
+      | {
+          role: "tool";
+          content: Array<{
+            type: "tool-result";
+            toolCallId: string;
+            toolName: string;
+            output: { type: "json"; value: unknown };
+          }>;
+        }
+    > = [];
 
     // Add existing messages
     for (const msg of existingMessages) {
-      const textContent = this.extractTextContent(msg.content);
-      if (textContent) {
-        messages.push({
-          role: msg.role,
-          content: textContent,
-        });
+      if (msg.role === "user") {
+        // User messages are always simple text
+        const textContent = this.extractTextContent(msg.content);
+        if (textContent) {
+          messages.push({
+            role: "user",
+            content: textContent,
+          });
+        }
+      } else if (msg.role === "assistant") {
+        // Check if assistant message contains tool calls
+        const hasToolCalls = msg.content.some((b) => b.type === "tool_use");
+
+        if (hasToolCalls) {
+          // Split content into pre-tool, tools, and post-tool sections
+          const { preToolText, toolCalls, toolResults, postToolText } =
+            this.splitAssistantContent(msg.content);
+
+          // Build tool name map for results
+          const toolNameMap = new Map(toolCalls.map((t) => [t.id, t.name]));
+
+          // 1. Assistant message with pre-tool text + tool calls
+          const assistantContent: Array<
+            | { type: "text"; text: string }
+            | {
+                type: "tool-call";
+                toolCallId: string;
+                toolName: string;
+                input: unknown;
+              }
+          > = [];
+
+          for (const text of preToolText) {
+            assistantContent.push({ type: "text", text });
+          }
+
+          for (const tc of toolCalls) {
+            const inputValue = tc.input ?? {};
+            logger.debug("build_tool_call_message", {
+              toolCallId: tc.id,
+              toolName: tc.name,
+              hasInput: tc.input !== undefined,
+              inputValue: JSON.stringify(inputValue),
+            });
+            // AI SDK v6 ToolCallPart expects `input`, not `args`
+            assistantContent.push({
+              type: "tool-call",
+              toolCallId: tc.id,
+              toolName: tc.name,
+              input: inputValue,
+            });
+          }
+
+          if (assistantContent.length > 0) {
+            messages.push({
+              role: "assistant",
+              content: assistantContent,
+            });
+          }
+
+          // 2. Tool message with results
+          // AI SDK v6 expects `output: { type: "json", value: ... }` format
+          if (toolResults.length > 0) {
+            messages.push({
+              role: "tool",
+              content: toolResults.map((toolResult) => ({
+                type: "tool-result" as const,
+                toolCallId: toolResult.tool_use_id,
+                toolName: toolNameMap.get(toolResult.tool_use_id) || "unknown",
+                output: { type: "json" as const, value: toolResult.content },
+              })),
+            });
+          }
+
+          // 3. Second assistant message with post-tool text (response after seeing results)
+          if (postToolText.length > 0) {
+            const postText = postToolText.join("\n");
+            if (postText.trim()) {
+              messages.push({
+                role: "assistant",
+                content: postText,
+              });
+            }
+          }
+        } else {
+          // Simple text-only assistant message
+          const textContent = this.extractTextContent(msg.content);
+          if (textContent) {
+            messages.push({
+              role: "assistant",
+              content: textContent,
+            });
+          }
+        }
       }
     }
 
@@ -1766,11 +1992,21 @@ export class ChatStreamService {
 
     // Apply context limit (100K tokens ~ keep last 10 messages as safety)
     // For now, we'll use a simple message count limit
-    const MAX_MESSAGES = 20; // 10 exchanges = 20 messages
+    const MAX_MESSAGES = 30; // Increased since tool messages add extra count
     if (messages.length > MAX_MESSAGES) {
-      return messages.slice(-MAX_MESSAGES);
+      const sliced = messages.slice(-MAX_MESSAGES);
+      logger.debug("build_llm_messages_result", {
+        originalCount: messages.length,
+        slicedCount: sliced.length,
+        messages: JSON.stringify(sliced),
+      });
+      return sliced;
     }
 
+    logger.debug("build_llm_messages_result", {
+      messageCount: messages.length,
+      messages: JSON.stringify(messages),
+    });
     return messages;
   }
 
