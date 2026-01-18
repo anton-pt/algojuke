@@ -251,7 +251,8 @@ describe("ToolName enum", () => {
     expect(names).toContain("suggestPlaylist");
     expect(names).toContain("readwiseList");
     expect(names).toContain("readwiseFetch");
-    expect(names).toHaveLength(7);
+    expect(names).toContain("generateMix");
+    expect(names).toHaveLength(8);
   });
 
   it("validates valid tool names", () => {
@@ -262,6 +263,7 @@ describe("ToolName enum", () => {
     expect(ToolName.safeParse("suggestPlaylist").success).toBe(true);
     expect(ToolName.safeParse("readwiseList").success).toBe(true);
     expect(ToolName.safeParse("readwiseFetch").success).toBe(true);
+    expect(ToolName.safeParse("generateMix").success).toBe(true);
   });
 
   it("rejects invalid tool names", () => {

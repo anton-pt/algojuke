@@ -581,6 +581,234 @@ export function isTrackIngestionEvent(
 }
 
 // ============================================================================
+// Mix Generation Events (Feature ALG-83)
+// ============================================================================
+
+/**
+ * Mix generation pipeline step names
+ */
+export const MixGenerationStepName = z.enum([
+  "validate-articles",
+  "fetch-article-content",
+  "plan-mix-structure",
+  "select-music",
+  "generate-voice-segments",
+  "assemble-mix",
+  "emit-completion",
+]);
+
+export type MixGenerationStepName = z.infer<typeof MixGenerationStepName>;
+
+/**
+ * Article input schema for mix generation
+ */
+export const MixArticleSchema = z.object({
+  /**
+   * Readwise document ID
+   */
+  documentId: z.string().min(1),
+
+  /**
+   * How to process the content
+   * - summary: Claude-generated summary optimized for audio
+   * - excerpt: Key excerpts from the article
+   * - full: Full article content
+   */
+  contentMode: z.enum(["summary", "excerpt", "full"]),
+});
+
+export type MixArticle = z.infer<typeof MixArticleSchema>;
+
+/**
+ * Event: mix/generation.requested
+ *
+ * Triggers the DJ agent to generate a radio mix. Sent by the generateMix
+ * agent tool when a user requests a mix from chat.
+ */
+export const MixGenerationRequestedEvent = z.object({
+  name: z.literal("mix/generation.requested"),
+  data: z.object({
+    /**
+     * Mix UUID created by generateMix tool
+     */
+    mixId: z.string().uuid(),
+
+    /**
+     * User ID (Clerk user ID)
+     */
+    userId: z.string().min(1),
+
+    /**
+     * Mix title provided by user
+     */
+    title: z.string().min(1).max(255),
+
+    /**
+     * Optional mix description
+     */
+    description: z.string().max(1000).nullable().optional(),
+
+    /**
+     * Articles to include in the mix (1-10)
+     */
+    articles: z.array(MixArticleSchema).min(1).max(10),
+
+    /**
+     * Natural language music instructions for the DJ agent.
+     * Can describe mood, genre, transitions, or narrative arc.
+     * @example "calm piano transitions building to ambient"
+     */
+    musicInstructions: z.string().max(2000).nullable().optional(),
+
+    /**
+     * Conversation ID for linking back to chat context
+     */
+    conversationId: z.string().uuid().nullable().optional(),
+
+    /**
+     * Priority modifier (-600 to +600 seconds)
+     * Positive values = higher priority
+     */
+    priority: PriorityModifier.optional(),
+  }),
+});
+
+export type MixGenerationRequestedEvent = z.infer<
+  typeof MixGenerationRequestedEvent
+>["data"];
+
+/**
+ * Event: mix/generation.completed
+ *
+ * Emitted when mix generation completes successfully.
+ */
+export const MixGenerationCompletedEvent = z.object({
+  name: z.literal("mix/generation.completed"),
+  data: z.object({
+    /**
+     * Mix UUID
+     */
+    mixId: z.string().uuid(),
+
+    /**
+     * User ID
+     */
+    userId: z.string().min(1),
+
+    /**
+     * Inngest function run ID
+     */
+    runId: z.string(),
+
+    /**
+     * Completion timestamp (Unix epoch ms)
+     */
+    completedAt: z.number().int().positive(),
+
+    /**
+     * Total execution time in milliseconds
+     */
+    durationMs: z.number().int().positive(),
+
+    /**
+     * Summary of generated mix
+     */
+    result: z.object({
+      segmentCount: z.number().int().nonnegative(),
+      voiceSegmentCount: z.number().int().nonnegative(),
+      musicSegmentCount: z.number().int().nonnegative(),
+      totalDurationMs: z.number().int().nonnegative(),
+      characterCount: z.number().int().nonnegative(),
+    }),
+  }),
+});
+
+export type MixGenerationCompletedEvent = z.infer<
+  typeof MixGenerationCompletedEvent
+>["data"];
+
+/**
+ * Event: mix/generation.failed
+ *
+ * Emitted when mix generation fails (after exhausting retries).
+ */
+export const MixGenerationFailedEvent = z.object({
+  name: z.literal("mix/generation.failed"),
+  data: z.object({
+    /**
+     * Mix UUID
+     */
+    mixId: z.string().uuid(),
+
+    /**
+     * User ID
+     */
+    userId: z.string().min(1),
+
+    /**
+     * Inngest function run ID
+     */
+    runId: z.string(),
+
+    /**
+     * Error message
+     */
+    error: z.string(),
+
+    /**
+     * Step that caused final failure
+     */
+    failedStep: MixGenerationStepName.optional(),
+
+    /**
+     * Number of retry attempts made
+     */
+    retries: z.number().int().nonnegative(),
+
+    /**
+     * Failure timestamp (Unix epoch ms)
+     */
+    failedAt: z.number().int().positive(),
+  }),
+});
+
+export type MixGenerationFailedEvent = z.infer<
+  typeof MixGenerationFailedEvent
+>["data"];
+
+/**
+ * Combined mix generation event schemas
+ */
+export const mixGenerationEvents = new EventSchemas().fromZod({
+  "mix/generation.requested": {
+    data: MixGenerationRequestedEvent.shape.data,
+  },
+  "mix/generation.completed": {
+    data: MixGenerationCompletedEvent.shape.data,
+  },
+  "mix/generation.failed": {
+    data: MixGenerationFailedEvent.shape.data,
+  },
+});
+
+/**
+ * TypeScript type for all mix generation events
+ */
+export type MixGenerationEvent =
+  | (MixGenerationRequestedEvent & { name: "mix/generation.requested" })
+  | (MixGenerationCompletedEvent & { name: "mix/generation.completed" })
+  | (MixGenerationFailedEvent & { name: "mix/generation.failed" });
+
+/**
+ * Type guard to check if event is mix-generation-related
+ */
+export function isMixGenerationEvent(
+  eventName: string,
+): eventName is MixGenerationEvent["name"] {
+  return eventName.startsWith("mix/generation.");
+}
+
+// ============================================================================
 // Combined Event Schemas (All Events)
 // ============================================================================
 
@@ -590,6 +818,7 @@ export function isTrackIngestionEvent(
  * Includes all event types:
  * - Demo events (infrastructure validation)
  * - Track ingestion events (feature 006)
+ * - Mix generation events (feature ALG-83)
  */
 export const allEvents = new EventSchemas().fromZod({
   // Demo events
@@ -611,5 +840,15 @@ export const allEvents = new EventSchemas().fromZod({
   },
   "track/ingestion.failed": {
     data: TrackIngestionFailedEvent.shape.data,
+  },
+  // Mix generation events
+  "mix/generation.requested": {
+    data: MixGenerationRequestedEvent.shape.data,
+  },
+  "mix/generation.completed": {
+    data: MixGenerationCompletedEvent.shape.data,
+  },
+  "mix/generation.failed": {
+    data: MixGenerationFailedEvent.shape.data,
   },
 });
