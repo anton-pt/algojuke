@@ -305,6 +305,21 @@ export async function executeReadwiseFetch(
       );
     }
 
+    if (response.status === 400) {
+      const durationMs = Date.now() - startTime;
+      logger.warn("readwise_fetch_bad_request", {
+        userId,
+        documentId,
+        durationMs,
+      });
+      throw createToolError(
+        `Invalid document ID "${documentId}". Please use the document ID from readwiseList results (e.g., a long alphanumeric string, not a search term or title).`,
+        false, // Not retryable - bad input won't succeed on retry
+        false,
+        "VALIDATION_ERROR",
+      );
+    }
+
     if (response.status === 429) {
       const durationMs = Date.now() - startTime;
       logger.warn("readwise_fetch_rate_limited", { userId, durationMs });

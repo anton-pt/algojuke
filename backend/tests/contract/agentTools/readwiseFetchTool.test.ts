@@ -383,6 +383,26 @@ describe("executeReadwiseFetch", () => {
   });
 
   describe("API errors", () => {
+    it("returns VALIDATION_ERROR on bad request (400)", async () => {
+      mockAxios.get.mockResolvedValue({
+        status: 400,
+        data: {},
+      });
+
+      const input: ReadwiseFetchInput = {
+        documentId: "invalid-id",
+        contentMode: "full",
+      };
+
+      await expect(
+        executeReadwiseFetch(input, mockContext),
+      ).rejects.toMatchObject({
+        message: expect.stringContaining("Invalid document ID"),
+        retryable: false,
+        code: "VALIDATION_ERROR",
+      });
+    });
+
     it("returns RATE_LIMIT error when rate limited", async () => {
       mockAxios.get.mockResolvedValue({
         status: 429,
