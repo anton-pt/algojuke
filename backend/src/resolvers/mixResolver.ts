@@ -6,15 +6,17 @@
  */
 
 import { MixService } from "../services/mixService.js";
-import { Mix, MixSegment } from "../entities/Mix.js";
+import { Mix, MixSegment, MixStatus } from "../entities/Mix.js";
 import { logger } from "../utils/logger.js";
 import { requireAuth, type GraphQLContext } from "../middleware/authGuard.js";
+import { requireServiceAuth } from "../middleware/serviceAuth.js";
 
 /**
  * GraphQL context with mix service
  */
 export interface MixContext extends GraphQLContext {
   mixService: MixService;
+  serviceApiKey?: string;
 }
 
 /**
@@ -180,6 +182,30 @@ function toGraphQLMix(mix: Mix): GraphQLMix {
 }
 
 /**
+ * GraphQL segment input type
+ */
+interface GraphQLSegmentInput {
+  id: string;
+  type: "MUSIC" | "VOICE";
+  startMs: number;
+  endMs: number;
+  durationMs: number;
+  // Music fields (optional)
+  tidalTrackId?: string;
+  isrc?: string;
+  trackTitle?: string;
+  artistName?: string;
+  albumArtUrl?: string;
+  // Voice fields (optional)
+  audioUrl?: string;
+  sourceType?: string;
+  sourceId?: string;
+  sourceTitle?: string;
+  sourceUrl?: string;
+  contentMode?: string;
+}
+
+/**
  * Create error response
  */
 function createError(
@@ -193,6 +219,62 @@ function createError(
     code,
     retryable,
   };
+}
+
+/**
+ * Map GraphQL status enum to entity status
+ */
+function graphQLStatusToEntity(status: string): MixStatus {
+  const statusMap: Record<string, MixStatus> = {
+    GENERATING: "generating",
+    READY: "ready",
+    FAILED: "failed",
+  };
+  return statusMap[status] ?? "generating";
+}
+
+/**
+ * Convert GraphQL segment input to entity format
+ */
+function graphQLSegmentToEntity(segment: GraphQLSegmentInput): MixSegment {
+  const base = {
+    id: segment.id,
+    type: segment.type === "MUSIC" ? ("music" as const) : ("voice" as const),
+    startMs: segment.startMs,
+    endMs: segment.endMs,
+    durationMs: segment.durationMs,
+  };
+
+  if (segment.type === "MUSIC") {
+    return {
+      ...base,
+      type: "music",
+      tidalTrackId: segment.tidalTrackId,
+      isrc: segment.isrc,
+      trackTitle: segment.trackTitle,
+      artistName: segment.artistName,
+      albumArtUrl: segment.albumArtUrl,
+    };
+  } else {
+    return {
+      ...base,
+      type: "voice",
+      audioUrl: segment.audioUrl,
+      sourceType: segment.sourceType as
+        | "article"
+        | "highlight"
+        | "newsletter"
+        | undefined,
+      sourceId: segment.sourceId,
+      sourceTitle: segment.sourceTitle,
+      sourceUrl: segment.sourceUrl,
+      contentMode: segment.contentMode as
+        | "summary"
+        | "excerpt"
+        | "full"
+        | undefined,
+    };
+  }
 }
 
 export const mixResolvers = {
@@ -311,6 +393,131 @@ export const mixResolvers = {
         );
       }
     },
+
+    // =========================================================================
+    // Internal mutations (service auth only)
+    // =========================================================================
+
+    /**
+     * Update mix status (internal use only - requires service API key)
+     */
+    internalUpdateMixStatus: async (
+      _: unknown,
+      {
+        mixId,
+        status,
+        failureReason,
+      }: { mixId: string; status: string; failureReason?: string },
+      context: MixContext,
+    ): Promise<GraphQLMix | MixError> => {
+      try {
+        requireServiceAuth(context, "internalUpdateMixStatus");
+      } catch {
+        return createError(
+          "Service authentication required",
+          "UNAUTHORIZED",
+          false,
+        );
+      }
+
+      try {
+        // Map GraphQL enum to entity status
+        const entityStatus = graphQLStatusToEntity(status);
+
+        const mix = await context.mixService.updateMixStatusInternal(
+          mixId,
+          entityStatus,
+          failureReason,
+        );
+
+        if (!mix) {
+          return createError("Mix not found", "NOT_FOUND", false);
+        }
+
+        logger.info("internal_mix_status_updated", {
+          mixId,
+          status: entityStatus,
+        });
+
+        return toGraphQLMix(mix);
+      } catch (error) {
+        logger.error("internal_mix_status_update_error", {
+          mixId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+
+        return createError(
+          "Failed to update mix status. Please try again.",
+          "DATABASE_ERROR",
+          true,
+        );
+      }
+    },
+
+    /**
+     * Update mix segments (internal use only - requires service API key)
+     */
+    internalUpdateMixSegments: async (
+      _: unknown,
+      {
+        mixId,
+        segments,
+        totalDurationMs,
+        characterCount,
+      }: {
+        mixId: string;
+        segments: GraphQLSegmentInput[];
+        totalDurationMs: number;
+        characterCount: number;
+      },
+      context: MixContext,
+    ): Promise<GraphQLMix | MixError> => {
+      try {
+        requireServiceAuth(context, "internalUpdateMixSegments");
+      } catch {
+        return createError(
+          "Service authentication required",
+          "UNAUTHORIZED",
+          false,
+        );
+      }
+
+      try {
+        // Convert GraphQL segment input to entity format
+        const entitySegments = segments.map(graphQLSegmentToEntity);
+
+        const mix = await context.mixService.updateMixSegmentsInternal(
+          mixId,
+          entitySegments,
+          totalDurationMs,
+          characterCount,
+        );
+
+        if (!mix) {
+          return createError("Mix not found", "NOT_FOUND", false);
+        }
+
+        logger.info("internal_mix_segments_updated", {
+          mixId,
+          segmentCount: segments.length,
+          totalDurationMs,
+          characterCount,
+        });
+
+        return toGraphQLMix(mix);
+      } catch (error) {
+        logger.error("internal_mix_segments_update_error", {
+          mixId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+
+        return createError(
+          "Failed to update mix segments. Please try again.",
+          "DATABASE_ERROR",
+          true,
+        );
+      }
+    },
   },
 
   // Union type resolvers
@@ -328,6 +535,12 @@ export const mixResolvers = {
 
   DeleteMixResult: {
     __resolveType(obj: DeleteMixSuccess | MixError) {
+      return obj.__typename;
+    },
+  },
+
+  InternalMixResult: {
+    __resolveType(obj: GraphQLMix | MixError) {
       return obj.__typename;
     },
   },

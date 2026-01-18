@@ -341,4 +341,168 @@ extend type Mutation {
   Returns error if not found or not owned by current user.
   """
   deleteMix(id: ID!): DeleteMixResult!
+
+  # ===========================================================================
+  # Internal mutations (service auth only - X-API-Key header required)
+  # ===========================================================================
+
+  """
+  Update mix status (internal use only - requires service API key).
+  Used by the worker service to report generation progress.
+  """
+  internalUpdateMixStatus(
+    """
+    ID of the mix to update
+    """
+    mixId: ID!
+
+    """
+    New status for the mix
+    """
+    status: MixStatus!
+
+    """
+    Failure reason (required if status is FAILED)
+    """
+    failureReason: String
+  ): InternalMixResult!
+
+  """
+  Update mix segments (internal use only - requires service API key).
+  Used by the worker service to populate mix content.
+  """
+  internalUpdateMixSegments(
+    """
+    ID of the mix to update
+    """
+    mixId: ID!
+
+    """
+    Ordered list of segments for the mix
+    """
+    segments: [MixSegmentInput!]!
+
+    """
+    Total duration of all segments in milliseconds
+    """
+    totalDurationMs: Int!
+
+    """
+    Total character count for voice segments (for cost tracking)
+    """
+    characterCount: Int!
+  ): InternalMixResult!
+}
+
+# =============================================================================
+# Internal Mutation Types
+# =============================================================================
+
+"""
+Result of internal mix mutations.
+"""
+union InternalMixResult = Mix | MixError
+
+"""
+Segment type enum for input.
+"""
+enum SegmentType {
+  """
+  Music track segment
+  """
+  MUSIC
+
+  """
+  Voice narration segment
+  """
+  VOICE
+}
+
+"""
+Input for creating or updating a mix segment.
+"""
+input MixSegmentInput {
+  """
+  Unique identifier for this segment
+  """
+  id: ID!
+
+  """
+  Segment type: MUSIC or VOICE
+  """
+  type: SegmentType!
+
+  """
+  Start time in milliseconds from mix beginning
+  """
+  startMs: Int!
+
+  """
+  End time in milliseconds from mix beginning
+  """
+  endMs: Int!
+
+  """
+  Duration of segment in milliseconds
+  """
+  durationMs: Int!
+
+  # Music segment fields (optional, for type=MUSIC)
+
+  """
+  Tidal track ID for playback (music segments only)
+  """
+  tidalTrackId: String
+
+  """
+  International Standard Recording Code (music segments only)
+  """
+  isrc: String
+
+  """
+  Track title (music segments only)
+  """
+  trackTitle: String
+
+  """
+  Primary artist name (music segments only)
+  """
+  artistName: String
+
+  """
+  URL to album artwork (music segments only)
+  """
+  albumArtUrl: String
+
+  # Voice segment fields (optional, for type=VOICE)
+
+  """
+  GCS signed URL for audio playback (voice segments only)
+  """
+  audioUrl: String
+
+  """
+  Source type: article, highlight, or newsletter (voice segments only)
+  """
+  sourceType: String
+
+  """
+  Readwise document ID (voice segments only)
+  """
+  sourceId: String
+
+  """
+  Title of the source content (voice segments only)
+  """
+  sourceTitle: String
+
+  """
+  Original URL of the source content (voice segments only)
+  """
+  sourceUrl: String
+
+  """
+  Content mode: summary, excerpt, or full (voice segments only)
+  """
+  contentMode: String
 }
