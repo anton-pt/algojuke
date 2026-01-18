@@ -16,6 +16,7 @@ import { DataSource } from "typeorm";
 import { DiscoveryService } from "../services/discoveryService.js";
 import { TrackMetadataService } from "../services/trackMetadataService.js";
 import { TidalService } from "../services/tidalService.js";
+import { MixService } from "../services/mixService.js";
 import { BackendQdrantClient } from "../clients/qdrantClient.js";
 import { LibraryTrack } from "../entities/LibraryTrack.js";
 import { LibraryAlbum } from "../entities/LibraryAlbum.js";
@@ -29,6 +30,7 @@ interface ChatRoutesOptions {
   discoveryService: DiscoveryService;
   trackMetadataService: TrackMetadataService;
   tidalService: TidalService;
+  mixService: MixService;
   qdrantClient: BackendQdrantClient;
   libraryTrackRepository: Repository<LibraryTrack>;
   libraryAlbumRepository: Repository<LibraryAlbum>;
@@ -44,6 +46,7 @@ export function createChatRoutes(options: ChatRoutesOptions): Router {
     discoveryService: options.discoveryService,
     trackMetadataService: options.trackMetadataService,
     tidalService: options.tidalService,
+    mixService: options.mixService,
     qdrantClient: options.qdrantClient,
     libraryTrackRepository: options.libraryTrackRepository,
     libraryAlbumRepository: options.libraryAlbumRepository,

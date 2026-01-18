@@ -27,6 +27,7 @@ import { CHAT_SYSTEM_PROMPT } from "../prompts/chatSystemPrompt.js";
 import { DiscoveryService } from "./discoveryService.js";
 import { TrackMetadataService } from "./trackMetadataService.js";
 import { TidalService } from "./tidalService.js";
+import { MixService } from "./mixService.js";
 import { BackendQdrantClient } from "../clients/qdrantClient.js";
 import { LibraryTrack } from "../entities/LibraryTrack.js";
 import { LibraryAlbum } from "../entities/LibraryAlbum.js";
@@ -36,6 +37,9 @@ import {
   AlbumTracksInputSchema,
   BatchMetadataInputSchema,
   SuggestPlaylistInputSchema,
+  ReadwiseListInputSchema,
+  ReadwiseFetchInputSchema,
+  GenerateMixInputSchema,
 } from "../schemas/agentTools.js";
 import type { ToolError } from "../types/agentTools.js";
 import {
@@ -58,6 +62,18 @@ import {
   executeSuggestPlaylist,
   type SuggestPlaylistContext,
 } from "./agentTools/suggestPlaylistTool.js";
+import {
+  executeReadwiseList,
+  type ReadwiseListContext,
+} from "./agentTools/readwiseListTool.js";
+import {
+  executeReadwiseFetch,
+  type ReadwiseFetchContext,
+} from "./agentTools/readwiseFetchTool.js";
+import {
+  executeGenerateMix,
+  type GenerateMixContext,
+} from "./agentTools/generateMixTool.js";
 import { executeWithRetry } from "./agentTools/retry.js";
 import { createToolSpan } from "./agentTools/tracing.js";
 
@@ -181,10 +197,12 @@ interface ToolContext {
   discoveryService: DiscoveryService;
   trackMetadataService: TrackMetadataService;
   tidalService: TidalService;
+  mixService: MixService;
   qdrantClient: BackendQdrantClient;
   libraryTrackRepository: Repository<LibraryTrack>;
   libraryAlbumRepository: Repository<LibraryAlbum>;
   userId: string;
+  conversationId?: string;
   onEvent: (event: SSEEvent) => void;
   trace: DiscoveryTrace | null;
   // Maps for tracking tool calls for persistence (Task 4.2)
@@ -200,6 +218,7 @@ export class ChatStreamService {
   private discoveryService?: DiscoveryService;
   private trackMetadataService?: TrackMetadataService;
   private tidalService?: TidalService;
+  private mixService?: MixService;
   private qdrantClient?: BackendQdrantClient;
   private libraryTrackRepository?: Repository<LibraryTrack>;
   private libraryAlbumRepository?: Repository<LibraryAlbum>;
@@ -210,6 +229,7 @@ export class ChatStreamService {
       discoveryService?: DiscoveryService;
       trackMetadataService?: TrackMetadataService;
       tidalService?: TidalService;
+      mixService?: MixService;
       qdrantClient?: BackendQdrantClient;
       libraryTrackRepository?: Repository<LibraryTrack>;
       libraryAlbumRepository?: Repository<LibraryAlbum>;
@@ -219,6 +239,7 @@ export class ChatStreamService {
     this.discoveryService = options?.discoveryService;
     this.trackMetadataService = options?.trackMetadataService;
     this.tidalService = options?.tidalService;
+    this.mixService = options?.mixService;
     this.qdrantClient = options?.qdrantClient;
     this.libraryTrackRepository = options?.libraryTrackRepository;
     this.libraryAlbumRepository = options?.libraryAlbumRepository;
@@ -732,12 +753,298 @@ export class ChatStreamService {
       },
     });
 
+    const readwiseListTool = tool({
+      description:
+        "List documents from user's Readwise Reader queue. Use when planning a radio mix to explore what articles the user has saved. Supports filters by location (new, later, shortlist, archive, feed) and category (article, email, pdf, epub, tweet, video).",
+      inputSchema: ReadwiseListInputSchema,
+      execute: async (input, options) => {
+        const typedInput = input;
+        const toolCallId = options.toolCallId;
+
+        // Track tool call for persistence
+        context.toolCallsMap.set(toolCallId, { name: "readwiseList", input });
+
+        context.onEvent({
+          type: "tool_call_start",
+          toolCallId,
+          toolName: "readwiseList",
+          input,
+        });
+
+        const span = createToolSpan(context.trace, {
+          toolName: "readwiseList",
+          toolCallId,
+          input,
+        });
+
+        const startTime = Date.now();
+
+        try {
+          const readwiseContext: ReadwiseListContext = {
+            userId: context.userId,
+          };
+
+          const { result, wasRetried } = await executeWithRetry(
+            async () => executeReadwiseList(typedInput, readwiseContext),
+            "readwiseList",
+          );
+
+          const durationMs = Date.now() - startTime;
+          const resultCount = result.documents.length;
+
+          span.endSuccess({
+            summary: result.summary,
+            resultCount,
+            durationMs,
+            metadata: { wasRetried, hasMore: result.hasMore },
+          });
+
+          // Track tool result for persistence
+          context.toolResultsMap.set(toolCallId, result);
+
+          context.onEvent({
+            type: "tool_call_end",
+            toolCallId,
+            summary: result.summary,
+            resultCount,
+            durationMs,
+            output: result,
+          });
+
+          return result;
+        } catch (error) {
+          const durationMs = Date.now() - startTime;
+          const toolError = error as ToolError;
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          const retryable =
+            "retryable" in toolError ? toolError.retryable : true;
+          const wasRetried =
+            "wasRetried" in toolError ? toolError.wasRetried : false;
+
+          span.endError({
+            error: errorMessage,
+            retryable,
+            wasRetried,
+            durationMs,
+          });
+
+          // Track error result for persistence
+          context.toolResultsMap.set(toolCallId, {
+            error: errorMessage,
+            retryable,
+          });
+
+          context.onEvent({
+            type: "tool_call_error",
+            toolCallId,
+            error: errorMessage,
+            retryable,
+            wasRetried,
+          });
+
+          throw error;
+        }
+      },
+    });
+
+    const readwiseFetchTool = tool({
+      description:
+        'Fetch and process a specific document\'s content from Readwise Reader. Use after readwiseList to get detailed content for mix generation. Supports contentMode: "summary" (spoken-word-friendly) or "full" (complete text). For summaries, use summaryLength: "short" (~100 words), "medium" (~250 words), or "long" (~500 words).',
+      inputSchema: ReadwiseFetchInputSchema,
+      execute: async (input, options) => {
+        const typedInput = input;
+        const toolCallId = options.toolCallId;
+
+        // Track tool call for persistence
+        context.toolCallsMap.set(toolCallId, { name: "readwiseFetch", input });
+
+        context.onEvent({
+          type: "tool_call_start",
+          toolCallId,
+          toolName: "readwiseFetch",
+          input,
+        });
+
+        const span = createToolSpan(context.trace, {
+          toolName: "readwiseFetch",
+          toolCallId,
+          input,
+        });
+
+        const startTime = Date.now();
+
+        try {
+          const readwiseContext: ReadwiseFetchContext = {
+            userId: context.userId,
+          };
+
+          const { result, wasRetried } = await executeWithRetry(
+            async () => executeReadwiseFetch(typedInput, readwiseContext),
+            "readwiseFetch",
+          );
+
+          const durationMs = Date.now() - startTime;
+
+          span.endSuccess({
+            summary: result.summary,
+            resultCount: 1,
+            durationMs,
+            metadata: { wasRetried, contentMode: result.contentMode },
+          });
+
+          // Track tool result for persistence
+          context.toolResultsMap.set(toolCallId, result);
+
+          context.onEvent({
+            type: "tool_call_end",
+            toolCallId,
+            summary: result.summary,
+            resultCount: 1,
+            durationMs,
+            output: result,
+          });
+
+          return result;
+        } catch (error) {
+          const durationMs = Date.now() - startTime;
+          const toolError = error as ToolError;
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          const retryable =
+            "retryable" in toolError ? toolError.retryable : true;
+          const wasRetried =
+            "wasRetried" in toolError ? toolError.wasRetried : false;
+
+          span.endError({
+            error: errorMessage,
+            retryable,
+            wasRetried,
+            durationMs,
+          });
+
+          // Track error result for persistence
+          context.toolResultsMap.set(toolCallId, {
+            error: errorMessage,
+            retryable,
+          });
+
+          context.onEvent({
+            type: "tool_call_error",
+            toolCallId,
+            error: errorMessage,
+            retryable,
+            wasRetried,
+          });
+
+          throw error;
+        }
+      },
+    });
+
+    const generateMixTool = tool({
+      description:
+        "Trigger background mix generation. Use AFTER gathering articles via readwiseList/readwiseFetch and confirming the selection with the user. Creates a radio mix with spoken content and music interludes. Requires title, articles array (with documentId and contentMode), and optional musicInstructions for the DJ agent.",
+      inputSchema: GenerateMixInputSchema,
+      execute: async (input, options) => {
+        const typedInput = input;
+        const toolCallId = options.toolCallId;
+
+        // Track tool call for persistence
+        context.toolCallsMap.set(toolCallId, { name: "generateMix", input });
+
+        context.onEvent({
+          type: "tool_call_start",
+          toolCallId,
+          toolName: "generateMix",
+          input,
+        });
+
+        const span = createToolSpan(context.trace, {
+          toolName: "generateMix",
+          toolCallId,
+          input,
+        });
+
+        const startTime = Date.now();
+
+        try {
+          const mixContext: GenerateMixContext = {
+            mixService: context.mixService,
+            userId: context.userId,
+            conversationId: context.conversationId,
+          };
+
+          // Note: generateMix does not use retry wrapper as it's a one-shot operation
+          const result = await executeGenerateMix(typedInput, mixContext);
+
+          const durationMs = Date.now() - startTime;
+
+          span.endSuccess({
+            summary: result.summary,
+            resultCount: result.articleCount,
+            durationMs,
+            metadata: { mixId: result.mixId, status: result.status },
+          });
+
+          // Track tool result for persistence
+          context.toolResultsMap.set(toolCallId, result);
+
+          context.onEvent({
+            type: "tool_call_end",
+            toolCallId,
+            summary: result.summary,
+            resultCount: result.articleCount,
+            durationMs,
+            output: result,
+          });
+
+          return result;
+        } catch (error) {
+          const durationMs = Date.now() - startTime;
+          const toolError = error as ToolError;
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          const retryable =
+            "retryable" in toolError ? toolError.retryable : true;
+          const wasRetried =
+            "wasRetried" in toolError ? toolError.wasRetried : false;
+
+          span.endError({
+            error: errorMessage,
+            retryable,
+            wasRetried,
+            durationMs,
+          });
+
+          // Track error result for persistence
+          context.toolResultsMap.set(toolCallId, {
+            error: errorMessage,
+            retryable,
+          });
+
+          context.onEvent({
+            type: "tool_call_error",
+            toolCallId,
+            error: errorMessage,
+            retryable,
+            wasRetried,
+          });
+
+          throw error;
+        }
+      },
+    });
+
     return {
       semanticSearch: semanticSearchTool,
       tidalSearch: tidalSearchTool,
       albumTracks: albumTracksTool,
       batchMetadata: batchMetadataTool,
       suggestPlaylist: suggestPlaylistTool,
+      readwiseList: readwiseListTool,
+      readwiseFetch: readwiseFetchTool,
+      generateMix: generateMixTool,
     };
   }
 
@@ -749,6 +1056,7 @@ export class ChatStreamService {
       this.discoveryService &&
       this.trackMetadataService &&
       this.tidalService &&
+      this.mixService &&
       this.qdrantClient &&
       this.libraryTrackRepository &&
       this.libraryAlbumRepository
@@ -885,10 +1193,12 @@ export class ChatStreamService {
             discoveryService: this.discoveryService!,
             trackMetadataService: this.trackMetadataService!,
             tidalService: this.tidalService!,
+            mixService: this.mixService!,
             qdrantClient: this.qdrantClient!,
             libraryTrackRepository: this.libraryTrackRepository!,
             libraryAlbumRepository: this.libraryAlbumRepository!,
             userId,
+            conversationId,
             onEvent,
             trace: trace ?? null,
             // Task 4.2: Pass tracking maps for persistence
