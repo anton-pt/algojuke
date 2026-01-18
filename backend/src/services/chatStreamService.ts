@@ -1739,22 +1739,187 @@ export class ChatStreamService {
   }
 
   /**
+   * AI SDK message type for tool calls
+   */
+  private buildToolCallContent(
+    content: ContentBlock[],
+  ): Array<
+    | { type: "text"; text: string }
+    | { type: "tool-call"; toolCallId: string; toolName: string; args: unknown }
+  > {
+    const parts: Array<
+      | { type: "text"; text: string }
+      | {
+          type: "tool-call";
+          toolCallId: string;
+          toolName: string;
+          args: unknown;
+        }
+    > = [];
+
+    for (const block of content) {
+      if (block.type === "text") {
+        const textBlock = block as { type: "text"; text: string };
+        if (textBlock.text) {
+          parts.push({ type: "text", text: textBlock.text });
+        }
+      } else if (block.type === "tool_use") {
+        const toolBlock = block as {
+          type: "tool_use";
+          id: string;
+          name: string;
+          input: unknown;
+        };
+        parts.push({
+          type: "tool-call",
+          toolCallId: toolBlock.id,
+          toolName: toolBlock.name,
+          args: toolBlock.input,
+        });
+      }
+    }
+
+    return parts;
+  }
+
+  /**
+   * Build tool result messages from content blocks
+   */
+  private buildToolResultMessages(content: ContentBlock[]): Array<{
+    role: "tool";
+    content: Array<{
+      type: "tool-result";
+      toolCallId: string;
+      toolName: string;
+      result: unknown;
+    }>;
+  }> {
+    const toolResults = content.filter(
+      (b) => b.type === "tool_result",
+    ) as Array<{ type: "tool_result"; tool_use_id: string; content: unknown }>;
+
+    // Find matching tool_use blocks to get tool names
+    const toolUses = content.filter((b) => b.type === "tool_use") as Array<{
+      type: "tool_use";
+      id: string;
+      name: string;
+      input: unknown;
+    }>;
+    const toolNameMap = new Map(toolUses.map((t) => [t.id, t.name]));
+
+    if (toolResults.length === 0) {
+      return [];
+    }
+
+    // Group all tool results into a single tool message
+    return [
+      {
+        role: "tool" as const,
+        content: toolResults.map((result) => ({
+          type: "tool-result" as const,
+          toolCallId: result.tool_use_id,
+          toolName: toolNameMap.get(result.tool_use_id) || "unknown",
+          result: result.content,
+        })),
+      },
+    ];
+  }
+
+  /**
    * Build LLM message array from conversation history
+   *
+   * Includes tool calls and results so the agent can reference previous tool outputs
    */
   private buildLLMMessages(
     existingMessages: Message[],
     newMessage: string,
-  ): Array<{ role: "user" | "assistant"; content: string }> {
-    const messages: Array<{ role: "user" | "assistant"; content: string }> = [];
+  ): Array<
+    | { role: "user" | "assistant"; content: string }
+    | {
+        role: "assistant";
+        content: Array<
+          | { type: "text"; text: string }
+          | {
+              type: "tool-call";
+              toolCallId: string;
+              toolName: string;
+              args: unknown;
+            }
+        >;
+      }
+    | {
+        role: "tool";
+        content: Array<{
+          type: "tool-result";
+          toolCallId: string;
+          toolName: string;
+          result: unknown;
+        }>;
+      }
+  > {
+    const messages: Array<
+      | { role: "user" | "assistant"; content: string }
+      | {
+          role: "assistant";
+          content: Array<
+            | { type: "text"; text: string }
+            | {
+                type: "tool-call";
+                toolCallId: string;
+                toolName: string;
+                args: unknown;
+              }
+          >;
+        }
+      | {
+          role: "tool";
+          content: Array<{
+            type: "tool-result";
+            toolCallId: string;
+            toolName: string;
+            result: unknown;
+          }>;
+        }
+    > = [];
 
     // Add existing messages
     for (const msg of existingMessages) {
-      const textContent = this.extractTextContent(msg.content);
-      if (textContent) {
-        messages.push({
-          role: msg.role,
-          content: textContent,
-        });
+      if (msg.role === "user") {
+        // User messages are always simple text
+        const textContent = this.extractTextContent(msg.content);
+        if (textContent) {
+          messages.push({
+            role: "user",
+            content: textContent,
+          });
+        }
+      } else if (msg.role === "assistant") {
+        // Check if assistant message contains tool calls
+        const hasToolCalls = msg.content.some((b) => b.type === "tool_use");
+
+        if (hasToolCalls) {
+          // Build structured content with tool calls
+          const toolCallContent = this.buildToolCallContent(msg.content);
+          if (toolCallContent.length > 0) {
+            messages.push({
+              role: "assistant",
+              content: toolCallContent,
+            });
+          }
+
+          // Add tool results as separate tool messages
+          const toolResultMessages = this.buildToolResultMessages(msg.content);
+          messages.push(...toolResultMessages);
+        } else {
+          // Simple text-only assistant message
+          const textContent = this.extractTextContent(msg.content);
+          if (textContent) {
+            messages.push({
+              role: "assistant",
+              content: textContent,
+            });
+          }
+        }
       }
     }
 
