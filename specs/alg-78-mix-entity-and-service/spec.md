@@ -117,17 +117,17 @@ As a user, I want my mixes to be private and not accessible to other users, so t
 
 ## Functional Requirements
 
-| ID | Requirement |
-|----|-------------|
-| FR-001 | Mix entity has UUID primary key auto-generated |
-| FR-002 | Mix stores userId as varchar(255) with index |
+| ID     | Requirement                                                               |
+| ------ | ------------------------------------------------------------------------- |
+| FR-001 | Mix entity has UUID primary key auto-generated                            |
+| FR-002 | Mix stores userId as varchar(255) with index                              |
 | FR-003 | Mix status is enum: "generating", "ready", "failed" with check constraint |
-| FR-004 | Mix segments is JSONB array with MixSegment type |
-| FR-005 | Mix failureReason is populated only when status is "failed" |
-| FR-006 | MixService verifies user ownership on all read/update/delete operations |
-| FR-007 | MixService has dedicated updateMixStatus method for status transitions |
-| FR-008 | Database migration creates table with check constraint on status |
-| FR-009 | Mix entity has indexes on userId, status, and updatedAt |
+| FR-004 | Mix segments is JSONB array with MixSegment type                          |
+| FR-005 | Mix failureReason is populated only when status is "failed"               |
+| FR-006 | MixService verifies user ownership on all read/update/delete operations   |
+| FR-007 | MixService has dedicated updateMixStatus method for status transitions    |
+| FR-008 | Database migration creates table with check constraint on status          |
+| FR-009 | Mix entity has indexes on userId, status, and updatedAt                   |
 
 ## Dependencies
 
