@@ -45,6 +45,34 @@ export interface ServiceAuthContext {
 }
 
 /**
+ * Require service authentication for internal operations
+ *
+ * Used by internal mutations that should only be callable by
+ * service-to-service communication (e.g., worker updating mix status).
+ * These operations bypass user ownership checks.
+ *
+ * @param context - GraphQL context with optional serviceApiKey
+ * @param operationName - Name of the operation for logging
+ * @throws GraphQLError with UNAUTHENTICATED code if not authenticated
+ */
+export function requireServiceAuth(
+  context: Pick<ServiceAuthContext, "serviceApiKey">,
+  operationName: string,
+): void {
+  if (!isServiceAuthenticated(context.serviceApiKey)) {
+    logAuthFailure(operationName, "service_required");
+    throw new GraphQLError("Service authentication required", {
+      extensions: { code: "UNAUTHENTICATED" },
+    });
+  }
+
+  logger.debug("service_auth_success", {
+    operation: operationName,
+    authMode: "api_key",
+  });
+}
+
+/**
  * Resolve the effective userId for an agent tool query
  *
  * Handles two authentication modes:

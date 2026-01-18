@@ -199,6 +199,117 @@ export class MixService {
     }
   }
 
+  // ===========================================================================
+  // Internal methods (no user ownership check - for service-to-service calls)
+  // ===========================================================================
+
+  /**
+   * Get a mix by ID without user ownership verification.
+   * Internal use only - for service-to-service operations.
+   */
+  async getMixById(id: string): Promise<Mix | null> {
+    logger.info("get_mix_by_id_internal", { id });
+
+    try {
+      const mix = await this.mixRepository.findOne({ where: { id } });
+
+      if (!mix) {
+        logger.info("mix_not_found_internal", { id });
+      }
+
+      return mix;
+    } catch (error) {
+      logger.error("get_mix_by_id_internal_failed", {
+        id,
+        error: String(error),
+      });
+      throw mapPostgresError(error, "Failed to fetch mix");
+    }
+  }
+
+  /**
+   * Update mix status without user ownership verification.
+   * Internal use only - for worker service status updates.
+   */
+  async updateMixStatusInternal(
+    id: string,
+    status: MixStatus,
+    failureReason?: string,
+  ): Promise<Mix | null> {
+    logger.info("update_mix_status_internal_start", { id, status });
+
+    try {
+      const existing = await this.mixRepository.findOne({ where: { id } });
+      if (!existing) {
+        logger.info("update_mix_status_internal_not_found", { id });
+        return null;
+      }
+
+      existing.status = status;
+
+      // Only set failure reason when status is "failed"
+      if (status === "failed") {
+        existing.failureReason = failureReason ?? "Unknown error";
+      } else {
+        existing.failureReason = null;
+      }
+
+      const saved = await this.mixRepository.save(existing);
+      logger.info("update_mix_status_internal_success", { id, status });
+      return saved;
+    } catch (error) {
+      logger.error("update_mix_status_internal_failed", {
+        id,
+        status,
+        error: String(error),
+      });
+      throw mapPostgresError(error, "Failed to update mix status");
+    }
+  }
+
+  /**
+   * Update mix segments without user ownership verification.
+   * Internal use only - for worker service segment updates.
+   */
+  async updateMixSegmentsInternal(
+    id: string,
+    segments: MixSegment[],
+    totalDurationMs: number,
+    characterCount: number,
+  ): Promise<Mix | null> {
+    logger.info("update_mix_segments_internal_start", {
+      id,
+      segmentCount: segments.length,
+      totalDurationMs,
+      characterCount,
+    });
+
+    try {
+      const existing = await this.mixRepository.findOne({ where: { id } });
+      if (!existing) {
+        logger.info("update_mix_segments_internal_not_found", { id });
+        return null;
+      }
+
+      existing.segments = segments;
+      existing.totalDurationMs = totalDurationMs;
+      existing.characterCount = characterCount;
+
+      const saved = await this.mixRepository.save(existing);
+      logger.info("update_mix_segments_internal_success", {
+        id,
+        segmentCount: segments.length,
+      });
+      return saved;
+    } catch (error) {
+      logger.error("update_mix_segments_internal_failed", {
+        id,
+        error: String(error),
+      });
+      throw mapPostgresError(error, "Failed to update mix segments");
+    }
+  }
+
   /**
    * Delete a mix with user ownership verification
    */
